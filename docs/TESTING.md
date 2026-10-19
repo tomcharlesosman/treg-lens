@@ -27,7 +27,7 @@ npm run test:e2e:report
 | Area | Coverage |
 | --- | --- |
 | Public pages | Product links, fork destinations, navigation anchors, all FAQ disclosures, compact sign-in, and demo entry points |
-| Sign-in and session | Required key, reveal/hide, trimmed input, invalid and unscoped keys, unavailable/malformed upstream responses, busy states, retries, encrypted cookie flags, reload, switching keys, logout and logout failure |
+| Sign-in and session | Slow JavaScript/client readiness, required key, reveal/hide, trimmed input, invalid and unscoped keys, unavailable/malformed upstream responses, busy states, retries, encrypted cookie flags, reload, switching keys, logout and logout failure |
 | Demo boundaries | All paid/account entry points require sign-in, demo edits stay separate from private saved workspaces, exports are labeled illustrative |
 | Settings and storage | Empty workspace, project validation, competitors, persistence, per-key isolation, in-memory credential overrides, malformed JSON/records, legacy key removal |
 | Audits | Live estimate UI, price breakdown, prompt/engine validation, example prompts, four-engine run, result details, partial/all failures, balance errors, unknown billing, persistence and rechecks |
@@ -55,4 +55,4 @@ Reports, screenshots and failure traces are written under the ignored `output/pl
 
 ## CI
 
-`.github/workflows/test.yml` runs library tests, lint and the production browser/API suite on pushes to `main` and pull requests. It installs all three browser engines on Ubuntu and uploads the Playwright report and failure artifacts for 14 days. No Treg or deployment secrets are required.
+`.github/workflows/test.yml` runs library tests, lint and the production browser/API suite on pushes to `main` and pull requests. It pins Ubuntu 24.04 for a reproducible browser host, installs all three browser engines and uploads the Playwright report and failure artifacts for 14 days. No Treg or deployment secrets are required.

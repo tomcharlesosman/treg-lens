@@ -1,3 +1,4 @@
+import type { Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import {
   test,
@@ -77,6 +78,26 @@ test.describe("Public marketing and navigation", () => {
 });
 
 test.describe("API-key sign-in and encrypted browser session", () => {
+  test("waits for client readiness before accepting a key on a slow initial load", async ({ page }) => {
+    let release!: () => void;
+    const scripts = new Promise<void>((resolve) => { release = resolve; });
+    await page.route("**/_next/static/chunks/*.js", async (route) => {
+      await scripts;
+      await route.continue();
+    });
+    await page.goto("/login", { waitUntil: "commit" });
+    const key = page.getByLabel("Treg API key", { exact: true });
+    try {
+      await expect(key).toBeVisible();
+      await expect(key).toBeDisabled();
+    } finally {
+      release();
+    }
+    await expect(key).toBeEnabled();
+    await key.fill(PRIMARY_TOKEN);
+    await page.getByRole("button", { name: "Open my workspace" }).click();
+    await expect(page).toHaveURL(/\/app$/);
+  });
   test("gates the private workspace and keeps an anonymous session empty", async ({ page }) => {
     await page.goto("/app");
     await expect(page).toHaveURL(/\/login$/);
@@ -247,35 +268,57 @@ test.describe("API-key sign-in and encrypted browser session", () => {
 });
 
 test.describe("Public demo safeguards", () => {
-  test("all paid and account actions lead to sign-in before issuing paid requests", async ({ page }) => {
-    const paidRequests: string[] = [];
+  function paidRequestsFor(page: Page) {
+    const requests: string[] = [];
     page.on("request", (request) => {
-      if (/\/api\/aeo\/(run|discover|source)$/.test(request.url()) && request.method() === "POST") paidRequests.push(request.url());
+      if (/\/api\/aeo\/(run|discover|source)$/.test(request.url()) && request.method() === "POST") requests.push(request.url());
     });
-    for (const action of ["Connect Treg", "Make it yours", "Settings", "Your workspace", "Treg workspace", "Run an audit"]) {
+    return requests;
+  }
+  async function expectSignInWithoutSpending(page: Page, requests: string[]) {
+    await expect(page).toHaveURL(/\/login$/);
+    await expect(page.getByLabel("Treg API key", { exact: true })).toBeEnabled();
+    expect(requests).toEqual([]);
+  }
+  for (const action of ["Connect Treg", "Make it yours", "Settings", "Your workspace", "Treg workspace", "Run an audit"]) {
+    test(`demo gate: ${action} requires sign-in without spending`, async ({ page }) => {
+      const requests = paidRequestsFor(page);
       await page.goto("/demo");
-      const target = action === "Connect Treg" ? page.getByRole("link", { name: action }) : page.getByRole("button", { name: action, exact: !["Your workspace", "Treg workspace"].includes(action) });
+      const target = action === "Connect Treg"
+        ? page.getByRole("link", { name: action })
+        : page.getByRole("button", { name: action, exact: !["Your workspace", "Treg workspace"].includes(action) });
       await target.click();
-      await expect(page).toHaveURL(/\/login$/);
-    }
+      await expectSignInWithoutSpending(page, requests);
+    });
+  }
+  test("demo gate: prompt discovery requires sign-in without spending", async ({ page }) => {
+    const requests = paidRequestsFor(page);
     await page.goto("/demo");
     await page.getByRole("button", { name: "Prompt tracking", exact: true }).click();
     await page.getByRole("button", { name: "Discover prompts", exact: true }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expectSignInWithoutSpending(page, requests);
+  });
+  test("demo gate: source research requires sign-in without spending", async ({ page }) => {
+    const requests = paidRequestsFor(page);
     await page.goto("/demo");
     await page.getByRole("button", { name: "Sources & citations", exact: true }).click();
     await page.getByRole("button", { name: "Research", exact: true }).first().click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expectSignInWithoutSpending(page, requests);
+  });
+  test("demo gate: prompt recheck requires sign-in without spending", async ({ page }) => {
+    const requests = paidRequestsFor(page);
     await page.goto("/demo");
     await page.getByRole("button", { name: "Prompt tracking", exact: true }).click();
     await page.locator("tbody .prompt-cell").first().click();
     await page.getByRole("button", { name: "Recheck prompt", exact: true }).click();
-    await expect(page).toHaveURL(/\/login$/);
+    await expectSignInWithoutSpending(page, requests);
+  });
+  test("demo gate: activity audit requires sign-in without spending", async ({ page }) => {
+    const requests = paidRequestsFor(page);
     await page.goto("/demo");
     await page.getByRole("button", { name: "Notifications" }).click();
     await page.locator(".notification-popover").getByRole("button", { name: "Run an audit" }).click();
-    await expect(page).toHaveURL(/\/login$/);
-    expect(paidRequests).toEqual([]);
+    await expectSignInWithoutSpending(page, requests);
   });
 
   test("ignores saved private workspaces and never persists demo edits", async ({ page }) => {

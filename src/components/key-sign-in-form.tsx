@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useState, useSyncExternalStore } from "react";
 import {
   ArrowRight,
   Check,
@@ -12,6 +12,10 @@ import {
   LockKeyhole,
 } from "lucide-react";
 
+const subscribeToClient = () => () => {};
+const clientSnapshot = () => true;
+const serverSnapshot = () => false;
+
 export default function KeySignInForm({
   compact = false,
 }: {
@@ -19,6 +23,11 @@ export default function KeySignInForm({
 }) {
   const id = useId();
   const router = useRouter();
+  const ready = useSyncExternalStore(
+    subscribeToClient,
+    clientSnapshot,
+    serverSnapshot,
+  );
   const [token, setToken] = useState("");
   const [visible, setVisible] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -37,7 +46,7 @@ export default function KeySignInForm({
   }, []);
   async function signIn(event: React.FormEvent) {
     event.preventDefault();
-    if (busy || !token.trim()) return;
+    if (!ready || busy || !token.trim()) return;
     setBusy(true);
     setError("");
     try {
@@ -52,6 +61,8 @@ export default function KeySignInForm({
           data.error || "We couldn’t verify that key. Please try again.",
         );
       setToken("");
+      setBusy(false);
+      setAuthenticated(true);
       router.replace("/app");
       router.refresh();
     } catch (failure) {
@@ -75,7 +86,12 @@ export default function KeySignInForm({
         </Link>
         <button
           className="key-other-account"
-          onClick={() => setAuthenticated(false)}
+          onClick={() => {
+            setBusy(false);
+            setError("");
+            setVisible(false);
+            setAuthenticated(false);
+          }}
         >
           Use a different API key
         </button>
@@ -106,7 +122,7 @@ export default function KeySignInForm({
           spellCheck={false}
           maxLength={1024}
           required
-          disabled={busy}
+          disabled={!ready || busy}
           aria-describedby={`${id}-privacy${error ? " " + id + "-error" : ""}`}
         />
         <button
@@ -114,7 +130,7 @@ export default function KeySignInForm({
           className="key-reveal"
           aria-label={visible ? "Hide API key" : "Show API key"}
           onClick={() => setVisible(!visible)}
-          disabled={busy}
+          disabled={!ready || busy}
         >
           {visible ? <EyeOff size={16} /> : <Eye size={16} />}
         </button>
@@ -122,7 +138,7 @@ export default function KeySignInForm({
           <button
             type="submit"
             className="key-submit-compact"
-            disabled={busy || !token.trim()}
+            disabled={!ready || busy || !token.trim()}
             aria-label="Verify key and open workspace"
           >
             {busy ? (
@@ -142,7 +158,7 @@ export default function KeySignInForm({
         <button
           type="submit"
           className="marketing-button primary key-submit"
-          disabled={busy || !token.trim()}
+          disabled={!ready || busy || !token.trim()}
         >
           {busy ? (
             <>

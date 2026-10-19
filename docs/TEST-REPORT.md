@@ -7,13 +7,13 @@ The [coverage guide](./TESTING.md) maps the implemented features to their browse
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
 | HTTP API | 81 | 0 / 0 |
-| Chromium browser workflows | 42 | 0 / 0 |
-| Firefox browser workflows | 42 | 0 / 0 |
-| WebKit browser workflows | 42 | 0 / 0 |
+| Chromium browser workflows | 52 | 0 / 0 |
+| Firefox browser workflows | 52 | 0 / 0 |
+| WebKit browser workflows | 52 | 0 / 0 |
 | Library tests | 47 | 0 / 0 |
-| **Total** | **254** | **0 / 0** |
+| **Total** | **284** | **0 / 0** |
 
-The complete 207-case API/browser run passed in approximately 1.2 minutes with retries disabled. Lint, TypeScript and the production build also passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths. All three browser engines completed the same 42 scenarios.
+The complete 237-case API/browser run passed with retries disabled. Lint, TypeScript and the production build also passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths. All three browser engines completed the same 52 scenarios.
 
 ## Issues found and fixed
 
@@ -22,6 +22,9 @@ The complete 207-case API/browser run passed in approximately 1.2 minutes with r
 3. **Legacy key cleanup:** malformed workspace JSON prevented deletion of an early plaintext session-storage key. Cleanup now runs independently, including on the demo route.
 4. **Production prerendering:** time-sensitive session decryption could run during speculative rendering. Authentication now waits for the actual request.
 5. **Dialog keyboard behavior:** native dialogs could let Tab leave their controls, and WebKit did not consistently return focus to the opener. Forward/reverse focus cycling and explicit opener focus now work across the three engines.
+6. **Slow initial sign-in:** Linux WebKit exposed a race where a key could be entered before React attached its change handlers, leaving the submit button disabled. Key controls now wait for client readiness. A regression test deliberately holds JavaScript downloads before entering a key.
+7. **Switching keys without signing out:** cached client navigation could retain the previous workspace's in-memory state when a different key selected a fresh storage namespace. The authenticated workspace is now mounted with that namespace as its React key. The isolation regression switches keys through the real UI, verifies an empty second workspace, then switches back and checks the original history and completed moves.
+8. **Returning to a cached sign-in form:** a successful submission left the cached form busy, so switching back to a different key could leave its input disabled. Successful verification now clears the busy state, and changing keys resets the form's error and visibility state.
 
 Each fix is covered by an end-to-end regression. The storage validator also has library regression tests. Browser tests fail on uncaught page errors.
 

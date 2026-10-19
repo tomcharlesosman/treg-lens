@@ -14,7 +14,7 @@ async function AuthenticatedWorkspace() {
   await connection();
   const session = await getTregSession();
   if (!session) redirect("/login");
-  return <Workspace storageId={session.workspaceId} />;
+  return <Workspace key={session.workspaceId} storageId={session.workspaceId} />;
 }
 export default function AppPage() {
   return (

@@ -357,19 +357,30 @@ test("saved answers render complete safe markdown and all CSV, JSON, and single-
 });
 
 test("workspace data is isolated per signed-in key and restored when returning to the original key", async ({ page }) => {
+  const switchThroughLogin = async (token: string) => {
+    await page.getByRole("link", { name: "Treg Lens home" }).click();
+    await page.getByRole("link", { name: "Log in", exact: true }).first().click();
+    await expect(page).toHaveURL(/\/login$/);
+    const form = page.locator(".signin-form-panel");
+    await expect(form).toBeVisible();
+    await form.getByRole("button", { name: "Use a different API key" }).click();
+    await form.getByLabel("Treg API key", { exact: true }).fill(token);
+    await form.getByRole("button", { name: "Open my workspace" }).click();
+    await expect(page).toHaveURL(/\/app$/);
+    await nav(page, "Overview");
+    await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+    const session = await (await page.request.get("/api/auth/session")).json();
+    return `${storagePrefix}${session.workspaceId}`;
+  };
   const originalKey = await seedWorkspace(page);
   await nav(page, "Opportunities");
   await page.getByRole("button", { name: "Mark done", exact: true }).click();
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page).toHaveURL("/");
-  const secondKey = await signIn(page, secondaryKey);
+  const secondKey = await switchThroughLogin(secondaryKey);
   expect(secondKey).not.toBe(originalKey);
   await expect(page.getByRole("heading", { name: "Your baseline starts here" })).toBeVisible();
   await nav(page, "Audit history");
   await expect(page.getByText("0 RUNS", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Sign out", exact: true }).click();
-  await expect(page).toHaveURL("/");
-  await signIn(page, primaryKey);
+  await switchThroughLogin(primaryKey);
   await nav(page, "Audit history");
   await expect(page.getByText("2 RUNS", { exact: true })).toBeVisible();
   await nav(page, "Opportunities");
