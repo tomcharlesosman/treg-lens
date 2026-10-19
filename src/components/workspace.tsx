@@ -112,7 +112,7 @@ const TITLES: Record<View, { title: string; description: string }> = {
     description: "How Treg Lens turns AI answers into a clearer picture.",
   },
 };
-const COLORS = ["#13865b", "#9c9dca", "#dfb66a", "#93b6c5"];
+const COLORS = ["#118453", "#9c9dca", "#dfb66a", "#93b6c5"];
 const STORE = "treg-lens-workspace-v1";
 function n(value: number, digits = 0) {
   return value.toLocaleString("en-US", {
@@ -361,8 +361,8 @@ function TrendChart({
               >
                 <defs>
                   <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#13865b" stopOpacity=".12" />
-                    <stop offset="100%" stopColor="#13865b" stopOpacity="0" />
+                    <stop offset="0%" stopColor="#118453" stopOpacity=".12" />
+                    <stop offset="100%" stopColor="#118453" stopOpacity="0" />
                   </linearGradient>
                 </defs>
                 {[0, 45, 90, 135, 180].map((y) => (
@@ -372,7 +372,7 @@ function TrendChart({
                     x2={width}
                     y1={y}
                     y2={y}
-                    stroke="#eeefeb"
+                    stroke="#e5e5e5"
                     strokeDasharray="3 4"
                   />
                 ))}
@@ -411,7 +411,7 @@ function TrendChart({
                     x2={coords[0][hover].x}
                     y1="0"
                     y2={height}
-                    stroke="#bac7be"
+                    stroke="#b8c9c4"
                   />
                 )}
                 {hover !== null &&
@@ -1325,7 +1325,7 @@ export default function Workspace({
                               width: `${totalMentions ? (b.mentions / totalMentions) * 100 : 0}%`,
                               background:
                                 b.brand === project.brand
-                                  ? "#15815a"
+                                  ? "#118453"
                                   : COLORS[(i % 3) + 1],
                             }}
                           />

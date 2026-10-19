@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   padding: 30px 20px;
-  background: rgba(30, 34, 29, 0.32);
+  background: rgba(0, 0, 0, 0.32);
   backdrop-filter: blur(6px);
   animation: lens-backdrop-in 0.18s ease-out;
   overflow: auto;
@@ -18,13 +18,13 @@
   max-width: 684px;
   overflow: auto;
   overscroll-behavior: contain;
-  background: #fdfcfb;
-  color: #20221f;
+  background: var(--treg-surface);
+  color: var(--treg-ink);
   border: 1px solid rgba(255, 255, 255, 0.8);
   border-radius: 16px;
   box-shadow:
-    0 24px 100px rgba(23, 35, 25, 0.18),
-    0 2px 8px rgba(23, 35, 25, 0.06);
+    0 24px 100px rgba(0, 0, 0, 0.18),
+    0 2px 8px rgba(0, 0, 0, 0.06);
   outline: none;
   font-family: inherit;
   animation: lens-dialog-in 0.22s cubic-bezier(0.2, 0.7, 0.2, 1);
@@ -51,19 +51,19 @@
 .lens-dialog button:focus-visible,
 .lens-dialog a:focus-visible,
 .lens-dialog summary:focus-visible {
-  outline: 2px solid #118453;
+  outline: 2px solid var(--treg-mint-ink);
   outline-offset: 4px;
 }
 .lens-dialog-heading {
   padding: 31px 34px 26px;
-  border-bottom: 1px solid #eaece5;
+  border-bottom: 1px solid var(--treg-border);
   position: relative;
 }
 .lens-dialog-eyebrow {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #728270;
+  color: var(--treg-body);
   font:
     10px/1.4 "SFMono-Regular",
     Consolas,
@@ -76,7 +76,7 @@
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #118453;
+  background: var(--treg-success);
 }
 .lens-dialog-close {
   position: absolute;
@@ -87,7 +87,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #7c8178;
+  color: var(--treg-body);
   background: transparent;
   border: 1px solid transparent;
   border-radius: 7px;
@@ -96,8 +96,8 @@
     color 0.15s;
 }
 .lens-dialog-close:hover {
-  background: #eeefe9;
-  color: #20221f;
+  background: var(--treg-canvas);
+  color: var(--treg-ink);
 }
 .lens-dialog-title-row {
   display: flex;
@@ -112,10 +112,10 @@
   width: 42px;
   height: 42px;
   flex-shrink: 0;
-  background: #edf3e8;
-  border: 1px solid #e4ebdf;
+  background: var(--treg-mint);
+  border: 1px solid var(--treg-mint-line);
   border-radius: 11px;
-  color: #34714c;
+  color: var(--treg-ink);
 }
 .lens-dialog-heading h2 {
   font-size: 27px;
@@ -127,7 +127,7 @@
 .lens-dialog-heading p {
   font-size: 13px;
   line-height: 1.7;
-  color: #7c8178;
+  color: var(--treg-body);
   margin: 13px 0 0;
 }
 .lens-dialog-body {
@@ -151,7 +151,7 @@
     Consolas,
     monospace;
   letter-spacing: 1.15px;
-  color: #7d8678;
+  color: var(--treg-body);
   font-weight: 500;
   margin: 25px 0 15px;
 }
@@ -165,10 +165,10 @@
   justify-content: center;
   width: 21px;
   height: 20px;
-  border: 1px solid #e6e9e0;
+  border: 1px solid var(--treg-border);
   border-radius: 4px;
-  color: #8b9485;
-  background: #f6f7f1;
+  color: var(--treg-muted);
+  background: var(--treg-canvas);
   letter-spacing: 0;
 }
 .lens-dialog-grid {
@@ -184,14 +184,14 @@
   font-size: 11px;
   line-height: 1.5;
   font-weight: 600;
-  color: #50594c;
+  color: var(--treg-ink);
 }
 .lens-dialog-field input,
 .lens-dialog-field textarea {
   width: 100%;
-  background: #fff;
-  color: #30362c;
-  border: 1px solid #e0e4da;
+  background: var(--treg-surface);
+  color: var(--treg-ink);
+  border: 1px solid var(--treg-border);
   border-radius: 7px;
   outline: none;
   padding: 10px 12px;
@@ -207,12 +207,12 @@
 }
 .lens-dialog-field input::placeholder,
 .lens-dialog-field textarea::placeholder {
-  color: #a4aa9f;
+  color: var(--treg-muted);
 }
 .lens-dialog-field input:focus,
 .lens-dialog-field textarea:focus {
-  border-color: #89ac8b;
-  box-shadow: 0 0 0 3px rgba(108, 148, 100, 0.1);
+  border-color: var(--treg-mint-ink);
+  box-shadow: 0 0 0 3px rgba(0, 0, 0, 0.1);
 }
 .lens-dialog-field textarea {
   resize: vertical;
@@ -232,7 +232,7 @@
 .lens-input-icon > svg {
   position: absolute;
   left: 12px;
-  color: #9ba493;
+  color: var(--treg-muted);
   pointer-events: none;
 }
 .lens-input-icon > input {
@@ -240,7 +240,7 @@
 }
 .lens-field-optional {
   font-weight: 400;
-  color: #a0a69a;
+  color: var(--treg-muted);
   margin-left: 5px;
   font-size: 10px;
 }
@@ -248,14 +248,14 @@
   font-weight: 400;
   font-size: 10px;
   line-height: 1.7;
-  color: #8b9283;
+  color: var(--treg-muted);
   margin: 0;
 }
 .lens-field-help a {
   display: inline-flex;
   gap: 3px;
   align-items: center;
-  color: #277748;
+  color: var(--treg-ink);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -269,11 +269,11 @@
     9px/1.4 "SFMono-Regular",
     Consolas,
     monospace;
-  color: #8b9283;
+  color: var(--treg-muted);
   font-weight: 400;
 }
 .lens-field-counter.lens-counter-invalid {
-  color: #b6744a;
+  color: var(--treg-danger);
 }
 .lens-example-button {
   display: inline-flex;
@@ -284,11 +284,11 @@
   margin-top: -4px;
   font-size: 10px !important;
   line-height: 1.4;
-  color: #648558;
+  color: var(--treg-body);
   background: transparent;
 }
 .lens-example-button:hover {
-  color: #118453;
+  color: var(--treg-ink);
 }
 .lens-engine-grid {
   display: grid;
@@ -301,21 +301,21 @@
   gap: 9px;
   position: relative;
   padding: 11px 12px;
-  border: 1px solid #e1e5da;
+  border: 1px solid var(--treg-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--treg-surface);
   text-align: left;
-  color: #4f5949;
+  color: var(--treg-ink);
   transition:
     background 0.15s,
     border-color 0.15s;
 }
 .lens-engine-option:hover {
-  border-color: #b4c3a8;
+  border-color: var(--treg-border-strong);
 }
 .lens-engine-option.is-selected {
-  background: #f2f6ed;
-  border-color: #a6bd96;
+  background: var(--treg-mint);
+  border-color: var(--treg-mint-line);
 }
 .lens-engine-symbol {
   width: 30px;
@@ -354,7 +354,7 @@
 }
 .lens-engine-name small {
   font-size: 9px;
-  color: #969d8e;
+  color: var(--treg-muted);
   font-weight: 400;
 }
 .lens-engine-check {
@@ -363,19 +363,19 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #e4e9dc;
+  border: 1px solid var(--treg-border);
   border-radius: 4px;
-  color: #a3ad98;
+  color: var(--treg-muted);
   margin-left: auto;
 }
 .is-selected .lens-engine-check {
-  background: #426d36;
-  border-color: #426d36;
-  color: #fff;
+  background: var(--treg-ink);
+  border-color: var(--treg-ink);
+  color: var(--treg-surface);
 }
 .lens-token-details {
   margin-top: 21px;
-  border-top: 1px solid #eceee6;
+  border-top: 1px solid var(--treg-border);
   padding-top: 15px;
 }
 .lens-token-details summary {
@@ -384,7 +384,7 @@
   align-items: center;
   justify-content: space-between;
   cursor: pointer;
-  color: #7e8974;
+  color: var(--treg-body);
   font-size: 10px;
 }
 .lens-token-details summary::-webkit-details-marker,
@@ -410,8 +410,8 @@
 }
 .lens-dialog-footer {
   padding: 21px 34px 23px;
-  background: #f7f8f3;
-  border-top: 1px solid #e7ebdf;
+  background: var(--treg-canvas);
+  border-top: 1px solid var(--treg-border);
   display: flex;
   align-items: center;
   gap: 14px;
@@ -432,7 +432,7 @@
     Consolas,
     monospace;
   letter-spacing: 0.8px;
-  color: #949c89;
+  color: var(--treg-muted);
 }
 .lens-estimate-label svg {
   opacity: 0.6;
@@ -442,24 +442,24 @@
   letter-spacing: -0.7px;
   line-height: 1.3;
   font-weight: 500;
-  color: #3d4934;
+  color: var(--treg-ink);
 }
 .lens-estimate-value small {
   font-size: 10px;
   letter-spacing: 0;
   font-weight: 400;
-  color: #919b83;
+  color: var(--treg-muted);
   margin-left: 4px;
   white-space: nowrap;
 }
 .lens-estimate-loading {
   font-size: 13px;
   letter-spacing: 0;
-  color: #929b88;
+  color: var(--treg-muted);
 }
 .lens-estimate-empty {
   font-size: 10px;
-  color: #969f8c;
+  color: var(--treg-muted);
   max-width: 270px;
   line-height: 1.4;
 }
@@ -470,34 +470,34 @@
   gap: 10px;
   min-height: 40px;
   padding: 11px 16px;
-  background: #287b48;
-  border: 1px solid #287b48;
+  background: var(--treg-ink);
+  border: 1px solid var(--treg-ink);
   border-radius: 7px;
   color: white;
   font-size: 11px !important;
   line-height: 1.4;
   font-weight: 500 !important;
-  box-shadow: 0 1px 1px rgba(21, 65, 28, 0.1);
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.1);
   transition:
     background 0.15s,
     transform 0.15s;
   white-space: nowrap;
 }
 .lens-dialog-primary:hover {
-  background: #206d3d;
-  border-color: #206d3d;
+  background: #333333;
+  border-color: #333333;
   transform: translateY(-1px);
 }
 .lens-dialog-primary:disabled {
-  background: #a6b69b;
-  border-color: #a6b69b;
+  background: var(--treg-placeholder);
+  border-color: var(--treg-placeholder);
   box-shadow: none;
   transform: none;
   opacity: 0.7;
 }
 .lens-cost-note {
   font-size: 9px;
-  color: #929d86;
+  color: var(--treg-muted);
   line-height: 1.7;
   width: 100%;
   margin: 0;
@@ -505,7 +505,7 @@
 .lens-pricing-details {
   width: 100%;
   font-size: 9px;
-  color: #8b967e;
+  color: var(--treg-muted);
   margin-top: -5px;
 }
 .lens-pricing-details summary {
@@ -520,7 +520,7 @@
   display: grid;
   gap: 7px;
   padding-top: 10px;
-  border-top: 1px solid #e8ecdf;
+  border-top: 1px solid var(--treg-border);
 }
 .lens-pricing-details > div > span {
   display: flex;
@@ -529,7 +529,7 @@
 }
 .lens-pricing-details strong {
   font-weight: 500;
-  color: #6d7c60;
+  color: var(--treg-body);
   font-family: "SFMono-Regular", Consolas, monospace;
 }
 .lens-dialog-notice {
@@ -540,27 +540,27 @@
   margin-top: 16px;
 }
 .lens-dialog-notice-error {
-  background: #fbefea;
-  border: 1px solid #f1d8cc;
-  color: #a35f3d;
+  background: var(--treg-danger-soft);
+  border: 1px solid var(--treg-danger-line);
+  color: var(--treg-danger);
 }
 .lens-dialog-notice-warning {
-  background: #fbf5e7;
-  border: 1px solid #eee1bc;
-  color: #968044;
+  background: var(--treg-warning-soft);
+  border: 1px solid var(--treg-warning-line);
+  color: var(--treg-warning);
 }
 .lens-audit-progress {
   padding: 17px 18px;
   margin-top: 18px;
-  background: #f0f5e9;
-  border: 1px solid #dce7cc;
+  background: var(--treg-canvas);
+  border: 1px solid var(--treg-border);
   border-radius: 8px;
 }
 .lens-progress-heading {
   display: flex;
   align-items: center;
   gap: 8px;
-  color: #52723c;
+  color: var(--treg-body);
 }
 .lens-progress-heading strong {
   font-size: 12px;
@@ -569,12 +569,12 @@
 .lens-audit-progress p {
   font-size: 10px;
   line-height: 1.8;
-  color: #81916f;
+  color: var(--treg-body);
   margin: 9px 0 14px;
 }
 .lens-indeterminate-track {
   height: 3px;
-  background: #e0e8d5;
+  background: var(--treg-panel);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -582,7 +582,7 @@
   display: block;
   width: 40%;
   height: 100%;
-  background: #7e9d60;
+  background: var(--treg-success);
   border-radius: 3px;
   animation: lens-progress 1.6s ease-in-out infinite;
 }
@@ -603,9 +603,9 @@
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  background: #edf4e5;
-  border: 1px solid #e1ebd6;
-  color: #608447;
+  background: var(--treg-success-soft);
+  border: 1px solid var(--treg-success-line);
+  color: var(--treg-success);
   margin-bottom: 18px;
 }
 .lens-audit-complete h3 {
@@ -616,7 +616,7 @@
 }
 .lens-audit-complete > p {
   font-size: 12px;
-  color: #8a9480;
+  color: var(--treg-muted);
   line-height: 1.9;
   max-width: 410px;
   margin: 0;
@@ -625,17 +625,17 @@
   width: 100%;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  border: 1px solid #e3e9dc;
+  border: 1px solid var(--treg-border);
   border-radius: 9px;
   padding: 20px 10px;
   margin: 27px 0;
-  background: #f8faf4;
+  background: var(--treg-canvas);
 }
 .lens-complete-stats > div {
   display: flex;
   flex-direction: column;
   gap: 7px;
-  border-right: 1px solid #e3e9dc;
+  border-right: 1px solid var(--treg-border);
 }
 .lens-complete-stats > div:last-child {
   border-right: 0;
@@ -644,11 +644,11 @@
   font-size: 23px;
   font-weight: 500;
   letter-spacing: -0.8px;
-  color: #415735;
+  color: var(--treg-ink);
 }
 .lens-complete-stats span {
   font-size: 9px;
-  color: #97a089;
+  color: var(--treg-muted);
 }
 .lens-audit-complete .lens-dialog-notice {
   margin: 0 0 20px;
@@ -661,8 +661,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #f8faf5;
-  border: 1px solid #e2e9d9;
+  background: var(--treg-canvas);
+  border: 1px solid var(--treg-border);
   border-radius: 9px;
   padding: 16px;
 }
@@ -673,7 +673,7 @@
   font-weight: 800;
   font-size: 24px;
   letter-spacing: -1.7px;
-  color: #244a32;
+  color: var(--treg-ink);
   position: relative;
   padding-right: 3px;
 }
@@ -686,7 +686,7 @@
   top: 4px;
   width: 5px;
   height: 5px;
-  background: #8aaa6a;
+  background: var(--treg-ink);
   border-radius: 50%;
 }
 .lens-connection-card > div {
@@ -696,12 +696,12 @@
 }
 .lens-connection-card > div > strong {
   font-size: 11px;
-  color: #4d5e41;
+  color: var(--treg-ink);
   font-weight: 500;
 }
 .lens-connection-card > div > span {
   font-size: 9px;
-  color: #99a18e;
+  color: var(--treg-muted);
 }
 .lens-connection-status {
   margin-left: auto;
@@ -710,19 +710,19 @@
   gap: 5px;
   font-size: 9px;
   white-space: nowrap;
-  color: #a0a991;
+  color: var(--treg-muted);
 }
 .lens-connection-status > span {
   width: 5px;
   height: 5px;
   border-radius: 50%;
-  background: #b8c1ae;
+  background: var(--treg-border-strong);
 }
 .lens-connection-status.is-connected {
-  color: #688c51;
+  color: var(--treg-success);
 }
 .lens-connection-status.is-connected > span {
-  background: #73a350;
+  background: var(--treg-success);
 }
 .lens-token-field {
   margin-top: 18px;
@@ -738,7 +738,7 @@
 .lens-privacy-note {
   display: flex;
   gap: 8px;
-  color: #9ba78e;
+  color: var(--treg-muted);
   align-items: flex-start;
   margin: -3px 0 17px;
 }
@@ -757,9 +757,9 @@
   justify-content: space-between;
   text-decoration: none;
   font-size: 10px;
-  color: #6f8d58 !important;
+  color: var(--treg-body) !important;
   padding: 12px 0 0;
-  border-top: 1px solid #ecefe5;
+  border-top: 1px solid var(--treg-border);
 }
 .lens-docs-link > span {
   display: flex;
@@ -767,18 +767,18 @@
   gap: 5px;
 }
 .lens-docs-link:hover {
-  color: #287b48 !important;
+  color: var(--treg-ink) !important;
 }
 .lens-settings-footer {
   justify-content: space-between;
 }
 .lens-settings-save-note {
   font-size: 9px;
-  color: #99a28d;
+  color: var(--treg-muted);
 }
 .lens-inline-error {
   font-size: 10px;
-  color: #a7724b;
+  color: var(--treg-danger);
   margin: -5px 0 12px;
 }
 @keyframes lens-backdrop-in {

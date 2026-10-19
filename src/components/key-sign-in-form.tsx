@@ -70,7 +70,7 @@ export default function KeySignInForm({
           <Check size={16} />
           <span>Your Treg session is ready.</span>
         </div>
-        <Link href="/app" className="marketing-button green">
+        <Link href="/app" className="marketing-button primary">
           Open your workspace <ArrowRight size={16} />
         </Link>
         <button
@@ -141,7 +141,7 @@ export default function KeySignInForm({
       {!compact && (
         <button
           type="submit"
-          className="marketing-button green key-submit"
+          className="marketing-button primary key-submit"
           disabled={busy || !token.trim()}
         >
           {busy ? (

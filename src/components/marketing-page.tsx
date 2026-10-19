@@ -296,7 +296,7 @@ export default function MarketingPage() {
           </p>
         </section>
         <section className="marketing-feature-grid marketing-wrap">
-          <article className="marketing-feature feature-sage">
+          <article className="marketing-feature feature-mint">
             <span className="feature-icon">
               <Eye size={20} />
             </span>
@@ -327,7 +327,7 @@ export default function MarketingPage() {
               your visibility from every angle.
             </p>
           </article>
-          <article className="marketing-feature feature-cream">
+          <article className="marketing-feature feature-white">
             <span className="feature-icon">
               <Globe2 size={20} />
             </span>
@@ -358,7 +358,7 @@ export default function MarketingPage() {
               influencing the conversation.
             </p>
           </article>
-          <article className="marketing-feature feature-pink">
+          <article className="marketing-feature feature-neutral">
             <span className="feature-icon">
               <Sparkles size={20} />
             </span>
@@ -501,7 +501,7 @@ export default function MarketingPage() {
             </p>
             <div className="marketing-open-actions">
               <a
-                className="marketing-button pale"
+                className="marketing-button light"
                 href={GITHUB_FORK_URL}
                 target="_blank"
                 rel="noreferrer"
@@ -575,7 +575,7 @@ export default function MarketingPage() {
           </h2>
           <p>One Treg key. A whole new perspective.</p>
           <div>
-            <Link className="marketing-button green" href="/login">
+            <Link className="marketing-button primary" href="/login">
               <KeyRound size={16} /> Start with your Treg key{" "}
               <ArrowRight size={16} />
             </Link>
