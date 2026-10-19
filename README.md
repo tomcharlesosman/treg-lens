@@ -2,114 +2,100 @@
 
 **See how AI sees your brand. Find your next move.**
 
-![Treg Lens marketing page](docs/marketing.png)
+[![Tests](https://github.com/tomcharlesosman/treg-lens/actions/workflows/test.yml/badge.svg)](https://github.com/tomcharlesosman/treg-lens/actions/workflows/test.yml)
 
-![Treg Lens demo dashboard](docs/screenshot.png)
+An open-source AI visibility workspace powered by the [Treg AEO toolkit](https://treg.to/aeo). Discover buyer questions, collect AI answers, compare competitors, inspect citations, and turn visibility gaps into content briefs.
 
-An open-source AI visibility workspace, powered by the [Treg AEO toolkit](https://treg.to/aeo). Discover buyer questions, track prompts across AI engines, compare competitors, inspect citations, and turn gaps into practical content briefs.
+[**Fork the repository**](https://github.com/tomcharlesosman/treg-lens/fork) · [Agent quickstart](docs/AGENT-QUICKSTART.md) · [Documentation](#documentation) · [MIT license](LICENSE)
 
-[**Fork Treg Lens**](https://github.com/tomcharlesosman/treg-lens/fork) · [Treg AEO toolkit](https://treg.to/aeo) · [MIT license](./LICENSE)
+## Run it
 
-Inspired by [Profound](https://www.tryprofound.com/), built as an independent, self-hosted implementation. This is a focused AEO workspace, not complete Profound feature parity.
-
-## What you can do
-
-- Explore the public landing page and a clearly labeled, key-free demo.
-- Sign in with your own Treg team API key; no separate Lens account is needed.
-- Set your brand, domain, competitors, and buyer questions.
-- Discover questions from 2–3 seed phrases using Google suggestions and People Also Ask. Select up to 8 questions or keyword phrases to track.
-- Audit prompts across ChatGPT, Gemini, Google AI Mode, and Perplexity.
-- Explore visibility, brand mentions, competitor performance, and cited sources.
-- Research cited pages with Moz authority metrics and Exa extraction: inspect brand excerpts, authors, and contact routes actually returned by the page.
-- Review visibility gaps, copy content briefs, and export audit history as JSON or CSV.
-
-The app brings question discovery, measurement, and cited-page research from the [Treg AEO workflow](https://treg.to/aeo) into one workspace. Full keyword-intent scoring, competitor backlink analysis, people enrichment, and scheduled rechecks are directions for expansion. Publishing and outreach stay with you.
-
-Perplexity uses the Sonar model API; the other engines return web-interface answers. Audits use United States / English parameters, with up to 8 prompts of 500 characters each.
-
-## Run locally
-
-Use **Node.js 22.13 or later**; Node.js 24 LTS is recommended.
+Install **Git and Node.js 24 LTS**; the minimum Node version is **22.13**. npm is included with Node. These commands work in macOS/Linux terminals and Windows PowerShell. After forking, use your fork's clone URL in the first command.
 
 ```bash
 git clone https://github.com/tomcharlesosman/treg-lens.git
 cd treg-lens
-npm install
-cp .env.example .env.local
-openssl rand -base64 48
-```
-
-Copy the generated value into `SESSION_SECRET` in `.env.local`. Keep this value private and stable between restarts. Then start the app:
-
-```bash
+npm ci
+npm run setup
+npm run doctor
 npm run dev
 ```
 
-Open [localhost:3000](http://localhost:3000). Visit [the demo](http://localhost:3000/demo) without a key, or [sign in](http://localhost:3000/login) with a team API key from [Treg](https://treg.to/app). Your workspace opens at `/app`.
+Open [localhost:3000/demo](http://localhost:3000/demo) for your first working workspace. **No Treg key is needed for the demo.** The [marketing page](http://localhost:3000/) includes a sign-in form and links to the demo and source.
 
-No operator `TREG_TOKEN` is required. Each user supplies their own key and pays through their own Treg team. Never commit `.env.local` or expose `SESSION_SECRET` through a `NEXT_PUBLIC_` variable.
+`setup` creates private `.env.local` configuration using Node's built-in random generator. It creates a 64-character `SESSION_SECRET`, never prints it, and preserves a valid existing secret on repeated runs. Invalid nonempty secrets are refused rather than replaced. `doctor` checks local prerequisites without calling Treg. No copying environment files, OpenSSL, Docker, database, Redis, external identity service, or Treg SDK is required to run the app.
 
-For a production build, configure `SESSION_SECRET` in the server environment, serve the app over HTTPS, and run:
+The current lockfile has a documented, unpatched development-linter advisory. The production audit has no findings as of the verification date. Read [the audit notes](docs/DEPENDENCIES.md#audit-status) before following npm's force-fix suggestion.
+
+When ready for live research, get your own **team API key** from [Treg](https://treg.to/app) and paste it at [localhost:3000/login](http://localhost:3000/login). No separate Lens account or operator `TREG_TOKEN` is needed. Paid discovery, audits, and source research start only after you review an estimate and choose to run them.
+
+Need a different port, setup help, or a complete first audit? Follow [getting started](docs/GETTING-STARTED.md). To hand setup to a coding agent, use the [copyable agent prompt](docs/AGENT-QUICKSTART.md#copy-this-prompt).
+
+## What works today
+
+- **Prompt discovery:** Google keyword suggestions and actual People Also Ask questions from 2–3 seed phrases; select up to 8 prompts to track.
+- **Answer monitoring:** ChatGPT, Gemini, Google AI Mode, and Perplexity; up to 8 questions of 500 characters each across four engines.
+- **Competitive visibility:** brand mentions, inferred recommendation positions, source coverage, trends, and share of voice from saved answers.
+- **Cited-page research:** Moz authority metrics and Exa extraction with observed brand excerpts, authors, and contact routes.
+- **Action and history:** visibility gaps, local content-brief templates, completed moves, and JSON/CSV reports.
+- **Your instance:** Treg-branded marketing, API-key login, a labeled demo, and a workspace stored in your browser.
+
+Perplexity uses the Sonar model API; the other engines return web-interface answers. Research uses United States / English parameters. Partial failures retain successful evidence, and missing fields stay unknown. The [architecture guide](docs/ARCHITECTURE.md#analytics-and-evidence) explains scoring and its limits.
+
+This is an independent, focused implementation inspired by [Profound](https://www.tryprofound.com/), without complete product parity. There is no shared database, cloud synchronization, scheduler, team collaboration, automatic outreach, publishing, or import UI. Content briefs are local templates rather than additional model calls.
+
+## Documentation
+
+| I want to… | Read |
+| --- | --- |
+| Install, try the demo, and run a first audit | [Getting started](docs/GETTING-STARTED.md) |
+| Give setup or a fork to a coding agent | [Agent quickstart](docs/AGENT-QUICKSTART.md) and [AGENTS.md](AGENTS.md) |
+| Deploy my own Node.js instance over HTTPS | [Deployment](docs/DEPLOYMENT.md) |
+| Understand the small dependency footprint | [Dependencies](docs/DEPENDENCIES.md) |
+| Integrate with the HTTP API | [API contracts](docs/API.md) |
+| Understand state, costs, and extension points | [Architecture](docs/ARCHITECTURE.md) |
+| Run tests and inspect coverage | [Testing](docs/TESTING.md) and [verification report](docs/TEST-REPORT.md) |
+| Contribute a fix or feature | [Contributing](CONTRIBUTING.md) and [pull request template](.github/pull_request_template.md) |
+| Get help, report a bug, or report a vulnerability | [Support](SUPPORT.md), [security policy](SECURITY.md), and [code of conduct](CODE_OF_CONDUCT.md) |
+
+## Costs, credentials, and data
+
+Setup, the demo, and automated tests make no paid provider calls. Sign-in uses free Treg key metadata, and a valid zero-balance key can sign in. Estimates read the live catalog; paid work uses your Treg team's billing. Estimates are not final charges. Reported spend comes from Treg billing headers, and unknown charges stay distinct from zero. Check Treg activity after an ambiguous failure before deliberately retrying. See [API cost semantics](docs/API.md#costs-errors-and-retries).
+
+Login sends your key to the application server and seals it into an encrypted HttpOnly cookie with a 12-hour lifetime. Production requires HTTPS and a stable private `SESSION_SECRET`. Protected access revalidates the key with Treg. Keys are excluded from `localStorage`, `sessionStorage`, and exports; optional per-request overrides stay in memory until reload. Public paid routes never inherit an operator's credential.
+
+Project settings, prompts, audit history, completed moves, and source research use ordinary browser `localStorage`, separated by key and deployment. This data is not synchronized or encrypted as a shared workspace database. A different browser, key, origin, or `SESSION_SECRET` opens a different namespace. Preserve your secret between restarts, and export before changing credentials or clearing site data.
+
+CSV contains filtered answer rows. JSON keeps the richer report, including source research; **there is currently no import/restore UI**. Keep exported copies as readable backups. Details and operational limits are in [architecture](docs/ARCHITECTURE.md#browser-data-and-exports) and [deployment](docs/DEPLOYMENT.md).
+
+## Develop and verify
 
 ```bash
-npm run build
-npm start
+npm run check
 ```
 
-## A useful first audit
+This runs ESLint, fresh Next.js route type generation, TypeScript, library/setup tests, and local documentation-link checks. The project has **seven direct runtime packages** for the framework, encrypted sessions, icons, and safe Markdown; their roles are documented in [dependencies](docs/DEPENDENCIES.md). Fonts are vendored locally, about **102 KB**, with licenses and provenance included. Builds and browsers do not download Google Fonts. See [font notices](src/app/fonts/README.md).
 
-1. Set your actual brand name, domain, and competitors. Brand names act as the matching dictionary, so include the names people use.
-2. Add buyer questions, or use **Discover prompts** with 2–3 seed phrases. Discovery returns search suggestions and actual People Also Ask questions; search volume appears only when supplied by the provider.
-3. Select the engines, review the estimated cost, and run the audit.
-4. Inspect answers and citations. Open a cited source, review its research estimate, then request page metrics and extraction. Missing fields remain unknown.
-5. Use the opportunity queue to create a content brief. Check observed authors and contact links when planning outreach; nothing is sent automatically.
-6. Export your results. After making changes, repeat the same prompts, locale, and engine set for meaningful comparisons.
-
-AI answers vary between runs. Brand detection, inferred rankings, and opportunity scores help prioritize investigation; they do not guarantee recommendations or prove causation. Demo values are illustrative, separate from your saved live audits.
-
-### Visibility methodology
-
-For each successful answer, the toolkit score awards 50 points for a brand mention, 30 divided by the brand's inferred position, and 20 for a citation of your domain. The workspace averages that score across successful answers. Failed or missing answers are excluded.
-
-Position uses a numbered list position when supplied; otherwise, it uses first appearance among recognized brands. Recognition depends on the configured dictionary and returned brand entities. Source coverage is the percentage of successful answers citing a domain. The comparison chart uses brand mention rates, and opportunities are ranked by the proportion of answers missing your brand.
-
-Moz scores describe link authority. Page extractions may be incomplete or cached. Follow the linked evidence to assess each result.
-
-## Costs and real data
-
-Treg provides the upstream search, AI answer, page metric, and extraction endpoints. Requests use a server-side endpoint allowlist. Discovery, audits, and source research show live catalog estimates before you explicitly run paid work.
-
-- **Demo data, sign-in validation, and price estimates have no provider cost.** A valid key can sign in with a zero balance. Paid work requires the appropriate Treg balance or connected provider credentials.
-- **Estimates are not final charges.** Catalog prices can change and depend on units, routing, or the provider. The AEO landing page's example workflow is not a fixed tariff for this app.
-- **Actual spend comes from Treg.** `X-Treg-Cost-Micro` reports micro-USD; divide by 1,000,000 for USD. `X-Treg-Call-Id` identifies the call. Unknown charges stay distinct from zero.
-- **Reconcile at the source.** Use the Treg dashboard or `treg balance` and `treg calls`. Calls outside Lens are outside its local history.
-
-Check `treg catalog get <endpoint-id>` before changing an integration. The catalog and upstream response shapes are the source of truth.
-
-## Sessions, storage, and deployment
-
-The app uses Next.js App Router. `/` is the marketing page, `/login` accepts a Treg key, `/demo` is the public sample, and `/app` requires a verified session.
-
-Keys are verified through a free Treg metadata lookup and sealed into an encrypted, HttpOnly, SameSite=Lax cookie with a 12-hour lifetime. Protected access rechecks the key with Treg, so revoked keys stop working. Keys are never saved in `localStorage`, `sessionStorage`, or exports. Optional per-request credential overrides remain in memory until reload. Paid HTTP routes require a validated user key or session; they do not inherit an operator's server token.
-
-Project settings, prompts, audits, completed moves, and source research stay in browser `localStorage`, under an opaque namespace for the signed-in key and deployment. Data is not synchronized between browsers or devices. Switching keys or changing `SESSION_SECRET` uses a different namespace; legacy unscoped workspace data is left untouched rather than migrated. Export copies before changing credentials or clearing site data. CSV contains answer rows; JSON preserves the richer workspace report and source research.
-
-For public deployment, use HTTPS and a stable, private `SESSION_SECRET`. Built-in rate guards are process-local; a deployment spanning multiple instances should add a shared, durable limiter and operational monitoring. This release has no shared workspace database, team collaboration, or managed backups. Live requests send the requested prompts and URLs to Treg and its upstream providers.
-
-## Contribute
-
-Read [CONTRIBUTING.md](./CONTRIBUTING.md). Useful improvements include provider fixtures, brand matching, accessibility, import/export reliability, and additional AEO steps with transparent costs.
+For the complete browser and HTTP suite, install the Playwright engines once and make OpenSSL available for the temporary HTTPS test certificate:
 
 ```bash
-npm test
-npm run lint
+npx playwright install chromium firefox webkit
+npm run doctor -- --e2e
 npm run test:e2e
 ```
 
-Tests use local fixtures and mocked requests; they do not spend Treg credits.
+The suite builds the production app, runs it behind an isolated local HTTPS proxy, and replaces upstream Treg calls with fixtures that refuse unknown requests. It does not spend Treg credits. OpenSSL is only an end-to-end test prerequisite. `npm run test:e2e:ui` also builds first; `npm run test:e2e:report` opens the latest report. Linux may need Playwright's OS dependencies; follow the [testing guide](docs/TESTING.md) for platform details and the separate live-verification record.
 
-Install browser engines with `npx playwright install chromium firefox webkit` before the first end-to-end run. See [the testing guide](./docs/TESTING.md) for feature coverage, browser/API reports and CI.
+## Make a fork yours
 
-The dated [verification report](./docs/TEST-REPORT.md) records the full test results, fixes and separate live provider checks.
+The [fork checklist](docs/AGENT-QUICKSTART.md#make-a-fork-yours) covers repository URLs, support/security destinations, metadata, branding, test expectations, and license notices. Enable private vulnerability reporting and security updates for your own GitHub repository; those settings are not inherited by cloning the code.
 
-Released under the [MIT license](./LICENSE). Product names and trademarks belong to their respective owners. This project is not affiliated with Profound.
+Contributions are welcome through [issues](https://github.com/tomcharlesosman/treg-lens/issues) and pull requests. Follow [CONTRIBUTING.md](CONTRIBUTING.md), report vulnerabilities through [SECURITY.md](SECURITY.md), and preserve the [MIT license](LICENSE) and [third-party notices](THIRD_PARTY_NOTICES.md).
+
+## Preview
+
+![Treg Lens marketing page](docs/marketing.png)
+
+![Treg Lens demo dashboard](docs/screenshot.png)
+
+Treg Lens is released under the MIT license. Font licenses remain separate. Product names and trademarks belong to their respective owners; this project is not affiliated with Profound.

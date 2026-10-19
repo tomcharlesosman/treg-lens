@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Setup and usage help
+    url: https://github.com/tomcharlesosman/treg-lens/blob/main/SUPPORT.md
+    about: Start with troubleshooting and the project's support boundaries.
+  - name: Report a vulnerability privately
+    url: https://github.com/tomcharlesosman/treg-lens/security/advisories/new
+    about: Use GitHub private vulnerability reporting. Do not post secrets or exploit details in an issue.

@@ -1,0 +1,57 @@
+name: Bug report
+description: Report a reproducible problem with Treg Lens.
+title: "[Bug]: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve Treg Lens. Check [support and troubleshooting](https://github.com/tomcharlesosman/treg-lens/blob/main/SUPPORT.md) first.
+
+        **Keep reports public-safe.** Remove API keys, cookies, `.env` contents, private prompts and customer data. For a suspected vulnerability, [report privately](https://github.com/tomcharlesosman/treg-lens/security/advisories/new) and follow [SECURITY.md](https://github.com/tomcharlesosman/treg-lens/blob/main/SECURITY.md). Do not publish exploit details here.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Explain the observed result and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: How can we reproduce it?
+      description: Use demo data or a small, sanitized example where possible. Do not repeat paid requests just to reproduce an issue.
+      placeholder: |
+        1. Open ...
+        2. Select ...
+        3. Observe ...
+    validations:
+      required: true
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Where does it happen?
+      options:
+        - Local development
+        - Self-hosted production build
+        - Public demo
+        - Automated tests or CI
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: revision
+    attributes:
+      label: Commit or version
+      description: Run git rev-parse --short HEAD, or link the commit you deployed.
+      placeholder: "Commit SHA or deployment revision"
+  - type: textarea
+    id: runtime
+    attributes:
+      label: Runtime and browser
+      description: Include OS, Node.js version, browser/version, and how you started or deployed the app.
+      placeholder: "macOS, Node 24, Firefox, npm run dev"
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Sanitized evidence
+      description: Optional screenshots, error text, test command, or relevant Treg call IDs. Remove sensitive data and indicate whether costs were known or unknown.

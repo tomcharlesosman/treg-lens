@@ -1,12 +1,29 @@
 import type { Metadata } from "next";
-import { DM_Sans, IBM_Plex_Mono, Inter_Tight } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
-const sans = DM_Sans({ variable: "--font-sans", subsets: ["latin"] });
-const display = Inter_Tight({ variable: "--font-display", subsets: ["latin"] });
-const mono = IBM_Plex_Mono({
+// Vendored Latin WOFF2 files keep fresh builds independent of Google Fonts.
+// License and exact upstream hashes: ./fonts/README.md and provenance.json.
+const sans = localFont({
+  src: "./fonts/dm-sans-latin-variable.woff2",
+  variable: "--font-sans",
+  weight: "100 1000",
+  style: "normal",
+  display: "swap",
+});
+const display = localFont({
+  src: "./fonts/inter-tight-latin-variable.woff2",
+  variable: "--font-display",
+  weight: "100 900",
+  style: "normal",
+  display: "swap",
+});
+const mono = localFont({
+  src: [
+    { path: "./fonts/ibm-plex-mono-latin-400.woff2", weight: "400", style: "normal" },
+    { path: "./fonts/ibm-plex-mono-latin-500.woff2", weight: "500", style: "normal" },
+  ],
   variable: "--font-mono",
-  weight: ["400", "500"],
-  subsets: ["latin"],
+  display: "swap",
 });
 export const metadata: Metadata = {
   title: "Treg Lens — Be the brand AI recommends",

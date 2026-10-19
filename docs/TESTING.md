@@ -4,15 +4,23 @@ Use Node.js 22.13 or later (Node.js 24 is used in CI).
 
 ```bash
 npm ci
+npm run setup
+npm run doctor
 npx playwright install chromium firefox webkit
-npm test
-npm run lint
+npm run check
+npm run doctor -- --e2e
 npm run test:e2e
 ```
 
 `test:e2e` builds the production app, starts an isolated HTTPS test server, runs the HTTP and browser tests, and stops the server. It does not reuse the development server or require a Treg account. Two workers stay within the application's concurrent-request guards. Retries are disabled so a flaky failure is visible.
 
 OpenSSL must be available on `PATH` (it is available on the macOS development host and Ubuntu CI). The server generates a temporary localhost certificate, proxies to the production app on loopback, and removes the certificate on exit. Only the test clients accept this self-signed certificate. Production `Secure` cookie behavior is preserved, including in WebKit, which refuses these cookies on plain HTTP loopback.
+
+OpenSSL is **not needed for app setup or the demo**: setup generates the session secret with Node's crypto module. On Windows, use an OpenSSL installation already provided by your development tools or install it from a trusted provider and add its executable directory to `PATH`; verify with `openssl version`. Git for Windows often includes it in its tools directory, but PowerShell may not have that directory on `PATH`. On Linux, Playwright may also need OS libraries: use `npx playwright install --with-deps chromium firefox webkit`. No Playwright browser binaries are needed for `npm run check`.
+
+`npm run doctor -- --e2e` reports missing browsers/OpenSSL or occupied test ports before you run the suite. The test certificate initializer removes its temporary directory even when OpenSSL fails. A source checkout also contains local licensed fonts, so fresh production builds do not need a Google Fonts connection.
+
+`npm run check` includes route type generation before TypeScript, library/setup tests, and local Markdown-link checks. The setup regressions cover repeat runs, preserving secrets, invalid overrides, file precedence and Windows line endings. `npm run test:e2e:ui` builds before opening Playwright's interactive test runner; stop another E2E runner before using it.
 
 For a targeted rerun after building:
 
@@ -55,4 +63,4 @@ Reports, screenshots and failure traces are written under the ignored `output/pl
 
 ## CI
 
-`.github/workflows/test.yml` runs library tests, lint and the production browser/API suite on pushes to `main` and pull requests. It pins Ubuntu 24.04 for a reproducible browser host, installs all three browser engines and uploads the Playwright report and failure artifacts for 14 days. No Treg or deployment secrets are required.
+`.github/workflows/test.yml` runs on pushes to `main` and pull requests. Fast checks exercise clean install, repeated setup, doctor, lint, type generation, library/setup tests and docs on Linux with Node.js 22.13/24, Windows with Node.js 24, and macOS with Node.js 24. A separate Ubuntu 24.04 job installs all three browsers, audits production dependencies, builds and runs the API/browser suite, and uploads reports and failure artifacts for 14 days. No Treg or deployment secrets are required. Action revisions are pinned; Dependabot proposes updates. A newer push cancels an older run of the same branch.

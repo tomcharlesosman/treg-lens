@@ -1,0 +1,5 @@
+* text=auto eol=lf
+*.png binary
+*.woff2 binary
+# Preserve upstream license text, including its original trailing spaces.
+src/app/fonts/*-OFL.txt -whitespace

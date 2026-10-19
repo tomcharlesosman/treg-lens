@@ -10,10 +10,12 @@ The [coverage guide](./TESTING.md) maps the implemented features to their browse
 | Chromium browser workflows | 67 | 0 / 0 |
 | Firefox browser workflows | 67 | 0 / 0 |
 | WebKit browser workflows | 67 | 0 / 0 |
-| Library tests | 47 | 0 / 0 |
-| **Total** | **329** | **0 / 0** |
+| Library and setup tests | 59 | 0 / 0 |
+| **Total** | **341** | **0 / 0** |
 
 The complete 282-case API/browser run passed with retries disabled. Lint, TypeScript and the production build also passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. All three browser engines completed the same 67 scenarios. Coverage includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and successful backup exports when browser storage rejects writes.
+
+Open-source onboarding adds 12 setup regressions for stable existing secrets, private file creation, Windows line endings, empty and duplicate overrides, test-mode handling, Node minimums, and environment precedence. `npm run check` also verifies local documentation links and heading anchors. A source-only copy in a directory containing spaces passed `npm ci`, setup, repeated setup with byte-for-byte configuration preservation, doctor, checks, and a fresh production build with external network connections blocked. No existing environment file, dependency installation, or build cache was copied into that installation. Fonts are vendored with licenses and provenance.
 
 ## Issues found and fixed
 
@@ -48,13 +50,14 @@ Live success confirms these small requests worked at the time tested. It does no
 
 ```bash
 npm ci
+npm run setup
+npm run doctor
 npx playwright install chromium firefox webkit
-npm test
-npm run lint
+npm run check
 npm run test:e2e
 npm run test:e2e:report
 ```
 
-The full local HTML report is `output/playwright/report/index.html`; machine-readable results are `output/playwright/results.json`. Failure traces and screenshots stay under the ignored output directory. The GitHub Actions workflow reruns the same suite on Ubuntu with Node.js 24 and uploads its report.
+The full local HTML report is `output/playwright/report/index.html`; machine-readable results are `output/playwright/results.json`. Failure traces and screenshots stay under the ignored output directory. The GitHub Actions workflow reruns the production browser/API suite on Ubuntu with Node.js 24 and uploads its report. Fast checks additionally exercise clean setup and library tests on Linux with Node.js 22.13/24, Windows, and macOS.
 
 The local verification host uses Node.js 22.22.3, Next.js 16.4.2 and Playwright 1.61.1. See the coverage guide for the macOS 14 WebKit compatibility note and HTTPS test setup.

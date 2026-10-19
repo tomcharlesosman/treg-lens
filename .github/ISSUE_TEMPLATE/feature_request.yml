@@ -1,0 +1,28 @@
+name: Feature request
+description: Suggest an improvement or a new AEO workflow.
+title: "[Feature]: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: Describe the user, task, and obstacle. Use a concrete example without private data.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: What should the app let someone do, and what would success look like?
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Data, costs, and persistence
+      description: If relevant, link official provider contracts, describe paid calls and estimates, and explain what must be saved or exported. Unknowns are welcome.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives or workarounds
+      description: Optional existing approaches, sketches, or related issues.

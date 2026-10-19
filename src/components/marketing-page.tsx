@@ -528,7 +528,7 @@ export default function MarketingPage() {
               <code>
                 <span># Make it yours.</span>
                 {"\n"}git clone {GITHUB_REPOSITORY}.git{"\n"}cd treg-lens{"\n"}
-                npm install{"\n"}npm run dev
+                npm ci{"\n"}npm run setup{"\n"}npm run doctor{"\n"}npm run dev
               </code>
             </pre>
             <footer>

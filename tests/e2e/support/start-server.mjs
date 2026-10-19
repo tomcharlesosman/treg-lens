@@ -11,27 +11,32 @@ import { setTimeout as delay } from "node:timers/promises";
 const temporary = mkdtempSync(join(tmpdir(), "treg-lens-e2e-"));
 const key = join(temporary, "localhost.key");
 const cert = join(temporary, "localhost.crt");
-execFileSync(
-  "openssl",
-  [
-    "req",
-    "-x509",
-    "-newkey",
-    "rsa:2048",
-    "-nodes",
-    "-keyout",
-    key,
-    "-out",
-    cert,
-    "-days",
-    "1",
-    "-subj",
-    "/CN=127.0.0.1",
-    "-addext",
-    "subjectAltName=IP:127.0.0.1,DNS:localhost",
-  ],
-  { stdio: "ignore" },
-);
+try {
+  execFileSync(
+    "openssl",
+    [
+      "req",
+      "-x509",
+      "-newkey",
+      "rsa:2048",
+      "-nodes",
+      "-keyout",
+      key,
+      "-out",
+      cert,
+      "-days",
+      "1",
+      "-subj",
+      "/CN=127.0.0.1",
+      "-addext",
+      "subjectAltName=IP:127.0.0.1,DNS:localhost",
+    ],
+    { stdio: "ignore" },
+  );
+} catch {
+  rmSync(temporary, { recursive: true, force: true });
+  throw new Error("E2E HTTPS setup needs OpenSSL on PATH with support for req -addext. Run npm run doctor -- --e2e and see docs/TESTING.md. Temporary certificate files were removed.");
+}
 
 const next = spawn(
   process.execPath,
