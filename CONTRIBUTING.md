@@ -19,10 +19,12 @@ Before proposing a change, run:
 ```bash
 npm test
 npm run lint
-npm run build
+npm run test:e2e
 ```
 
 `npm test` runs TypeScript tests in `src/lib` with `tsx --test`. These cover request validation, sessions, provider parsing, costs, and metrics using fixtures and mocked requests, without paid calls.
+
+Install browser engines once with `npx playwright install chromium firefox webkit`. The production end-to-end suite covers HTTP routes and complete browser workflows in three engines, with synthetic provider responses and no Treg charges. See [docs/TESTING.md](./docs/TESTING.md) for coverage, reports and targeted runs.
 
 Include what changed, why it matters, and how you verified it. For interface changes, include a screenshot and check narrow screens and keyboard navigation. Never include API keys, session cookies, `SESSION_SECRET`, or private audit data in fixtures, logs, screenshots, or issue reports.
 

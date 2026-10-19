@@ -103,9 +103,13 @@ Read [CONTRIBUTING.md](./CONTRIBUTING.md). Useful improvements include provider 
 ```bash
 npm test
 npm run lint
-npm run build
+npm run test:e2e
 ```
 
 Tests use local fixtures and mocked requests; they do not spend Treg credits.
+
+Install browser engines with `npx playwright install chromium firefox webkit` before the first end-to-end run. See [the testing guide](./docs/TESTING.md) for feature coverage, browser/API reports and CI.
+
+The dated [verification report](./docs/TEST-REPORT.md) records the full test results, fixes and separate live provider checks.
 
 Released under the [MIT license](./LICENSE). Product names and trademarks belong to their respective owners. This project is not affiliated with Profound.

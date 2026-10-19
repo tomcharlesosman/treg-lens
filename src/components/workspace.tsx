@@ -47,6 +47,7 @@ import AnswerBody from "./answer-body";
 import DiscoveryDialog from "./discovery-dialog";
 import { SourceDialog } from "./source-dialog";
 import type { SourceResearch } from "@/lib/source-research";
+import { parseWorkspaceSnapshot } from "@/lib/workspace-storage";
 import SettingsDialog from "./settings-dialog";
 import type { AnswerResult } from "@/lib/aeo";
 import {
@@ -199,8 +200,12 @@ function Modal({
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = ref.current;
+    const previousFocus = document.activeElement as HTMLElement | null;
     dialog?.showModal();
-    return () => dialog?.close();
+    return () => {
+      dialog?.close();
+      if (previousFocus?.isConnected) previousFocus.focus();
+    };
   }, []);
   return (
     <dialog
@@ -208,6 +213,20 @@ function Modal({
       className={`native-modal ${wide ? "wide" : ""}`}
       aria-label={title}
       onCancel={onClose}
+      onKeyDown={(event) => {
+        if (event.key !== "Tab") return;
+        const focusable = Array.from(
+          event.currentTarget.querySelectorAll<HTMLElement>(
+            'a[href],button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),[tabindex="0"]',
+          ),
+        ).filter((element) => element.getClientRects().length > 0);
+        event.preventDefault();
+        const active = focusable.indexOf(document.activeElement as HTMLElement);
+        const next = active < 0
+          ? event.shiftKey ? focusable.length - 1 : 0
+          : (active + (event.shiftKey ? -1 : 1) + focusable.length) % focusable.length;
+        focusable[next]?.focus();
+      }}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -531,25 +550,24 @@ export default function Workspace({
   const searchRef = useRef<HTMLInputElement>(null);
   /* eslint-disable react-hooks/set-state-in-effect -- Restore the external browser workspace after hydration. */
   useEffect(() => {
+    // Cleanup must survive corrupt workspace JSON and blocked local storage.
+    // Never restore the plaintext key used by early versions of the app.
+    try {
+      sessionStorage.removeItem("treg-lens-token");
+    } catch {}
     if (demoMode) {
       setLoaded(true);
       return;
     }
     try {
-      const saved = JSON.parse(localStorage.getItem(storageKey) || "null");
-      if (
-        saved &&
-        saved.project &&
-        Array.isArray(saved.prompts) &&
-        Array.isArray(saved.runs)
-      ) {
+      const saved = parseWorkspaceSnapshot(localStorage.getItem(storageKey));
+      if (saved) {
         setProject(saved.project);
         setPrompts(saved.prompts);
         setRuns(saved.runs);
-        setDone(saved.done || []);
-        setSourceResearch(saved.sourceResearch || {});
+        setDone(saved.done);
+        setSourceResearch(saved.sourceResearch);
       }
-      sessionStorage.removeItem("treg-lens-token");
     } catch {}
     setLoaded(true);
   }, [demoMode, storageKey]);
@@ -902,7 +920,16 @@ export default function Workspace({
       />
     );
   return (
-    <div className="app-shell">
+    <div
+      className="app-shell"
+      onClickCapture={(event) => {
+        // Safari does not focus clicked buttons. Establish the opener before
+        // mounting a dialog so closing it can return keyboard focus reliably.
+        (event.target as Element).closest<HTMLButtonElement>("button")?.focus({
+          preventScroll: true,
+        });
+      }}
+    >
       {mobileOpen && (
         <button
           className="sidebar-backdrop"
