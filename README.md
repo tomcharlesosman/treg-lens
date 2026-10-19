@@ -4,7 +4,7 @@
 
 [![Tests](https://github.com/tomcharlesosman/treg-lens/actions/workflows/test.yml/badge.svg)](https://github.com/tomcharlesosman/treg-lens/actions/workflows/test.yml)
 
-An open-source AI visibility workspace powered by the [Treg AEO toolkit](https://treg.to/aeo). Discover buyer questions, collect AI answers, compare competitors, inspect citations, and turn visibility gaps into content briefs.
+A live, self-hosted AI visibility product powered by the [Treg AEO toolkit](https://treg.to/aeo). Connect your Treg key, discover buyer questions, collect answers, compare competitors, research citations, and track changes with budgeted daily or weekly audits. Private workspaces are saved on your server.
 
 [**Fork the repository**](https://github.com/tomcharlesosman/treg-lens/fork) · [Agent quickstart](docs/AGENT-QUICKSTART.md) · [Documentation](#documentation) · [MIT license](LICENSE)
 
@@ -21,13 +21,15 @@ npm run doctor
 npm run dev
 ```
 
-Open [localhost:3000/demo](http://localhost:3000/demo) for your first working workspace. **No Treg key is needed for the demo.** The [marketing page](http://localhost:3000/) includes a sign-in form and links to the demo and source.
+Open [localhost:3000/login](http://localhost:3000/login), paste your **team API key** from [Treg](https://treg.to/app), and open your private workspace. Configure your brand and start with one prompt and one engine. Review the live estimate before running your first audit. Sign-in validation is free, including with a zero-balance key.
 
-`setup` creates private `.env.local` configuration using Node's built-in random generator. It creates a 64-character `SESSION_SECRET`, never prints it, and preserves a valid existing secret on repeated runs. Invalid nonempty secrets are refused rather than replaced. `doctor` checks local prerequisites without calling Treg. No copying environment files, OpenSSL, Docker, database, Redis, external identity service, or Treg SDK is required to run the app.
+You can install and verify the app without a Treg account. The optional [demo](http://localhost:3000/demo) is clearly labeled illustrative data; it is separate from live research.
+
+`setup` creates private `.env.local` configuration using Node's built-in random generator. It creates a 64-character `SESSION_SECRET`, never prints it, and preserves a valid existing secret on repeated runs. Invalid nonempty secrets are refused rather than replaced. `doctor` checks local prerequisites without calling Treg. No copying environment files, OpenSSL, Docker, separately installed database, Redis, external identity service, or Treg SDK is required. The app uses Node's built-in SQLite support for durable workspace storage. Keep its data directory on persistent local disk.
 
 The current lockfile has a documented, unpatched development-linter advisory. The production audit has no findings as of the verification date. Read [the audit notes](docs/DEPENDENCIES.md#audit-status) before following npm's force-fix suggestion.
 
-When ready for live research, get your own **team API key** from [Treg](https://treg.to/app) and paste it at [localhost:3000/login](http://localhost:3000/login). No separate Lens account or operator `TREG_TOKEN` is needed. Paid discovery, audits, and source research start only after you review an estimate and choose to run them.
+No separate Lens account or operator `TREG_TOKEN` is needed. Paid discovery, manual audits, and source research start after you review an estimate and choose to run them. Automated audits require a separate, explicit monitoring configuration and budget.
 
 Need a different port, setup help, or a complete first audit? Follow [getting started](docs/GETTING-STARTED.md). To hand setup to a coding agent, use the [copyable agent prompt](docs/AGENT-QUICKSTART.md#copy-this-prompt).
 
@@ -37,23 +39,25 @@ Need a different port, setup help, or a complete first audit? Follow [getting st
 - **Answer monitoring:** ChatGPT, Gemini, Google AI Mode, and Perplexity; up to 8 questions of 500 characters each across four engines.
 - **Competitive visibility:** brand mentions, inferred recommendation positions, source coverage, trends, and share of voice from saved answers.
 - **Cited-page research:** Moz authority metrics and Exa extraction with observed brand excerpts, authors, and contact routes.
-- **Action and history:** visibility gaps, local content-brief templates, completed moves, and JSON/CSV reports.
-- **Your instance:** Treg-branded marketing, API-key login, a labeled demo, and a workspace stored in your browser.
+- **Durable workspaces:** server-side SQLite history, revision checks that protect concurrent changes, browser recovery, and JSON backup import/export.
+- **Scheduled monitoring:** opt-in daily or weekly audits at a UTC hour, per-audit and monthly spending limits, worker status, and retained evidence after partial failures.
+- **Action and history:** visibility gaps, writing-brief templates, completed moves, and JSON/CSV reports.
+- **Your instance:** Treg-branded marketing, API-key login, a private workspace, and a separate labeled demo.
 
 Perplexity uses the Sonar model API; the other engines return web-interface answers. Research uses United States / English parameters. Partial failures retain successful evidence, and missing fields stay unknown. The [architecture guide](docs/ARCHITECTURE.md#analytics-and-evidence) explains scoring and its limits.
 
-This is an independent, focused implementation inspired by [Profound](https://www.tryprofound.com/), without complete product parity. There is no shared database, cloud synchronization, scheduler, team collaboration, automatic outreach, publishing, or import UI. Content briefs are local templates rather than additional model calls.
+Treg Lens is an independent implementation inspired by [Profound](https://www.tryprofound.com/). It does not promise complete Profound parity or provide shared team accounts, automatic outreach, or publishing. Content briefs currently provide editable writing templates; they are labeled as templates and do not make an additional model call.
 
 ## Documentation
 
 | I want to… | Read |
 | --- | --- |
-| Install, try the demo, and run a first audit | [Getting started](docs/GETTING-STARTED.md) |
+| Install, connect a key, and run a first audit | [Getting started](docs/GETTING-STARTED.md) |
 | Give setup or a fork to a coding agent | [Agent quickstart](docs/AGENT-QUICKSTART.md) and [AGENTS.md](AGENTS.md) |
 | Deploy my own Node.js instance over HTTPS | [Deployment](docs/DEPLOYMENT.md) |
 | Understand the small dependency footprint | [Dependencies](docs/DEPENDENCIES.md) |
 | Integrate with the HTTP API | [API contracts](docs/API.md) |
-| Understand state, costs, and extension points | [Architecture](docs/ARCHITECTURE.md) |
+| Understand state, costs, and extension points | [Architecture](docs/ARCHITECTURE.md) and [product behavior](docs/PRODUCT-STATUS.md) |
 | Run tests and inspect coverage | [Testing](docs/TESTING.md) and [verification report](docs/TEST-REPORT.md) |
 | Contribute a fix or feature | [Contributing](CONTRIBUTING.md) and [pull request template](.github/pull_request_template.md) |
 | Get help, report a bug, or report a vulnerability | [Support](SUPPORT.md), [security policy](SECURITY.md), and [code of conduct](CODE_OF_CONDUCT.md) |
@@ -64,9 +68,25 @@ Setup, the demo, and automated tests make no paid provider calls. Sign-in uses f
 
 Login sends your key to the application server and seals it into an encrypted HttpOnly cookie with a 12-hour lifetime. Production requires HTTPS and a stable private `SESSION_SECRET`. Protected access revalidates the key with Treg. Keys are excluded from `localStorage`, `sessionStorage`, and exports; optional per-request overrides stay in memory until reload. Public paid routes never inherit an operator's credential.
 
-Project settings, prompts, audit history, completed moves, and source research use ordinary browser `localStorage`, separated by key and deployment. This data is not synchronized or encrypted as a shared workspace database. A different browser, key, origin, or `SESSION_SECRET` opens a different namespace. Preserve your secret between restarts, and export before changing credentials or clearing site data.
+Project settings, prompts, audit history, completed moves, and source research are saved in SQLite on the application server, separated by the verified key and stable deployment secret. Signing in with the same key on another browser reaches that instance's workspace. This is per-key access, not a team account or invitation system. Workspace content is ordinary database data; scheduled credentials receive separate authenticated encryption.
 
-CSV contains filtered answer rows. JSON keeps the richer report, including source research; **there is currently no import/restore UI**. Keep exported copies as readable backups. Details and operational limits are in [architecture](docs/ARCHITECTURE.md#browser-data-and-exports) and [deployment](docs/DEPLOYMENT.md).
+The default database is `data/treg-lens.sqlite`; set `TREG_DATA_DIR` to a private persistent local directory in production. Back up the database safely, including SQLite WAL state, and retain `SESSION_SECRET` separately. Secret rotation invalidates sessions, changes workspace namespaces, and prevents old scheduled credentials from being decrypted. See [deployment](docs/DEPLOYMENT.md) before changing it.
+
+CSV and JSON reports contain the selected project and filters. Use **Backup and restore → Download full workspace backup** for an importable copy of every brand, date, engine, completed move, and source-research record. Filtered reports and demo exports cannot be restored as full workspaces. Export a full backup before replacing a workspace, resolving a concurrent-change conflict, changing keys, or performing a deployment migration. Browser recovery copies are useful safeguards, not a replacement for server backups. See [architecture](docs/ARCHITECTURE.md#browser-data-and-exports).
+
+## Run scheduled monitoring
+
+Start a separate worker while the application server is running:
+
+```bash
+npm run monitor
+```
+
+In your private workspace, choose daily or weekly monitoring, the UTC hour, prompts and engines, and spending limits. Enabling it explicitly allows the server to retain an encrypted copy of your signed-in key and run paid audits after your browser closes or you sign out. The worker refreshes catalog prices, reserves a ceiling before starting, and saves results to your workspace. The monthly limit covers automated monitoring, not manual audits or other activity in Treg.
+
+Check the worker heartbeat in the app. Enabling a schedule does not start a worker process. Pausing removes the retained credential and prevents future runs; an already submitted provider request may still complete. Ambiguous billing, interrupted work, failed engines, or exhausted budgets pause monitoring for review, with uncertain reservations retained. Re-enabling is a deliberate action after checking Treg activity.
+
+For a supervised production worker, a once-per-minute cron invocation, a custom app origin, and persistence requirements, follow [deployment](docs/DEPLOYMENT.md#monitoring-worker).
 
 ## Develop and verify
 

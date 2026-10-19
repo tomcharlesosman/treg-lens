@@ -90,6 +90,8 @@ globalThis.fetch = async function fixtureFetch(input, init) {
     validations.set(token, count);
     if (token === "treg-e2e-revoked-after-login" && count > 1)
       return response(errorBody("revoked_key"), 401);
+    if (token.startsWith("treg-e2e-worker-revoked-") && count > 2)
+      return response(errorBody("revoked_key"), 401);
     return response({ tier: "team", balance_usd: 0 });
   }
   const catalogId = url.pathname.match(/^\/catalog\/endpoints\/([^/]+)$/)?.[1];

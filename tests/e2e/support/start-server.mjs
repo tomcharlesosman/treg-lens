@@ -1,5 +1,5 @@
 import { execFileSync, spawn } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { createServer } from "node:https";
 import { request } from "node:http";
 import { tmpdir } from "node:os";
@@ -9,6 +9,8 @@ import { setTimeout as delay } from "node:timers/promises";
 // Production sessions must retain Secure cookies. A real TLS listener lets
 // WebKit exercise them too; it does not trust HTTP loopback like Chromium.
 const temporary = mkdtempSync(join(tmpdir(), "treg-lens-e2e-"));
+mkdirSync(resolve("output/playwright"), { recursive: true });
+writeFileSync(resolve("output/playwright/server-info.json"), JSON.stringify({ dataDirectory: join(temporary, "data") }));
 const key = join(temporary, "localhost.key");
 const cert = join(temporary, "localhost.crt");
 try {
@@ -50,7 +52,7 @@ const next = spawn(
     "--port",
     "3101",
   ],
-  { env: process.env, stdio: "inherit" },
+  { env: { ...process.env, TREG_DATA_DIR: join(temporary, "data") }, stdio: "inherit" },
 );
 
 const server = createServer(
@@ -84,7 +86,8 @@ const server = createServer(
 function cleanup() {
   server.close();
   next.kill("SIGTERM");
-  rmSync(temporary, { recursive: true, force: true });
+  // Windows can retain the SQLite file lock briefly while Next terminates.
+  rmSync(temporary, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
 }
 process.once("exit", cleanup);
 for (const signal of ["SIGINT", "SIGTERM"])

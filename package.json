@@ -5,6 +5,8 @@
   "scripts": {
     "setup": "node scripts/setup.mjs",
     "doctor": "node scripts/doctor.mjs",
+    "monitor": "node scripts/monitor.mjs",
+    "backup": "node scripts/backup.mjs",
     "dev": "next dev",
     "build": "next build",
     "start": "next start",

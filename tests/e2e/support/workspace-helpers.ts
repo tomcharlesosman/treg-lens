@@ -12,7 +12,23 @@ export async function freshAddress(context: BrowserContext) {
   await context.setExtraHTTPHeaders({ "x-forwarded-for": `e2e-${crypto.randomUUID()}` });
 }
 
+const contextKeys = new WeakMap<BrowserContext, { primary: string; secondary: string }>();
+export function contextKey(context: BrowserContext, token = primaryKey) {
+  let keys = contextKeys.get(context);
+  if (!keys) { keys = { primary: `${primaryKey}-${crypto.randomUUID()}`, secondary: `${secondaryKey}-${crypto.randomUUID()}` }; contextKeys.set(context, keys); }
+  return token === primaryKey ? keys.primary : token === secondaryKey ? keys.secondary : token;
+}
+export async function waitForServerSave(page: Page) {
+  await expect(page.getByRole("region", { name: "Workspace synchronization" })).toContainText("Saved to server");
+}
+export async function saveServerSnapshot(page: Page, snapshot: unknown) {
+  const existing = await (await page.request.get("/api/workspace")).json();
+  const response = await page.request.put("/api/workspace", { data: { snapshot, revision: existing.revision } });
+  expect(response.status(), await response.text()).toBe(200);
+  return response.json();
+}
 export async function signIn(page: Page, token = primaryKey) {
+  token = contextKey(page.context(), token);
   await freshAddress(page.context());
   const response = await page.request.post("/api/auth/session", { data: { token } });
   expect(response.status()).toBe(200);
@@ -75,7 +91,7 @@ export function storedFixture() {
 
 export async function seedWorkspace(page: Page) {
   const storageKey = await signIn(page);
-  await page.evaluate(({ storageKey, fixture }) => localStorage.setItem(storageKey, JSON.stringify(fixture)), { storageKey, fixture: storedFixture() });
+  await saveServerSnapshot(page, storedFixture());
   await page.reload();
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
   await expect(page.locator(".chart-legend")).toBeVisible();

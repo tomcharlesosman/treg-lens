@@ -77,7 +77,7 @@ export default function Login() {
             </div>
             <div className="signin-secondary">
               <Link href="/demo">
-                Explore the demo <ArrowUpRight size={13} />
+                Preview sample data <ArrowUpRight size={13} />
               </Link>
               <a href={GITHUB_FORK_URL} target="_blank" rel="noreferrer">
                 <GitFork size={14} /> Fork the repo <ArrowUpRight size={13} />

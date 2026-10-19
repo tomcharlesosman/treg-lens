@@ -8,6 +8,11 @@ Start with the [README](../README.md) for setup, [architecture](./ARCHITECTURE.m
 
 | Method | Path | Credential required | Provider work |
 | --- | --- | --- | --- |
+| `GET` | `/api/health` | None | SQLite connection/readiness only, no Treg request |
+| `GET`, `PUT` | `/api/workspace` | Verified session cookie | Durable snapshot read or revision-checked save |
+| `GET`, `PUT`, `DELETE` | `/api/monitor` | Verified session cookie | Read/configure/pause scheduling; no immediate paid run |
+| `GET` | `/api/monitor/results` | Verified session cookie | Download retained scheduled results after storage overflow |
+| `POST` | `/api/internal/monitor/tick` | Internal runner bearer | One due scheduled audit, if any |
 | `GET` | `/api/auth/session` | Optional session cookie | Free key metadata validation when a session exists |
 | `POST` | `/api/auth/session` | `token` in JSON | Free key metadata validation; creates session |
 | `DELETE` | `/api/auth/session` | None | Clears browser session cookie |
@@ -17,13 +22,13 @@ Start with the [README](../README.md) for setup, [architecture](./ARCHITECTURE.m
 | `POST` | `/api/aeo/discover` | None for `estimateOnly: true`; otherwise session or `token` | Catalog reads or paid keyword/PAA calls |
 | `POST` | `/api/aeo/source` | None for `estimateOnly: true`; otherwise session or `token` | Catalog reads or paid Moz/Exa calls |
 
-Next.js supplies `OPTIONS` with an `Allow` header and `HEAD` for GET-enabled routes. Other unsupported methods return `405`; framework-generated responses need not use the JSON error format below. There are no pagination, streaming, webhook, job-status, workspace-storage, or import endpoints.
+Next.js supplies `OPTIONS` with an `Allow` header and `HEAD` for GET-enabled routes. Other unsupported methods return `405`; framework-generated responses need not use the JSON error format below. There are no general-purpose proxy or team-membership endpoints. Full-backup import is validated in the browser, then saved through the revision-checked workspace route; it does not enable monitoring.
 
 ## Request and authentication rules
 
-All POST bodies must use `Content-Type: application/json` and fit within **16,384 bytes**, including when sent without `Content-Length`. Invalid JSON or invalid fields return `400`; oversized bodies return `413`; other content types return `415`. Unknown fields are ignored by the current validators.
+Research/authentication JSON requests and monitor PUT use `Content-Type: application/json` and fit within **16,384 bytes**, including when sent without `Content-Length`. Workspace PUT has a separate **8 MiB** streamed body limit. The internal tick and DELETE routes do not require JSON bodies. Invalid JSON or invalid fields return `400`; oversized bodies return `413`; other content types return `415`. Unknown fields are ignored by the current validators.
 
-POST routes and session DELETE inspect `Origin` when supplied. A valid HTTP(S) origin must have the same host and port as the request's `Host` header; the check does not compare the incoming request scheme. Requests without `Origin`, such as server-side scripts, are accepted. These routes do not configure cross-origin browser access.
+Public mutations inspect `Origin` when supplied; the workspace route also checks it on GET. The internal runner instead requires its bearer credential. A valid HTTP(S) origin must have the same host and port as the request's `Host` header; the check does not compare the incoming request scheme. Requests without `Origin`, such as server-side scripts, are accepted. These routes do not configure cross-origin browser access.
 
 ### Browser session
 
@@ -43,13 +48,13 @@ The password field masks the display. HTTPS protects the request in transit; the
 
 Protected requests decrypt the cookie and revalidate the key through Treg's free `GET /catalog/endpoints/cloro.ai-search.chatgpt.scrape/access` metadata endpoint. A valid zero-balance key can sign in. Invalid or revoked keys produce an anonymous session; an unavailable validation service fails closed with `503`. Reads do not extend the cookie lifetime.
 
-`SESSION_SECRET` must be a stable private value of at least 32 characters. Keep it identical across instances of one deployment. Rotating it invalidates existing cookies and changes the browser workspace namespace. See [environment boundaries](./ARCHITECTURE.md#environment-boundaries).
+`SESSION_SECRET` must be a stable private value of at least 32 characters. Keep it identical across instances of one deployment. Rotating it invalidates existing cookies, changes server workspace namespaces, and prevents old retained monitoring keys from being decrypted. See [authentication and ownership](./ARCHITECTURE.md#authentication-and-ownership).
 
 ### Direct API clients
 
 Paid request bodies accept an optional `token`. A non-empty explicit token takes precedence over the cookie and is validated independently. An invalid explicit key does not fall back to a valid cookie or an operator credential. Empty tokens are treated as omitted. Effective paid-key validation requires a trimmed, printable ASCII key of at most 2,048 characters without internal whitespace. Sign-in may also reject an unusually long key whose sealed cookie would exceed its size budget.
 
-Lens does not read client credentials from `Authorization`, `X-Treg-Token`, URL query parameters, or an `org` body field. `X-Treg-Token` is the header Lens sends upstream to Treg. Public paid routes never inherit an operator's `TREG_TOKEN` or `TREG_ORG`. A script using an explicit token does not need to create a browser session.
+Public user routes do not read Treg client credentials from `Authorization`, `X-Treg-Token`, URL query parameters, or an `org` body field. The internal monitoring tick separately uses purpose-derived bearer authentication. `X-Treg-Token` is the header Lens sends upstream to Treg. Public paid routes never inherit an operator's `TREG_TOKEN` or `TREG_ORG`. A script using an explicit token does not need to create a browser session.
 
 ## Session and status
 
@@ -75,11 +80,110 @@ Body: `{ "token": "YOUR_TREG_TEAM_KEY" }`. Leading and trailing whitespace is tr
 
 ### DELETE `/api/auth/session`
 
-No body is needed. Returns the anonymous response above and expires the cookie. It does not delete local workspace history or revoke the Treg key. This stateless logout cannot invalidate another copy of an already issued cookie; revoke the underlying Treg key or rotate the deployment secret when revocation is required.
+No body is needed. Returns the anonymous response above and expires the cookie. It does not delete server workspace history, pause an enabled schedule, remove its retained monitoring credential, or revoke the Treg key. This stateless logout cannot invalidate another copy of an already issued cookie; revoke the underlying Treg key or rotate the deployment secret when revocation is required.
 
 ### GET `/api/aeo/status`
 
 Returns `200` with `{ "configured": true }` or `{ "configured": false }`, using `Cache-Control: private, no-store`. This checks the browser session, not operator environment variables or a future explicit-token request. Treg validation unavailability can return `503`.
+
+## Health
+
+### GET `/api/health`
+
+Unauthenticated local storage probe with `Cache-Control: no-store`. Returns `200 {"status":"ok","storage":"ready"}` when the SQLite connection responds, otherwise `503 {"status":"unavailable","storage":"unavailable"}`. No Treg call or tenant information is returned. This does not prove provider availability, funding, free disk space, or an active worker.
+
+## Durable workspace
+
+### GET `/api/workspace`
+
+Requires a verified session; callers do not supply a workspace ID. Returns private/no-store JSON:
+
+```ts
+type WorkspaceEnvelope = {
+  snapshot: WorkspaceSnapshot | null;
+  revision: number; // 0 for an uninitialized workspace
+  updatedAt: string | null;
+};
+type WorkspaceSnapshot = {
+  project: { brand: string; domain: string; competitors: string[] };
+  prompts: string[];
+  runs: SavedRun[];
+  done: string[];
+  sourceResearch: Record<string, SourceResearch>;
+};
+```
+
+The verified key and stable deployment secret determine the namespace. The same key reaches the same instance's saved workspace across browsers. An unrelated key cannot select or read it by changing request fields.
+
+### PUT `/api/workspace`
+
+Body: `{ "snapshot": { ... }, "revision": 0 }`, using the revision most recently loaded. The route validates the snapshot and writes only known fields, excluding credential fields. Audit IDs must be nonempty and unique. JSON bodies are limited to 8 MiB even without Content-Length. Revision must be a nonnegative safe integer.
+
+A successful transaction returns the envelope with an incremented revision. A stale revision returns **409** with `{ error, snapshot, revision, updatedAt }` containing the current saved state. Preserve/export unsaved edits and explicitly refresh before choosing a replacement. Do not simply retry an old snapshot with the new revision. Invalid data is 400, oversized HTTP input is 413, and unavailable storage is 503.
+
+The separate full-backup format is `{ kind: "treg-lens-workspace-backup", version: 1, demo: false, exportedAt, snapshot }`. The UI validates the same 8 MiB workspace-data limit, allows a small wrapper overhead, and asks for replacement confirmation. Filtered reports, illustrative demo exports, credential fields, duplicate IDs, or invalid research are rejected. Import does not restore session or monitor authorization. A monitoring-recovery file uses the separate merge flow below.
+
+## Scheduled monitoring
+
+### GET `/api/monitor`
+
+Requires a verified session. Returns private/no-store state without plaintext or encrypted credentials:
+
+```ts
+type MonitorState = {
+  schedule: null | {
+    enabled: boolean;
+    intervalHours: 24 | 168;
+    hourUtc: number;
+    perRunBudgetUsd: number;
+    monthlyBudgetUsd: number;
+    config: { brand: string; domain: string; competitors: string[]; prompts: string[]; engines: string[] };
+    nextRunAt: string | null;
+    lastRunAt: string | null;
+    lastStatus: string;
+    lastError: string | null;
+    spentMonthUsd: number; // known charges + outstanding reservations, UTC month
+    recoveryAudit?: { completedAt: string; url: string };
+  };
+  worker: { lastSeenAt: string | null; healthy: boolean };
+};
+```
+
+`healthy` means the worker heartbeat is newer than ten minutes. It does not guarantee provider availability or an exact execution time. `recoveryAudit` identifies retained completed evidence that could not fit into the bounded workspace.
+
+### PUT `/api/monitor`
+
+```json
+{
+  "enabled": true,
+  "intervalHours": 24,
+  "hourUtc": 9,
+  "perRunBudgetUsd": 0.1,
+  "monthlyBudgetUsd": 3,
+  "config": {
+    "brand": "Your Brand", "domain": "example.com", "competitors": [],
+    "prompts": ["Which tools fit this category?"], "engines": ["chatgpt"]
+  }
+}
+```
+
+Requires a verified session and same-origin request. `enabled` is a boolean, interval is 24 or 168, and UTC hour is an integer from 0 through 23. Per-audit budget is $0.001–$1; monthly budget is at least that per-audit ceiling and at most $1,000. Config follows audit validation below: 1–8 prompts, 1–4 supported engines, bounded brand/domain/competitors. Client credential fields are not a way to change the retained key; the signed-in key owns the schedule.
+
+Enabling explicitly authorizes encrypted retention of that key and future paid runs, including after logout or browser close. It sets the first run to the next selected UTC hour. A separate worker is required. A schedule already running cannot be edited through PUT; it returns 409. Setting `enabled:false` pauses and removes the retained credential. PUT returns updated MonitorState and does not immediately execute provider work.
+
+### DELETE `/api/monitor`
+
+Pauses future work, removes the retained credential, clears nextRunAt, and returns state. It does not erase the spending ledger or cancel a provider call already in flight. Logout is a separate action and does not pause the monitor.
+
+### GET `/api/monitor/results`
+
+Verified-session download of `{ version: 1, kind: "monitoring-recovery", runs: SavedRun[] }`. These are paid results retained in the job journal when workspace append failed or a completed journaled run was interrupted before append. The response is a private/no-store JSON attachment named `treg-lens-recovered-audits.json`. Downloading does not rerun the audit or resume monitoring. In **Backup and restore**, this file previews a merge of unique audit IDs into the current workspace; existing audits and settings are preserved. If storage is full, first download a full-workspace backup, delete reviewed older audits, let the deletion save, and explicitly confirm the recovery merge. It does not alter the spending ledger.
+
+### POST `/api/internal/monitor/tick`
+
+Internal worker route, not a user integration endpoint. It requires the purpose-derived runner bearer credential generated by `scripts/monitor.mjs`; an ordinary Treg key or session cookie receives 401. No request body is required. A tick claims at most one due schedule and returns `{ processed: false }` or `{ processed: true, status: "complete" | "paused" }`.
+
+A ten-minute SQLite lease prevents overlapping claims. Before paid work, the worker revalidates its encrypted key, reads current catalog prices, and atomically reserves the full ceiling in the job's UTC calendar month. Execution uses that exact quote, per-call caps, and stable job-based idempotency. Final known charges replace the reservation; unknown final charges retain it. Partial/ambiguous failures, interrupted jobs, budget exhaustion, or a storage failure pause monitoring. A stale paid job is not automatically resubmitted. An old database restore is not a billing rollback; use the [documented restore procedure](DEPLOYMENT.md#backups-restore-and-upgrades).
 
 ## Audit estimate and execution
 
@@ -168,8 +272,16 @@ type AuditResponse = {
   totalCostUsd: number;
   totalCostKnown: boolean;
   completedAt: string;
+  auditId: string;
+  savedWorkspaceId: string;
+  saved: boolean;
+  workspaceRevision?: number;
+  workspaceUpdatedAt?: string | null;
+  storageError?: string;
 };
 ```
+
+The route atomically appends the result to server history. With a session, the signed-in workspace owns the evidence even when an explicit in-memory key pays. Without a session, an explicit key owns its own derived namespace. `saved:false` preserves the paid result in the HTTP response and includes a storage warning; export/reconcile it rather than rerunning the paid request to save it.
 
 The response can contain partial results or even zero successful answers. Inspect `errors` and cost flags after every `200`. Individual provider authorization, billing, timeout, and availability failures appear in `errors`; their upstream HTTP statuses are not necessarily the Lens response status.
 
@@ -328,9 +440,9 @@ All monetary values are USD. Catalog estimates are reservations, not receipts. P
 | Discovery | `totalCostKnown: false`; known settled sum stays in `totalCostUsd`; known pending reservations stay separately in `reservedCostUsd` |
 | Source | `costKnown: false`, `totalCostUsd: null`, and known partial sum in `knownCostUsd` |
 
-Zero and unknown are different. Reconcile ambiguous failures, pending calls and final charges in Treg activity before retrying. These synchronous routes do not provide automatic retries, durable jobs, or caller-supplied idempotency. Each upstream call gets a fresh UUID idempotency key; repeating a Lens request is a new potential spend. Closing a dialog does not cancel its running audit/discovery in the current tab; a page reload or browser disconnect can lose the result even if upstream work continues.
+Zero and unknown are different. Reconcile ambiguous failures, pending calls and final charges in Treg activity before retrying. Manual research routes do not provide automatic retries or caller-supplied idempotency. Scheduled audit jobs have their separate durable lease/reservation/idempotency path described above. Each upstream call gets a fresh UUID idempotency key; repeating a Lens request is a new potential spend. Closing a dialog does not cancel its running audit/discovery in the current tab; manual discovery can lose its response on reload/disconnect even if upstream work continues. A manual audit attempts a server-side append, but the client must still check its saved flag or reload history before assuming durability.
 
-Only discovery models a separate pending reservation. Audit and source adapters expect synchronous provider responses and do not expose a pending-job state. If an upstream contract starts returning asynchronous acceptance for those tools, adapt its status and billing handling before relying on the totals as final receipts.
+Discovery exposes a separate pending reservation and call IDs when a provider returns HTTP 202. Audit and source adapters treat HTTP 202 as still processing: its billing header is a reservation rather than a settled charge, no completed answer/page is invented, and the relevant cost-known flag is false. They do not poll for completion. A scheduled audit with an unsettled response pauses and retains its full reserved ceiling. Reconcile these calls through Treg before submitting another paid request.
 
 Application errors use `{ "error": "human-readable message" }` and `Cache-Control: no-store` (also `private` for auth responses). Do not parse message text as a stable machine error code.
 
@@ -339,8 +451,9 @@ Application errors use `{ "error": "human-readable message" }` and `Cache-Contro
 | `400` | Invalid fields/JSON, unsafe or unresolved source URL, team selection problem, or a workflow safety limit |
 | `401` | Missing caller credential or invalid/revoked explicit key |
 | `403` | Rejected `Origin` header |
+| `409` | Stale workspace revision or an attempt to edit a running monitoring schedule |
 | `405` | Unsupported HTTP method; framework response |
-| `413` | Request body exceeds 16 KiB |
+| `413` | Request body exceeds its route limit: 16 KiB normally, 8 MiB for workspace PUT |
 | `415` | Request is not JSON |
 | `429` | Process-local attempt, concurrency, or cooldown guard |
 | `503` | Missing sign-in configuration, unavailable validation/pricing, or an unexpected server failure |
@@ -355,9 +468,11 @@ Partial provider errors usually return `200` with an `errors` array, including u
 | Paid audit | Nominally 3 active audits; 10-second cooldown per forwarded address |
 | Paid discovery | Nominally 3 active discoveries; 10-second cooldown per forwarded address |
 | Paid source | Nominally 3 active source lookups; 5-second cooldown per forwarded address |
+| Monitor tick | Durable global SQLite lease; one due job per tick, per-workspace monitoring budgets |
+| Workspace | Atomic revision compare-and-swap and 8 MiB body/snapshot bound |
 | Estimates, session GET/DELETE, status | No application rate guard |
 
-Each route owns a separate in-memory counter/map. The address is the first `x-forwarded-for` value or `local`; a trusted reverse proxy must overwrite forwarded headers. No `Retry-After` or rate-limit headers are returned. Counters reset with the process and are not shared between instances. Source DNS preflight happens before its active counter is acquired, so its guard is best-effort rather than an atomic concurrency guarantee. Add an atomic shared limiter if your deployment needs a durable spending boundary.
+Each route owns a separate in-memory counter/map. The address is the first `x-forwarded-for` value or `local`; a trusted reverse proxy must overwrite forwarded headers. No `Retry-After` or rate-limit headers are returned. Manual-route counters reset with the process and are not shared between instances. Monitoring leases/reservations and workspace revisions persist in the SQLite database. Source DNS preflight happens before its active counter is acquired, so its guard is best-effort rather than an atomic concurrency guarantee. Add an atomic shared limiter if your deployment needs a durable spending boundary.
 
 ## Source of truth
 
@@ -366,4 +481,4 @@ Each route owns a separate in-memory counter/map. The address is the first `x-fo
 - [Discovery types and adapter](../src/lib/discovery.ts): routing, bounded pipeline and pending reservations.
 - [Source types and adapter](../src/lib/source-research.ts): public URL checks, DNS preflight and nullable evidence.
 - [Session primitives](../src/lib/treg-session.ts) and [server bridge](../src/lib/treg-auth.ts): credential validation and encrypted cookies.
-- [API tests](../tests/e2e/api.spec.ts): executable examples and refusal cases without paid provider traffic.
+- [API tests](../tests/e2e/api.spec.ts), [monitor contracts](../tests/e2e/monitor-api.spec.ts), and [workspace API tests](../tests/e2e/workspace-api.spec.ts): executable examples and refusal cases without live paid provider traffic.

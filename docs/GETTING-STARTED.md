@@ -1,10 +1,10 @@
 # Get started with Treg Lens
 
-Run the demo first, then connect your own Treg team key when you want live research. Setup and automated tests do not require a Treg account or spend provider credits.
+Install the app, connect your own Treg team key, and run a live audit in a durable private workspace. You can complete setup and automated verification without a Treg account; those steps do not spend provider credits. The labeled demo is an optional preview.
 
 ## Prerequisites
 
-Use **Node.js 24 LTS**; the minimum is **22.13**. Install Git and npm, then reopen your terminal after installing Node. The app needs no database, Redis, ORM, Docker, or separately installed Treg SDK. Its fonts are vendored, so a build does not fetch Google Fonts.
+Use **Node.js 24 LTS**; the minimum is **22.13**. Install Git and npm, then reopen your terminal after installing Node. The app uses Node's built-in SQLite, so it needs no separate database server, Redis, ORM, Docker, or Treg SDK. Its fonts are vendored, so a build does not fetch Google Fonts.
 
 These commands work in macOS/Linux shells and Windows PowerShell. OpenSSL is needed only for the full HTTPS end-to-end test suite, not app setup or normal use.
 
@@ -24,7 +24,7 @@ npm run dev
 
 `npm ci` installs the locked dependency versions. `setup` uses Node's built-in cryptographic generator to configure a random `SESSION_SECRET` in private `.env.local` without printing it. Re-running setup preserves a valid existing secret. It refuses a nonempty invalid secret rather than silently rotating it. Keep `.env.local` out of Git and preserve its secret between restarts.
 
-If setup reports an invalid existing value, decide whether to keep or deliberately replace that configuration. A change to the effective secret invalidates sessions and changes which browser workspace namespace opens. Do not remove an existing secret just to make setup pass.
+If setup reports an invalid existing value, decide whether to keep or deliberately replace that configuration. A change to the effective secret invalidates sessions, changes which server workspace namespace opens, and prevents old monitoring credentials from being decrypted. Do not remove an existing secret just to make setup pass.
 
 If setup reports duplicate empty assignments, keep one deliberate `SESSION_SECRET` assignment and rerun it. If your shell has `NODE_ENV=test`, unset it for normal local setup: Next.js ignores `.env.local` in test mode. The automated suite supplies its own synthetic configuration.
 
@@ -41,7 +41,9 @@ Open [localhost:3000](http://localhost:3000). The routes are:
 | `/login` | Paste your own Treg team API key |
 | `/app` | Private workspace after key validation |
 
-Explore `/demo` to see answers, citations, opportunities, and exports. Demo values are illustrative and demo edits do not become private saved audits. Paid actions lead to sign-in.
+Open `/login`, paste a team-scoped Treg API key from [Treg](https://treg.to/app), and continue to `/app`. Key validation is free. Your live project and research history are saved on the application server.
+
+The optional `/demo` shows illustrative answers and citations. Its edits do not become private saved audits, and paid actions lead to sign-in.
 
 If port 3000 is occupied, use a different port:
 
@@ -65,19 +67,42 @@ Then open `http://localhost:3001`. Remove that PowerShell environment override l
 3. Add a buyer question, or use **Discover prompts** with 2–3 seed phrases. Review the discovery estimate before starting it, then select the returned questions or keywords you want to track.
 4. Open **Run audit**, choose prompts and engines, and review the current estimate. Start with one prompt and one engine to inspect the workflow. Up to 8 prompts and 4 engines are supported.
 5. Inspect the answer and its cited URLs. A cited-page research request has its own estimate and paid action for Moz metrics and Exa extraction.
-6. Review opportunities, copy a content brief, and export a report. Publishing and outreach remain actions you perform yourself.
+6. Review opportunities, copy an explicitly labeled writing-brief template, and export a report. Publishing and outreach remain actions you perform yourself.
+7. Return from another browser with the same key to the same instance and verify your saved project. Use JSON import/export for reviewed backups. Enable budgeted monitoring only when you want future paid audits.
 
 Live discovery, audits, and source research use your Treg team's billing. Estimates are quotes, not final charges or balance reservations. Missing billing headers mean unknown cost. A partial failure preserves successful evidence; an ambiguous timeout can still have upstream activity. Check Treg activity before deliberately retrying.
 
 Perplexity uses the Sonar model API; the other engines use web-interface answers. Audits use United States / English parameters. Repeat the same inputs when comparing runs, and treat scores as prioritization heuristics rather than promises of visibility.
 
-## Understand what is saved
+## Save, back up, and restore
 
-Settings, tracked prompts, audits, completed moves, and source research stay in this browser's `localStorage`, under a namespace derived from the key and deployment secret. Logout leaves that local history in place. Keys are held in an encrypted HttpOnly session cookie, not `localStorage`, `sessionStorage`, or workspace exports. An optional per-request override stays in memory until reload.
+Settings, prompts, audits, completed moves, and source research are saved in the server's SQLite database. The same verified key and deployment secret identify the same workspace across browsers. Another key opens a separate workspace. Possession of a shared Treg key grants access to that key's workspace; Lens does not provide team invitations or roles.
 
-There is no cross-device synchronization or server backup. A different browser, origin/port, key, or deployment secret opens a different local workspace. Clearing site data can remove history. People sharing a browser profile can access its origin-local data; the namespace is not encrypted storage.
+The default database is `data/treg-lens.sqlite`. `TREG_DATA_DIR` selects another private persistent local directory. Keep the application secret and data directory stable between restarts. An ephemeral host or a new checkout with an empty data directory cannot recover the old server's history.
 
-Use **Export report → JSON** for the richer report, including source research, or CSV for answer rows. Filters affect exports; select the intended date range and engines first. JSON is a portable report, and there is currently no supported import/restore workflow. Keep copies before changing credentials, secrets, or site data.
+The browser can retain recovery data for unsaved changes or older browser-only installations. A server revision protects concurrent saves. If another tab or scheduled audit changes the workspace, refresh and review the conflict before saving; export unsaved work first. Do not overwrite a newer server snapshot by guessing its revision.
+
+Use **Backup and restore → Download full workspace backup** for a complete, importable JSON copy across all brands, dates, and engines. The regular Export menu produces filtered JSON reports or CSV answer rows; those reports and demo exports are not restore files. Import a full backup within the 8 MiB workspace-data limit, review its project and counts, then explicitly confirm replacement. Import does not restore login sessions or enable paid monitoring. Keep a backup before replacing data. Server backups are the instance operator's responsibility; follow [deployment recovery](DEPLOYMENT.md#backups-restore-and-upgrades) for WAL-safe SQLite copies.
+
+If a completed monitoring audit cannot be saved, download its recovery file from **Monitoring**. Download a full workspace backup before pruning history, open an older audit and choose **Delete this audit**, then wait for **Saved to server**. Import the recovery file in **Backup and restore** and confirm the merge. Existing audit IDs and settings remain intact; the merge does not rerun paid work, resume monitoring, or reset its budget ledger.
+
+Authentication keys stay out of browser storage and reports. The session cookie is encrypted and HttpOnly. An optional per-request override stays in memory until reload. Enabling a monitor separately authorizes an encrypted server-retained credential.
+
+## Enable daily or weekly monitoring
+
+Run the app server, then start the worker in a second terminal:
+
+```bash
+npm run monitor
+```
+
+If using a different app port or origin, configure `MONITOR_BASE_URL` in that worker's environment. The default is `http://127.0.0.1:3000`; remote origins require HTTPS. The worker and server must use the same stable secret and configuration mode. See [worker deployment](DEPLOYMENT.md#monitoring-worker) for a supervised process or one-shot cron invocation.
+
+In the private workspace, review the prompts/engines, choose daily or weekly monitoring and a UTC hour, set per-audit and monthly limits, and explicitly enable it. Confirm the worker heartbeat. Enabling a schedule in the UI does not launch a worker process.
+
+An enabled schedule retains your signed-in key encrypted on the server and can make paid calls after browser close or logout. Its monthly limit covers monitoring audits only, not manual research or other Treg activity. Current prices are checked and a budget ceiling reserved before each run. Unknown billing, interrupted work, partial errors, or exhausted budgets pause for review; check Treg activity before re-enabling.
+
+Pause monitoring when you want future runs to stop. This removes the retained credential. A provider request already submitted may still finish and save its evidence. Signing out alone does not pause a schedule.
 
 ## Environment and verification
 

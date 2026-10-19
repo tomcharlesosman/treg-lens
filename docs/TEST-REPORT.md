@@ -1,21 +1,25 @@
 # Full feature verification — 19 October 2026
 
-The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. The normal suite uses synthetic provider responses; a separate live smoke verified the Treg boundary.
+The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This pass covers the live workspace, durable SQLite storage, backup restoration and budgeted monitoring. Automated runs use synthetic provider responses; the dated live smoke below separately verified the Treg boundary.
 
 ## Results
 
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
-| HTTP API | 81 | 0 / 0 |
-| Chromium browser workflows | 67 | 0 / 0 |
-| Firefox browser workflows | 67 | 0 / 0 |
-| WebKit browser workflows | 67 | 0 / 0 |
-| Library and setup tests | 59 | 0 / 0 |
-| **Total** | **341** | **0 / 0** |
+| HTTP API | 114 | 0 / 0 |
+| Chromium browser workflows | 76 | 0 / 0 |
+| Firefox browser workflows | 76 | 0 / 0 |
+| WebKit browser workflows | 76 | 0 / 0 |
+| Library, setup and operations tests | 92 | 0 / 0 |
+| **Total** | **434** | **0 / 0** |
 
-The complete 282-case API/browser run passed with retries disabled. Lint, TypeScript and the production build also passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. All three browser engines completed the same 67 scenarios. Coverage includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and successful backup exports when browser storage rejects writes.
+The complete 342-case API/browser run passed with retries disabled. Lint, TypeScript and the production build also passed. Production dependency audit reported zero vulnerabilities. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. All three browser engines completed the same 76 scenarios. The test server uses a fresh private database and synthetic credentials; it never opens the development workspace database.
 
-Open-source onboarding adds 12 setup regressions for stable existing secrets, private file creation, Windows line endings, empty and duplicate overrides, test-mode handling, Node minimums, and environment precedence. `npm run check` also verifies local documentation links and heading anchors. A source-only copy in a directory containing spaces passed `npm ci`, setup, repeated setup with byte-for-byte configuration preservation, doctor, checks, and a fresh production build with external network connections blocked. No existing environment file, dependency installation, or build cache was copied into that installation. Fonts are vendored with licenses and provenance.
+New coverage includes server durability after clearing the browser cache, scoped legacy migration, failed-save recovery, revision conflicts, complete backup restoration, confirmed audit deletion, idempotent monitoring recovery merges, and a near-8 MiB backup round trip with answer hashes checked. Worker HTTP tests make isolated schedules due and execute the actual auth, pricing, provider adapters, ledger and workspace routes. They cover success, UTC cadence, revocation, per-run/monthly budgets, partial failures, missing charges, pending reservations, and retained paid results when the workspace is full.
+
+Library/operations regressions exercise cross-process SQLite reads, atomic rollback, encrypted credential ownership, concurrent runner leases, crashes before and after journaling, exact quote execution, UTC slot alignment, online WAL-consistent backups, and the real worker CLI against an isolated HTTP server. Existing coverage also includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and backup exports when browser storage rejects writes.
+
+Open-source onboarding includes 12 setup regressions for stable existing secrets, private file creation, Windows line endings, empty and duplicate overrides, test-mode handling, Node minimums, and environment precedence. `npm run check` also verifies local documentation links and heading anchors. The earlier onboarding verification used a source-only copy in a directory containing spaces for clean install, repeated setup with byte-for-byte secret preservation, doctor, checks, and a fresh production build with external network connections blocked. No environment file, dependency installation, or build cache was copied into that installation. Fonts remain vendored with licenses and provenance. Current commit-specific clean installs and platform results are recorded by GitHub Actions.
 
 ## Issues found and fixed
 
@@ -31,6 +35,8 @@ Open-source onboarding adds 12 setup regressions for stable existing secrets, pr
 10. **Delayed dialog focus:** the dialog's opening animation frame could move focus from an already selected textarea to the brand field, sending typing into the wrong control. Initial focus now preserves an existing selection inside the dialog. The regression holds and releases the opening frame after focusing the prompt field.
 
 Each fix is covered by an end-to-end regression. The storage validator also has library regression tests. Browser tests fail on uncaught page errors.
+
+The durable-product review additionally fixed asynchronous reservation headers being mistaken for settled charges, discarded paid evidence when a workspace is full, late-worker schedule drift, lost evidence after a post-collection crash, stale client responses, fallback writes before server verification, and full-backup envelope size limits. These cases have targeted HTTP, browser or library regressions in the suites above.
 
 ## Live Treg checks
 

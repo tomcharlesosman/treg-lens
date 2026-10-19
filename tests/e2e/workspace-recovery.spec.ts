@@ -6,6 +6,7 @@ import {
   primaryKey,
   secondaryKey,
   seedWorkspace,
+  saveServerSnapshot,
   storagePrefix,
 } from "./support/workspace-helpers";
 import type { SavedRun } from "../../src/lib/workspace-data";
@@ -14,15 +15,16 @@ import type { SavedRun } from "../../src/lib/workspace-data";
 // Relative dates keep historical answers inside the currently selected period.
 test("a completed prompt recheck appends history and displays the latest saved answer per engine", async ({ page }) => {
   const storageKey = await seedWorkspace(page);
-  await page.evaluate((key) => {
+  const historical = await page.evaluate((key) => {
     const saved = JSON.parse(localStorage.getItem(key)!);
     saved.runs.forEach((run: { completedAt: string; results: { completedAt: string }[] }, index: number) => {
       const historicalDate = new Date(Date.now() - (2 - index) * 86_400_000).toISOString();
       run.completedAt = historicalDate;
       run.results.forEach((answer) => { answer.completedAt = historicalDate; });
     });
-    localStorage.setItem(key, JSON.stringify(saved));
+    return saved;
   }, storageKey);
+  await saveServerSnapshot(page, historical);
   await page.reload();
   await expect(page.locator(".chart-legend")).toBeVisible();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), storageKey);
@@ -115,7 +117,7 @@ test("a blocked workspace storage write offers a backup and exports current unsa
   await addPrompt.getByLabel("Buyer question").fill(unsavedPrompt);
   await addPrompt.getByRole("button", { name: "Add prompt", exact: true }).click();
   await expect(page.locator(".prompt-cell").filter({ hasText: unsavedPrompt })).toHaveCount(1);
-  await expect(page.getByRole("status")).toContainText("Browser storage is full. Export your audits to keep a backup.");
+  await expect(page.getByRole("region", { name: "Workspace synchronization" })).toContainText("Browser storage is full or unavailable.");
   expect(await page.evaluate((key) => localStorage.getItem(key), storageKey)).toBe(persistedBefore);
 
   await page.getByRole("button", { name: "Export", exact: true }).click();

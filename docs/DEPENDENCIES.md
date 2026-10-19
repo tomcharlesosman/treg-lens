@@ -14,7 +14,7 @@ Treg Lens has **seven direct runtime dependencies** and **eight development depe
 | `react-markdown` | Structured rendering of untrusted answers without raw HTML |
 | `remark-gfm` | Tables, lists and GFM content in answers |
 
-There is no Treg SDK, Axios, ORM, database client, auth SaaS SDK, charting package, CSS framework or UI component framework. Requests use native `fetch`; charts use SVG; setup uses Node's `crypto`, `fs` and environment parser. New scripts add no packages.
+There is no Treg SDK, Axios, ORM, database client, auth SaaS SDK, charting package, CSS framework or UI component framework. Requests use native `fetch`; charts use SVG; durable storage uses built-in `node:sqlite`; schedules use SQLite leases plus a small Node worker; setup and encrypted monitor credentials use Node's crypto/fs/environment primitives. New scripts add no packages.
 
 The four local fonts total 102,008 bytes. They remove Google Fonts requests during builds and ship with complete OFL licenses, pinned provenance and hashes. See [third-party notices](../THIRD_PARTY_NOTICES.md) and [font provenance](../src/app/fonts/README.md).
 

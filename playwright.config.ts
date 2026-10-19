@@ -23,20 +23,20 @@ export default defineConfig({
     actionTimeout: 10_000,
   },
   projects: [
-    { name: "api", testMatch: "api.spec.ts" },
+    { name: "api", testMatch: "*api.spec.ts" },
     {
       name: "chromium",
-      testIgnore: "api.spec.ts",
+      testIgnore: "*api.spec.ts",
       use: { ...devices["Desktop Chrome"] },
     },
     {
       name: "firefox",
-      testIgnore: "api.spec.ts",
+      testIgnore: "*api.spec.ts",
       use: { ...devices["Desktop Firefox"] },
     },
     {
       name: "webkit",
-      testIgnore: "api.spec.ts",
+      testIgnore: "*api.spec.ts",
       use: { ...devices["Desktop Safari"] },
     },
   ],

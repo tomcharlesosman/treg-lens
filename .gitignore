@@ -45,3 +45,9 @@ next-env.d.ts
 .playwright-cli/
 
 .playwright-mcp/
+
+# Private durable workspaces and scheduled work.
+/data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm

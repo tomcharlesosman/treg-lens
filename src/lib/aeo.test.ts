@@ -190,6 +190,33 @@ test("estimate uses live catalog pricing and refuses missing verified prices", a
   );
 });
 
+test("a durable worker executes its reserved quote with stable per-call idempotency keys", async () => {
+  const quote = await estimateAudit(input, async () => Response.json({ endpoint: { cost: { usd: 0.0036 } } }));
+  const keys: string[] = [];
+  const answer = await runAudit(input, async (url, init) => {
+    assert.ok(String(url).includes("/call/"), "The worker must not refresh pricing after reserving a different quote");
+    const headers = new Headers(init?.headers);
+    assert.equal(headers.get("X-Treg-Route-Max-Cost"), "0.0036");
+    keys.push(headers.get("Idempotency-Key")!);
+    return Response.json({ result: { markdown: "Firecrawl is an option." } }, { headers: { "X-Treg-Cost-Micro": "3000" } });
+  }, { estimate: quote, idempotencyPrefix: "durable-job-one" });
+  assert.deepEqual(keys.sort(), ["durable-job-one:0:chatgpt", "durable-job-one:0:gemini"]);
+  assert.equal(answer.results.length, 2);
+  assert.equal(answer.totalCostUsd, 0.006);
+});
+
+test("asynchronous audit submissions retain unknown billing instead of treating reservations as charges", async () => {
+  const response = await runAudit({ ...input, engines: ["chatgpt"] }, async (url) => {
+    if (String(url).includes("/catalog/")) return Response.json({ endpoint: { cost: { usd: 0.004 } } });
+    return Response.json({ status: "pending" }, { status: 202, headers: { "X-Treg-Cost-Micro": "1000", "X-Treg-Call-Id": "pending-submission-one" } });
+  });
+  assert.equal(response.totalCostKnown, false);
+  assert.equal(response.totalCostUsd, 0);
+  assert.equal(response.results.length, 0);
+  assert.equal(response.errors[0].costKnown, false);
+  assert.match(response.errors[0].error, /still processing.*unsettled.*before retrying/);
+});
+
 test("paid calls use fixed routes, quote caps, real header charges, and partial failures", async () => {
   const calls: string[] = [];
   const response = await runAudit(input, async (url, init) => {

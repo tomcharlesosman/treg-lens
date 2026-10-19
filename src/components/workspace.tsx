@@ -3,9 +3,13 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { GITHUB_REPOSITORY } from "@/lib/site";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type SetStateAction } from "react";
 import {
   ArrowDownToLine,
+  Clock,
+  RefreshCw,
+  Cloud,
+  AlertTriangle,
   ArrowRight,
   ArrowUpRight,
   BarChart3,
@@ -47,12 +51,14 @@ import AnswerBody from "./answer-body";
 import DiscoveryDialog from "./discovery-dialog";
 import { SourceDialog } from "./source-dialog";
 import type { SourceResearch } from "@/lib/source-research";
-import { parseWorkspaceSnapshot } from "@/lib/workspace-storage";
+import { useServerWorkspace, type AuditPersistence } from "./use-server-workspace";
+import WorkspaceBackup, { downloadWorkspaceBackup } from "./workspace-backup";
+import MonitorSettings from "./monitor-settings";
+import "./workspace-live.css";
 import SettingsDialog from "./settings-dialog";
 import type { AnswerResult } from "@/lib/aeo";
 import {
   DEFAULT_PROJECT,
-  DEFAULT_PROMPTS,
   ENGINES,
   brandStats,
   createDemoRuns,
@@ -515,10 +521,17 @@ export default function Workspace({
   const storageKey = storageId ? `${STORE}:${storageId}` : STORE;
   const [loggingOut, setLoggingOut] = useState(false);
   const [view, setView] = useState<View>("overview");
-  const [project, setProject] = useState<Project>(DEFAULT_PROJECT);
-  const [prompts, setPrompts] = useState(DEFAULT_PROMPTS);
-  const [runs, setRuns] = useState<SavedRun[]>([]);
-  const [loaded, setLoaded] = useState(false);
+  const workspace = useServerWorkspace(storageKey, demoMode);
+  const { snapshot: { project, prompts, runs, done, sourceResearch }, sync, loaded } = workspace;
+  const setProject = (action: SetStateAction<Project>) => workspace.field("project", action);
+  const setPrompts = (action: SetStateAction<string[]>) => workspace.field("prompts", action);
+  const setRuns = (action: SetStateAction<SavedRun[]>) => workspace.field("runs", action);
+  const setDone = (action: SetStateAction<string[]>) => workspace.field("done", action);
+  const setSourceResearch = (action: SetStateAction<Record<string, SourceResearch>>) => workspace.field("sourceResearch", action);
+  const [backupOpen, setBackupOpen] = useState(false);
+  const [monitorOpen, setMonitorOpen] = useState(false);
+  const [confirmServer, setConfirmServer] = useState(false);
+  const auditProject = useRef<Project>(project);
   const [token, setToken] = useState("");
   const [auditOpen, setAuditOpen] = useState(false);
   const [auditPrompts, setAuditPrompts] = useState<string[] | undefined>(
@@ -530,9 +543,6 @@ export default function Workspace({
     url: string;
     domain: string;
   } | null>(null);
-  const [sourceResearch, setSourceResearch] = useState<
-    Record<string, SourceResearch>
-  >({});
   const [mobileOpen, setMobileOpen] = useState(false);
   const [range, setRange] = useState(28);
   const [engine, setEngine] = useState("all");
@@ -542,60 +552,11 @@ export default function Workspace({
   const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<SavedRun | null>(null);
   const [brief, setBrief] = useState<string | null>(null);
-  const [done, setDone] = useState<string[]>([]);
   const [toast, setToast] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
-  /* eslint-disable react-hooks/set-state-in-effect -- Restore the external browser workspace after hydration. */
-  useEffect(() => {
-    // Cleanup must survive corrupt workspace JSON and blocked local storage.
-    // Never restore the plaintext key used by early versions of the app.
-    try {
-      sessionStorage.removeItem("treg-lens-token");
-    } catch {}
-    if (demoMode) {
-      setLoaded(true);
-      return;
-    }
-    try {
-      const saved = parseWorkspaceSnapshot(localStorage.getItem(storageKey));
-      if (saved) {
-        setProject(saved.project);
-        setPrompts(saved.prompts);
-        setRuns(saved.runs);
-        setDone(saved.done);
-        setSourceResearch(saved.sourceResearch);
-      }
-    } catch {}
-    setLoaded(true);
-  }, [demoMode, storageKey]);
-  /* eslint-enable react-hooks/set-state-in-effect */
-  useEffect(() => {
-    if (loaded && !demoMode)
-      try {
-        localStorage.setItem(
-          storageKey,
-          JSON.stringify({ project, prompts, runs, done, sourceResearch }),
-        );
-      } catch {
-        queueMicrotask(() =>
-          setToast(
-            "Browser storage is full. Export your audits to keep a backup.",
-          ),
-        );
-      }
-  }, [
-    project,
-    prompts,
-    runs,
-    done,
-    sourceResearch,
-    loaded,
-    demoMode,
-    storageKey,
-  ]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 4500);
@@ -623,7 +584,7 @@ export default function Workspace({
         (r) =>
           r.brand.toLowerCase() === project.brand.toLowerCase() &&
           normalizeDomain(r.domain) === normalizeDomain(project.domain),
-      ),
+      ).sort((a, b) => Date.parse(a.completedAt) - Date.parse(b.completedAt)),
     [runs, project],
   );
   const demo = demoMode;
@@ -715,34 +676,19 @@ export default function Workspace({
     setExportOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-  const onRun = () => {
+  const onRun = async () => {
     if (demoMode) {
       router.push("/login");
       return;
     }
+    await workspace.save();
+    auditProject.current = project;
     setAuditPrompts(undefined);
     setAuditOpen(true);
   };
-  const finish = (run: SavedRun) => {
-    setRuns((old) => [...old, run]);
-    setProject((old) => ({
-      ...old,
-      brand: run.brand,
-      domain: run.domain,
-      competitors: run.competitors || old.competitors,
-    }));
-    if (run.prompts)
-      setPrompts((old) =>
-        run.brand.toLowerCase() === project.brand.toLowerCase() &&
-        normalizeDomain(run.domain) === normalizeDomain(project.domain)
-          ? [...new Set([...old, ...run.prompts!])]
-          : run.prompts!,
-      );
-    setToast(
-      run.results.length
-        ? `Audit complete. ${run.results.length} real AI answers added.`
-        : "Audit recorded. All engines returned errors.",
-    );
+  const finish = async (run: SavedRun, persistence?: AuditPersistence) => {
+    await workspace.acceptAudit(run, persistence, auditProject.current);
+    setToast(run.results.length ? `Audit complete. ${run.results.length} real AI answers added.` : "Audit recorded. All engines returned errors.");
   };
   const saveProject = (next: Project, nextToken: string) => {
     setProject(next);
@@ -758,6 +704,7 @@ export default function Workspace({
   const logout = async () => {
     setLoggingOut(true);
     try {
+      await workspace.save();
       const response = await fetch("/api/auth/session", { method: "DELETE" });
       if (!response.ok) throw new Error();
       setToken("");
@@ -919,6 +866,7 @@ export default function Workspace({
         onRun={onRun}
       />
     );
+  if (!loaded) return <div className="workspace-loading" role="status"><p>Loading your saved workspace…</p></div>;
   return (
     <div
       className="app-shell"
@@ -1153,6 +1101,7 @@ export default function Workspace({
                       <FileText size={15} />
                       Download JSON
                     </button>
+                    {!demo && <button onClick={() => { downloadWorkspaceBackup(workspace.snapshot); setExportOpen(false); }}>Download full workspace backup</button>}
                   </div>
                 )}
               </div>
@@ -1161,6 +1110,13 @@ export default function Workspace({
               </button>
             </div>
           </div>
+          {!demo && <section className={`workspace-sync is-${sync.phase}`} aria-label="Workspace synchronization" aria-live="polite">
+            <span>{sync.phase === "offline" || sync.phase === "conflict" ? <AlertTriangle size={14} /> : <Cloud size={14} />}{sync.phase === "saved" ? "Saved to server" : sync.phase === "saving" ? "Saving changes…" : sync.phase === "unsaved" ? "Unsaved changes" : sync.phase === "conflict" ? "Conflicting workspace versions" : "Unsynced · browser fallback"}</span>
+            {sync.updatedAt && <small>Updated {new Date(sync.updatedAt).toLocaleTimeString()}</small>}
+            <div className="sync-actions"><button className="button" onClick={() => { void workspace.refresh(); }} disabled={sync.phase === "saving"}><RefreshCw size={12} /> Refresh</button><button className="button" onClick={() => setBackupOpen(true)}>Backup and restore</button><button className="button" onClick={() => setMonitorOpen(true)}><Clock size={12} /> Monitoring</button>{(sync.phase === "offline" || sync.phase === "conflict") && <button className="button" onClick={() => { void workspace.retry(); }}>Retry sync</button>}{sync.phase === "conflict" && <button className="button" onClick={() => setConfirmServer(true)}>Load server version</button>}</div>
+            {sync.error && <p>{sync.error}</p>}{sync.cacheError && <p>{sync.cacheError}</p>}
+          </section>}
+          {!demo && view === "overview" && !projectRuns.length && <section className="workspace-onboarding" aria-label="Set up your workspace"><div><h2>{project.brand === DEFAULT_PROJECT.brand && project.domain === DEFAULT_PROJECT.domain ? "Set up your brand." : "Your brand is ready for its first answers."}</h2><p>{project.brand === DEFAULT_PROJECT.brand && project.domain === DEFAULT_PROJECT.domain ? "Treg and the current questions are editable examples. Configure your own brand, then add or discover your buyers’ questions." : "Review your buyer questions, choose your engines, and run a real audit. Monitoring can repeat it on a schedule."}</p></div><button className="button primary" onClick={openSettings}>Set up your brand</button><button className="button" onClick={() => nav("prompts")}>Manage buyer questions</button></section>}
           {demo && (
             <div className="demo-strip">
               <span>
@@ -1932,7 +1888,7 @@ export default function Workspace({
                   <span className="outline-tag">{allRuns.length} RUNS</span>
                 </div>
                 <span className="muted">
-                  Stored in this browser · export to keep a backup
+                  {demo ? "Illustrative sample history" : "Saved to your server · export a full backup"}
                 </span>
               </div>
               <section className="panel table-panel">
@@ -2120,6 +2076,9 @@ export default function Workspace({
           </footer>
         </main>
       </div>
+      {!demo && <WorkspaceBackup open={backupOpen} onClose={() => setBackupOpen(false)} snapshot={workspace.snapshot} onRestore={(next) => { workspace.change(next); setToast("Backup restored in this tab. Server synchronization is pending."); }} />}
+      {!demo && monitorOpen && <MonitorSettings open onClose={() => setMonitorOpen(false)} project={project} prompts={prompts} />}
+      {confirmServer && <Modal title="Load the server workspace?" onClose={() => setConfirmServer(false)}><p className="modal-description">Your unsynced local changes will be replaced by the latest saved server version. Download a full backup first to retain both versions.</p><div className="modal-actions"><button className="button" onClick={() => downloadWorkspaceBackup(workspace.snapshot)}>Download local backup</button><button className="button" onClick={() => setConfirmServer(false)}>Cancel</button><button className="button primary" onClick={async () => { if (await workspace.loadServer()) setConfirmServer(false); }}>Confirm load server version</button></div></Modal>}
       <AuditDialog
         open={auditOpen}
         onClose={() => setAuditOpen(false)}
@@ -2237,6 +2196,7 @@ export default function Workspace({
                   router.push("/login");
                   return;
                 }
+                auditProject.current = project;
                 setAuditPrompts([selectedPrompt]);
                 setSelectedPrompt(null);
                 setAuditOpen(true);
@@ -2292,6 +2252,7 @@ export default function Workspace({
               ))}
             </div>
           )}
+          {!demo && <div className="detail-toolbar"><button className="button" onClick={() => downloadWorkspaceBackup(workspace.snapshot)}>Download full workspace backup</button><button className="button" onClick={() => { if (window.confirm("Delete this saved audit? Download a full workspace backup first. This removal will synchronize to your server.")) { setRuns((old) => old.filter((run) => run.id !== selectedRun.id)); setSelectedRun(null); setToast("Audit removed. Synchronizing the workspace…"); } }}>Delete this audit</button></div>}
           {answerContent(selectedRun.results)}
         </Modal>
       )}
@@ -2370,8 +2331,8 @@ export default function Workspace({
             </p>
             <p>
               The complete source, self-hosting instructions, and contribution
-              guide are included in this project. Your audit data stays in your
-              browser; Treg API calls run through your server.
+              guide are included in this project. Your workspace is saved on your
+              server with a browser fallback; Treg API calls use your own key.
             </p>
             <a
               className="button primary"

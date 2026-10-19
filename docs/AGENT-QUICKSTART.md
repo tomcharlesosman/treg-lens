@@ -1,6 +1,6 @@
 # Agent quickstart
 
-Give a coding agent the prompt below to get a working local instance before making changes. The [README](../README.md) is the short human setup path; [getting started](GETTING-STARTED.md) covers troubleshooting and first use. No Treg account is needed to set up, test, or explore the demo.
+Give a coding agent the prompt below to get a working local instance before making changes. The [README](../README.md) is the short human setup path; [getting started](GETTING-STARTED.md) covers troubleshooting and first use. No Treg account is needed to install or verify the application with fixtures. Live use starts when the user connects their key; the private workspace persists on the application server.
 
 ## Copy this prompt
 
@@ -17,13 +17,16 @@ Set up Treg Lens locally in this checkout and verify that it works.
 3. Run npm run check. Fix relevant failures while preserving the application's
    credential, storage, cost, accessibility, and test boundaries.
 4. Start npm run dev on an available local port. Reuse an existing server only
-   after verifying that it belongs to this checkout. Verify that / and /demo
-   return successfully and show the marketing page and labeled demo workspace.
-   Use an available browser to check the visible pages; report honestly if only
-   HTTP verification is available. Keep the server available for me to inspect.
-5. Use the key-free demo and fixture-backed tests. Do not request or print my
-   Treg key, run paid provider calls, publish a repository, or deploy publicly
-   unless I explicitly ask. Do not add services or dependencies just for setup.
+   after verifying that it belongs to this checkout. Verify /api/health reports
+   ready storage, / shows the marketing page, /login offers key entry, and /app
+   requires sign-in. The optional /demo is illustrative, not the primary product.
+   Use a browser where available; report honestly if only HTTP verification is
+   available. Keep the app available for me to connect my key and inspect.
+5. Use fixture-backed tests for private workspace and paid-provider flows.
+   Do not print credentials, make paid calls, enable a paid monitor, publish,
+   or deploy unless authorized. Let me enter my key in /login for live use.
+   Do not add services or dependencies just for setup. Preserve the SQLite data
+   directory and stable secret. Starting a worker does not authorize schedules.
 6. Report the local preview URL, commands/checks completed, any fixes, and any
    remaining issue. Do not claim browser or live-provider checks you did not run.
 ```
@@ -42,11 +45,11 @@ npm run check
 npm run dev
 ```
 
-Open `http://localhost:3000/` and `http://localhost:3000/demo`. If port 3000 is occupied, use `npm run dev -- --port 3001` and report the actual URL. Do not stop an unrelated server to claim its port.
+Open `http://localhost:3000/login` for live use. `http://localhost:3000/api/health` checks local storage readiness without Treg; `/demo` is an optional sample. If port 3000 is occupied, use `npm run dev -- --port 3001` and report the actual URL. Do not stop an unrelated server to claim its port.
 
-`setup` uses Node's built-in cryptographic generator to create a 64-character secret. A new `.env.local` is written with mode `0600` where supported; the value is never printed. Repeated setup preserves a valid nonempty secret. An existing invalid nonempty value is refused, and a higher-priority empty override may need deliberate correction. Secret rotation invalidates cookies and changes browser workspace namespaces, so it is not a routine setup repair. Setup and doctor make no Treg requests.
+`setup` uses Node's built-in cryptographic generator to create a 64-character secret. A new `.env.local` is written with mode `0600` where supported; the value is never printed. Repeated setup preserves a valid nonempty secret. An existing invalid nonempty value is refused, and a higher-priority empty override may need deliberate correction. Secret rotation invalidates cookies, changes server workspace namespaces, and prevents old monitoring credentials from being decrypted; it is not a routine setup repair. Setup and doctor make no Treg requests.
 
-A successful baseline means the demo loads without a key, the local checks pass, and private configuration stays private. The demo uses illustrative data and does not persist its edits. `/login` is for a user to paste their own team-scoped key when they choose live research; agents do not need a key for setup.
+A successful baseline means local checks pass, the protected live application is available, SQLite is ready, and private configuration stays private. The user enters their own team-scoped key at `/login`; setup agents do not need it. The optional demo uses illustrative data and stays separate from durable private workspaces.
 
 ## Commands and verification
 
@@ -57,6 +60,10 @@ A successful baseline means the demo loads without a key, the local checks pass,
 | `npm run doctor` | Check Node, locked direct packages, and effective secret configuration; values hidden |
 | `npm run check` | Lint, Next route type generation, TypeScript, library/setup tests, local documentation links |
 | `npm run dev` | Start the local development app |
+| `npm run monitor` | Start the separate monitoring loop; users still explicitly enable schedules/budgets |
+| `npm run monitor -- --once` | Check one due schedule for host-scheduler integration |
+| `npm run backup -- /private/path/new.sqlite` | Create a consistent online server backup in a new protected file |
+| `npm run monitor -- --pause-all` | With app/worker stopped after database restore, disable schedules and clear retained credentials before review |
 | `npm run build` | Build production assets; no Treg credential required |
 | `npm run doctor -- --production` | Check production environment-file precedence and runtime dependencies |
 | `npm run doctor -- --e2e` | Check browser binaries, OpenSSL, and free test ports 3100/3101 |
@@ -81,7 +88,7 @@ Synthetic `treg-e2e-*` keys and test provider responses belong only to the isola
 
 ## Keep the footprint small
 
-There are seven direct runtime packages: Next.js, React, React DOM, iron-session, lucide-react, react-markdown, and remark-gfm. They provide the app framework, encrypted cookies, icons, and Markdown rendering. Treg calls use native `fetch`; charts use local SVG and calculations; onboarding scripts use Node built-ins. No database, Redis, Docker, ORM, managed identity provider, Treg SDK, or agent framework is required. See the [dependency rationale](DEPENDENCIES.md) before adding a package.
+There are seven direct runtime packages: Next.js, React, React DOM, iron-session, lucide-react, react-markdown, and remark-gfm. They provide the app framework, encrypted cookies, icons, and Markdown rendering. Treg calls use native `fetch`; charts use local SVG and calculations; onboarding scripts use Node built-ins. SQLite uses Node's built-in `node:sqlite`; no database service or package is required. No Redis, Docker, ORM, managed identity provider, Treg SDK, scheduler package, or agent framework is required. See the [dependency rationale](DEPENDENCIES.md) before adding a package.
 
 Fonts are checked in, approximately 102 KB total, and loaded with `next/font/local`. They include licenses and provenance and require no Google Fonts download at build or runtime. Do not reintroduce a network font dependency as a setup shortcut.
 
@@ -89,8 +96,8 @@ Fonts are checked in, approximately 102 KB total, and loaded with `next/font/loc
 
 - Paid routes require the caller's validated key or encrypted session. Keep provider URLs and endpoint IDs allowlisted. Never turn operator environment credentials into a public fallback.
 - Quotes use current catalog prices and paid work refreshes them. Preserve per-call ceilings, partial results, provider errors, and the distinction between unknown and zero cost. Do not automatically retry ambiguous paid work.
-- Session keys belong in the encrypted HttpOnly cookie; optional overrides remain in memory. Keep plaintext keys out of source, logs, `localStorage`, `sessionStorage`, screenshots, and exports.
-- Project history is browser-local, separated by key and deployment secret. Namespaces do not encrypt local history. JSON is a report backup, with no import/restore UI or automatic migration between secrets. Preserve snapshot validation and demo isolation.
-- Audit and discovery continue across dialog close/reopen in the same mounted tab; they are not durable jobs. Preserve accessible focus behavior and safe rendering of untrusted answer content.
+- Session keys belong in the encrypted HttpOnly cookie; optional overrides remain in memory. Monitoring retains a separate AES-GCM-encrypted key only after explicit consent. Keep plaintext keys out of source, logs, browser storage, screenshots, and exports.
+- Project history is server-side SQLite, separated by verified key and stable deployment secret. Preserve revision compare-and-swap, atomic run append, bounded backup import, browser recovery, and demo isolation. Never silently overwrite a newer server snapshot or automatically migrate another key's history.
+- Manual audit/discovery dialogs retain progress across close/reopen in the mounted tab. Scheduled jobs have durable leases and budget reservations. Never automatically retry ambiguous paid work; preserve reservations on interruption and require deliberate review before re-enabling. Keep accessible focus and safe Markdown.
 
 Use [architecture](ARCHITECTURE.md), [API contracts](API.md), [contributing](../CONTRIBUTING.md), and [security](../SECURITY.md) for details. The [verification report](TEST-REPORT.md) distinguishes fixture coverage from dated live checks. State what you verified rather than treating either as a deployment guarantee.

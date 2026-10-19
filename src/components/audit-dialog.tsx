@@ -26,6 +26,7 @@ import {
   X,
 } from "lucide-react";
 import type { AnswerResult } from "@/lib/aeo";
+import type { AuditPersistence } from "./use-server-workspace";
 import "./dialog.css";
 
 export type ProjectSettings = {
@@ -63,7 +64,7 @@ type Estimate = {
 type AuditDialogProps = {
   open: boolean;
   onClose: () => void;
-  onComplete: (run: AuditRun) => void;
+  onComplete: (run: AuditRun, persistence?: AuditPersistence) => void;
   project: ProjectSettings;
   initialPrompts?: string[];
   token?: string;
@@ -404,7 +405,7 @@ export function AuditDialog({
       if (!response.ok)
         throw new Error(data.error || "The audit could not be completed.");
       const run: AuditRun = {
-        id: crypto.randomUUID(),
+        id: typeof data.auditId === "string" ? data.auditId : crypto.randomUUID(),
         brand: brand.trim(),
         domain: domain.trim(),
         prompts,
@@ -417,7 +418,7 @@ export function AuditDialog({
         completedAt: data.completedAt,
       };
       setCompletedRun(run);
-      onComplete(run);
+      onComplete(run, { saved: data.saved === true, storageError: data.storageError });
     } catch (error) {
       setRunError(
         error instanceof Error

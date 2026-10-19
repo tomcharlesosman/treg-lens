@@ -517,10 +517,13 @@ function providerError(status: number, body: unknown): string {
 export async function runAudit(
   input: AuditInput,
   fetcher: Fetcher = fetch,
+  execution?: { estimate: CostEstimate; idempotencyPrefix: string },
 ): Promise<AuditResponse> {
   const credentials = resolveCredentials(input);
   // Refresh prices immediately before execution and refuse to run if unavailable.
-  const estimate = await estimateAudit(input, fetcher);
+  // Internal workers pass the exact catalog quote they reserved, so pricing
+  // cannot change between reserving a budget and setting each provider cap.
+  const estimate = execution?.estimate ?? await estimateAudit(input, fetcher);
   const tasks = input.prompts.flatMap((prompt) =>
     input.engines.map((engine) => ({ prompt, engine })),
   );
@@ -542,7 +545,9 @@ export async function runAudit(
           "X-Treg-Token": credentials.token,
           "X-Treg-Route-Max-Cost": String(price.costPerCallUsd),
           "X-Treg-Meta": "feature=aeo-audit",
-          "Idempotency-Key": crypto.randomUUID(),
+          "Idempotency-Key": execution
+            ? `${execution.idempotencyPrefix}:${input.prompts.indexOf(prompt)}:${engine}`
+            : crypto.randomUUID(),
         };
         if (credentials.org) headers["X-Treg-Org"] = credentials.org;
         if (engine === "perplexity") headers["X-Treg-Route-Exclude"] = "cloro";
@@ -557,10 +562,18 @@ export async function runAudit(
           },
         );
         const rawCost = response.headers.get("X-Treg-Cost-Micro");
-        costKnown = rawCost !== null && /^\d+$/.test(rawCost);
+        // On an async submission this header reserves a ceiling, rather than
+        // settling a charge. Never release a worker's budget against that value.
+        const pending = response.status === 202;
+        costKnown = !pending && rawCost !== null && /^\d+$/.test(rawCost);
         chargedUsd = costKnown ? Number(rawCost) / 1_000_000 : 0;
         totalCostUsd = money(totalCostUsd + chargedUsd);
         const body = await response.json().catch(() => ({}));
+        if (pending)
+          throw new AeoError(
+            "This engine is still processing the original request. Its charge is unsettled. Check Treg activity before retrying; no new request was submitted automatically.",
+            202,
+          );
         if (!response.ok)
           throw new AeoError(
             providerError(response.status, body),

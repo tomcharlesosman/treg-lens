@@ -37,7 +37,9 @@ npm run test:e2e:report
 | Public pages | Product links, fork destinations, navigation anchors, all FAQ disclosures, compact sign-in, and demo entry points |
 | Sign-in and session | Slow JavaScript/client readiness, late session responses during key entry, required key, reveal/hide, trimmed input, invalid and unscoped keys, unavailable/malformed upstream responses, busy states, retries, encrypted cookie flags, reload, switching keys, logout and logout failure |
 | Demo boundaries | All paid/account entry points require sign-in, demo edits stay separate from private saved workspaces, exports are labeled illustrative |
-| Settings and storage | Empty workspace, project validation, competitors, persistence, per-key isolation, in-memory credential overrides, malformed JSON/records, legacy key removal, quota failures and export backup of unsaved changes |
+| Settings and storage | Empty workspace, project validation, competitors, durable server save/reload, cross-browser per-key isolation, revision conflicts, browser recovery/migration, malformed data, legacy key removal, and backup of unsaved changes |
+| Full backups | Complete versioned workspace export/import, replacement confirmation, rejected filtered/demo/credential-bearing files, near-8 MiB round trips, confirmed audit deletion, idempotent recovery merges, and source-research preservation |
+| Scheduled monitoring | Explicit configuration/consent, encrypted credentials, runner authorization, UTC schedule/heartbeat, budgets/reservations, fixture-backed due-job execution, retained partial evidence, interruption pauses, and recovery download |
 | Audits | Live estimate UI, price breakdown, prompt/engine validation, example prompts, four-engine run, result details, partial/all failures, balance errors, unknown billing, background completion across close/reopen without duplicate requests, completed rechecks and latest-answer persistence |
 | Prompt tracking | Add, case-insensitive duplicate prevention, remove, tabs, search, keyboard shortcut, empty answers and prompt recheck |
 | Discovery | Seed validation, estimates, keyword/People Also Ask results, volumes, tabs, deduplication, selection/import, combined eight-selection limit, reset/change seeds, background continuation and retained results, partial failures and pending reservations |
@@ -49,13 +51,13 @@ npm run test:e2e:report
 | HTTP boundaries | Every route's supported methods, JSON/body limits, origin checks, anonymous denial, explicit-key validation, no operator-key fallback, revoked/tampered sessions, duplicate throttling and private-URL/DNS rejection |
 | Untrusted content | Safe Markdown, no executed HTML/scripts, blocked unsafe links and no remote tracking images |
 
-The browser scenarios run in Chromium, Firefox and WebKit. The API project runs once against the same production server. The library suite additionally covers provider parsing, domain/brand matching, scoring and session expiry/rotation.
+The browser scenarios run in Chromium, Firefox and WebKit. The API project runs once against the same production server. The library suite additionally covers provider parsing, domain/brand matching, scoring, session expiry/rotation, SQLite snapshot validation/CAS/append, monitor encryption/leases/UTC cadence/reservations/crash handling, and consistent database backups.
 
 Playwright is pinned to 1.61.1 so this checkout can also exercise the frozen WebKit build available on macOS 14. Newer Playwright clients fail before creating a page on that OS because of an [upstream protocol mismatch](https://github.com/microsoft/playwright/issues/42964). Ubuntu CI uses the WebKit version bundled for Linux with the pinned release. Browser-engine tests do not replace testing a particular installed Safari release on its target OS.
 
 ## Provider boundary and costs
 
-Normal automated runs use `tests/e2e/support/treg-fixture.cjs` as a Node preload **only in the test server process**. Application route handlers, request validation, session encryption, browser code, storage and downloads remain real. The fixture replaces Treg's network responses, checks request contracts and spend guards, and refuses unknown Treg paths. Its keys and session secret are synthetic, public test data. The application has no test authentication endpoint or configurable upstream bypass.
+Normal automated runs use `tests/e2e/support/treg-fixture.cjs` as a Node preload **only in the test server process**. The HTTPS harness supplies a temporary `TREG_DATA_DIR`; it never uses the development or production workspace database. Scheduler integration tests make a schedule due in that isolated database and invoke the real internal runner route. This test-only database manipulation is not a public application endpoint or authorization bypass. Application route handlers, request validation, session encryption, browser code, storage and downloads remain real. The fixture replaces Treg's network responses, checks request contracts and spend guards, and refuses unknown Treg paths. Its keys and session secret are synthetic, public test data. The application has no test authentication endpoint or configurable upstream bypass.
 
 Fixtures cover provider success, refusal, partial errors, insufficient balance, pending work and missing billing headers. They do not establish that a live upstream provider is currently available. Live checks must be run separately with a private key, fresh estimates and an explicit spending budget; never add them to the default suite or CI.
 
@@ -64,3 +66,11 @@ Reports, screenshots and failure traces are written under the ignored `output/pl
 ## CI
 
 `.github/workflows/test.yml` runs on pushes to `main` and pull requests. Fast checks exercise clean install, repeated setup, doctor, lint, type generation, library/setup tests and docs on Linux with Node.js 22.13/24, Windows with Node.js 24, and macOS with Node.js 24. A separate Ubuntu 24.04 job installs all three browsers, audits production dependencies, builds and runs the API/browser suite, and uploads reports and failure artifacts for 14 days. No Treg or deployment secrets are required. Action revisions are pinned; Dependabot proposes updates. A newer push cancels an older run of the same branch.
+
+## Durable storage and worker verification
+
+The live product now persists workspaces and schedules on the server. A fixture-backed pass establishes the tested database, revision, import, and runner behavior; it does not prove a production disk is persistent or a worker is supervised. Verify `/api/health`, save/reload from a fresh browser with the same key, a reviewed full-backup restore, and an enabled worker heartbeat on the actual host. Paid live verification still requires deliberate inputs and a spending limit.
+
+For operations, `npm run backup -- /private/path/new.sqlite` produces a consistent SQLite backup without a CLI/database package. Keep real databases and their credentials out of test artifacts. Stop server/worker and use `npm run monitor -- --pause-all` before restarting from an old database backup; external billing is not rolled back by restore.
+
+The dated [verification report](TEST-REPORT.md) records the complete local verification pass. GitHub Actions records results for each commit; use that run when checking a particular checkout.

@@ -316,6 +316,49 @@ test("a trusted Treg preflight cost-cap refusal is known to be uncharged", async
   assert.equal(result.errors.length, 1);
 });
 
+test("pending source reservations remain unsettled while completed evidence and actual charges survive", async () => {
+  const result = await researchSource(input, async (url) => {
+    const path = String(url);
+    if (path.includes("/catalog/")) return Response.json(catalog(path));
+    if (path.endsWith("metrics"))
+      return Response.json({ status: "pending", private: input.token }, {
+        status: 202,
+        headers: { "X-Treg-Cost-Micro": "6667", "X-Treg-Call-Id": "pending-metrics" },
+      });
+    return Response.json({ results: [{ text: "Treg is described in this completed page." }] }, {
+      headers: { "X-Treg-Cost-Micro": "1000", "X-Treg-Call-Id": "completed-extract" },
+    });
+  });
+  assert.equal(result.costKnown, false);
+  assert.equal(result.totalCostUsd, null);
+  assert.equal(result.knownCostUsd, 0.001);
+  assert.equal(result.metrics.domainAuthority, null);
+  assert.equal(result.brandMentioned, true);
+  assert.deepEqual(result.callIds, ["pending-metrics", "completed-extract"]);
+  assert.equal(result.errors.length, 1);
+  assert.match(result.errors[0].error, /still processing.*not a settled charge/i);
+  assert.doesNotMatch(JSON.stringify(result), /test-only-secret/);
+});
+
+test("pending source steps cannot become completed or free from a reservation header, including zero", async () => {
+  for (const reservation of ["1000", "0"]) {
+    const result = await researchSource(input, async (url) => {
+      const path = String(url);
+      if (path.includes("/catalog/")) return Response.json(catalog(path));
+      return Response.json({ results: [{ text: "Treg is still being processed." }] }, {
+        status: 202, headers: { "X-Treg-Cost-Micro": reservation },
+      });
+    });
+    assert.equal(result.costKnown, false);
+    assert.equal(result.totalCostUsd, null);
+    assert.equal(result.knownCostUsd, 0);
+    assert.equal(result.brandMentioned, null);
+    assert.equal(result.excerpt, null);
+    assert.equal(result.errors.length, 2);
+    assert.ok(result.errors.every((issue) => /still processing/i.test(issue.error)));
+  }
+});
+
 test("shared tool reader respects actual Host behind internal URL rewrites and limits data", async () => {
   const data = await readToolRequest(
     new Request("http://localhost:3000/api/aeo/source", {

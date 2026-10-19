@@ -67,10 +67,10 @@ Choose a focused improvement such as a reproducible parsing bug, an accessibilit
 
 Explain metric definitions and denominators. Test absent brands, partial engine failures, repeated citations, malformed responses, and empty audit sets. Heuristic matches and opportunity rankings should remain recognizable as estimates.
 
-Preserve browser data when changing its schema. Workspaces use opaque per-key storage namespaces; never mix one key's saved data into another workspace or silently import legacy unscoped data. For export changes, check Unicode, multiline answers, CSV quoting, source research, and empty results.
+Preserve durable SQLite snapshots, revisions, and browser recovery data when changing schemas. Workspaces use opaque per-key namespaces; never mix one key's data into another workspace or silently overwrite server data with a legacy browser snapshot. Keep full-backup import validated and explicit; filtered reports are not restore files. Test stale writes and atomic scheduled/manual audit append. For export changes, check Unicode, multiline answers, CSV quoting, source research, and empty results.
 
 ## Scope
 
-The app covers key-based sign-in, prompt discovery, audits, visibility, competitors, citations, cited-page research, and content briefs. New features should expose their inputs and costs, return source evidence, and leave external publishing or messaging under the operator's control.
+The app covers key-based sign-in, durable private workspaces, prompt discovery, audits, visibility, competitors, citations, cited-page research, full backups, budgeted scheduled monitoring, and writing-brief templates. Preserve encrypted retained credentials, reservations on uncertain charges, crash pause behavior, and explicit re-enable consent when changing monitoring. New features should expose their inputs and costs, return source evidence, and leave external publishing or messaging under the operator's control.
 
 By submitting a contribution, you agree that it may be distributed under this project's [MIT license](./LICENSE).

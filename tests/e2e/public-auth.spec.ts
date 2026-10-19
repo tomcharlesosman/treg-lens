@@ -39,7 +39,8 @@ test.describe("Public marketing and navigation", () => {
     }
     await expect(page.getByRole("contentinfo").getByRole("link", { name: "GitHub", exact: true })).toHaveAttribute("href", REPOSITORY_URL);
     await expect(page.getByRole("link", { name: "The AEO toolkit" })).toHaveAttribute("href", "https://treg.to/aeo");
-    await page.getByRole("link", { name: "Take a look inside" }).click();
+    await expect(page.getByRole("link", { name: "Open your workspace", exact: true }).first()).toHaveAttribute("href", "/login");
+    await page.getByRole("link", { name: "Preview sample data", exact: true }).first().click();
     await expect(page).toHaveURL(/\/demo$/);
     await expect(page.getByText("DEMO WORKSPACE", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
@@ -66,7 +67,7 @@ test.describe("Public marketing and navigation", () => {
     await expect(page).toHaveURL(/\/login$/);
     await expect(page.getByRole("link", { name: "Get one from Treg" })).toHaveAttribute("href", "https://treg.to/app");
     await expect(page.getByRole("link", { name: "Fork the repo" })).toHaveAttribute("href", FORK_URL);
-    await page.getByRole("link", { name: "Explore the demo", exact: true }).click();
+    await page.getByRole("link", { name: "Preview sample data", exact: true }).click();
     await expect(page).toHaveURL(/\/demo$/);
     await page.getByRole("link", { name: "Treg Lens home" }).click();
     await expect(page).toHaveURL(/\/$/);

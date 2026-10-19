@@ -546,6 +546,16 @@ export async function researchSource(
           charge && /^\d+$/.test(charge) ? Number(charge) / 1_000_000 : null;
         callId = response.headers.get("X-Treg-Call-Id");
         const body = (await response.json().catch(() => ({}))) as unknown;
+        if (response.status === 202) {
+          // Treg's pending header is a reservation, not a settled charge.
+          // Retain the call ID for reconciliation without treating an accepted
+          // task as completed evidence or inviting an automatic paid retry.
+          costUsd = null;
+          throw new AeoError(
+            "This source lookup is still processing in Treg. Its reservation is not a settled charge. Check Treg activity before retrying.",
+            202,
+          );
+        }
         const refusal = obj(obj(body).detail);
         if (
           costUsd === null &&

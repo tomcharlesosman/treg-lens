@@ -17,10 +17,12 @@ export function readConfiguration(root, environment = process.env, mode = enviro
     : [".env", `.env.${mode}`, ".env.local", `.env.${mode}.local`];
   let secret;
   let source;
+  let fileEnvironment = {};
   for (const name of names) {
     const path = join(root, name);
     if (!existsSync(path)) continue;
     const parsed = nodeUtil.parseEnv(readFileSync(path, "utf8"));
+    fileEnvironment = { ...fileEnvironment, ...parsed };
     if (Object.hasOwn(parsed, "SESSION_SECRET")) {
       secret = parsed.SESSION_SECRET;
       source = name;
@@ -30,7 +32,7 @@ export function readConfiguration(root, environment = process.env, mode = enviro
     secret = environment.SESSION_SECRET;
     source = "server environment";
   }
-  return { secret, source };
+  return { secret, source, environment: { ...fileEnvironment, ...environment } };
 }
 
 export function secretIssue(secret) {

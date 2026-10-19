@@ -148,7 +148,7 @@ const steps = [
 const questions = [
   {
     q: "How do I get started?",
-    a: "Paste an org-scoped Treg API key above. Lens verifies it with Treg without running a paid audit, then opens your workspace. You can also explore the demo before connecting.",
+    a: "Paste an org-scoped Treg API key above. Lens verifies it with Treg without running a paid audit, then opens your workspace. A separate sample preview is available before connecting.",
   },
   {
     q: "Is Treg Lens free?",
@@ -160,7 +160,7 @@ const questions = [
   },
   {
     q: "Where do my key and audit data live?",
-    a: "Your sign-in key is verified server-side and kept in an encrypted, HTTP-only session cookie. It is never included in exports. Saved projects and audits stay in this browser, separated by API key. Export JSON or CSV to keep a backup.",
+    a: "Your sign-in key is verified server-side and kept in an encrypted, HTTP-only session cookie. It is never included in exports. Your workspace is saved on your server, separated by API key, with a browser cache for interrupted connections. Export and restore a full JSON backup, or export filtered JSON/CSV reports.",
   },
   {
     q: "Can I host it myself?",
@@ -227,9 +227,9 @@ export default function MarketingPage() {
               <KeySignInForm compact />
               <div className="marketing-demo-link">
                 <Link href="/demo">
-                  Explore the demo <ArrowUpRight size={13} />
+                  Preview sample data <ArrowUpRight size={13} />
                 </Link>
-                <span>No key needed.</span>
+                <span>Illustrative data · no key needed.</span>
               </div>
             </div>
             <div className="marketing-hero-footnote">
@@ -408,8 +408,8 @@ export default function MarketingPage() {
                 to “here’s our next move.”
               </h2>
             </div>
-            <Link href="/demo" className="marketing-button">
-              Take a look inside <ArrowUpRight size={15} />
+            <Link href="/login" className="marketing-button">
+              Open your workspace <ArrowUpRight size={15} />
             </Link>
           </div>
           <div className="marketing-browser-frame">
@@ -429,7 +429,7 @@ export default function MarketingPage() {
             <Link
               href="/demo"
               className="marketing-screenshot"
-              aria-label="Explore the interactive demo workspace"
+              aria-label="Preview sample data"
             >
               <img
                 src="/marketing/workspace.png"
@@ -439,7 +439,7 @@ export default function MarketingPage() {
                 loading="lazy"
               />
               <span className="marketing-preview-cta">
-                Explore the live demo <ArrowUpRight size={16} />
+                View the sample preview <ArrowUpRight size={16} />
               </span>
             </Link>
           </div>
@@ -580,7 +580,7 @@ export default function MarketingPage() {
               <ArrowRight size={16} />
             </Link>
             <Link href="/demo">
-              Or explore the demo <ArrowUpRight size={13} />
+              Or preview sample data <ArrowUpRight size={13} />
             </Link>
           </div>
           <span className="marketing-final-doodle" aria-hidden="true">

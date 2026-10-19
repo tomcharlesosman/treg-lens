@@ -1,14 +1,12 @@
 # Deploy Treg Lens
 
-The supported deployment path is a **Node.js production server behind an HTTPS reverse proxy**. Use Node.js 24 LTS, with 22.13 as the minimum. The app requires server-side route handlers, encrypted sessions, and DNS checks; a static export cannot provide these features.
+Run Treg Lens as a **Node.js server on one persistent host behind HTTPS**, with a separate monitor worker when users enable automated audits. Use Node.js 24 LTS; 22.13 is the minimum. SQLite is built into Node, so no database service, ORM, Redis, Docker, identity provider, or Treg SDK is required.
 
-No database, Redis, ORM, Docker, or external identity service is required for this path. Workspace history lives in users' browsers. Fonts are checked in and loaded locally, so builds do not contact Google Fonts. See [architecture](ARCHITECTURE.md) and [dependencies](DEPENDENCIES.md) for the component choices and their limits.
-
-Installation needs access to the public npm registry; installing E2E browsers also needs Playwright's download hosts. Normal server operation needs outbound HTTPS to `treg.to` and working DNS for public source-URL checks. Once dependencies are installed, the production build uses checked-in fonts and does not need Treg credentials or an external font connection.
+Private workspaces, revisions, schedules, and spending records live in SQLite. Use persistent local disk, protect the data directory, and keep `SESSION_SECRET` stable. An ephemeral filesystem, a static export, or unrelated replicas with separate databases cannot provide this deployment's durability. See [architecture](ARCHITECTURE.md) and [API contracts](API.md) before adapting it.
 
 ## Build and start
 
-From the repository root:
+From the checkout:
 
 ```bash
 npm ci
@@ -16,51 +14,77 @@ npm run check
 npm run build
 ```
 
-Configure a stable private `SESSION_SECRET` in the **runtime server environment**, then start the production process behind your HTTPS proxy:
+Configure these values in the host's protected runtime environment:
+
+| Variable | Purpose |
+| --- | --- |
+| `SESSION_SECRET` | Stable private random value, at least 32 characters; seals sessions, namespaces workspaces, and protects monitor credentials |
+| `TREG_DATA_DIR` | Private persistent local directory; defaults to `data` below the process working directory |
+| `MONITOR_BASE_URL` | App origin used by the separate worker; defaults to `http://127.0.0.1:3000`; remote origins require HTTPS |
+| `NODE_ENV` | Use `production` for the production app and worker |
+
+Use absolute paths for production data. Make the data directory writable only by the application service account. The app creates a 0700 directory and 0600 files where supported; configure equivalent Windows ACLs. The database filename is `treg-lens.sqlite`, with SQLite `-wal` and `-shm` files alongside it. Do not put this directory in a public/static folder or a source-control backup.
+
+Start the server behind the HTTPS proxy:
 
 ```bash
 npm run doctor -- --production
 npm start -- --hostname 127.0.0.1 --port 3000
 ```
 
-Keep the process supervised using your host's service manager. The loopback bind assumes the reverse proxy runs on the same machine; adapt the private listener to your network without exposing it directly to the public internet. Build with development dependencies installed because lint, TypeScript, and compilation need them. If the build environment already sets `NODE_ENV=production`, use `npm ci --include=dev` so npm does not omit those tools. No Treg key is needed for checks or a build.
+Keep the app supervised by your host's service manager. The loopback bind assumes the proxy is on the same host. Build with development dependencies installed; if the build environment sets `NODE_ENV=production`, use `npm ci --include=dev`. No Treg key is needed to install, check, or build. Fonts are checked in and loaded locally.
 
-`npm start` selects production mode and production cookies are `Secure`. Opening the raw `http://` production listener is not a supported sign-in setup: browsers can refuse its session cookie. Use the public HTTPS URL. For local exploration without a TLS proxy, use `npm run dev` instead.
+Production cookies are Secure. Opening the raw HTTP production listener is not a supported sign-in setup: browsers may refuse its cookie. Use the public HTTPS origin. Local development uses `npm run dev`.
 
 ## Configuration and secrets
 
-Generate a production secret privately with Node, on any supported platform:
+For local use, `npm run setup` creates private `.env.local` without printing its generated secret. For production, create a secret privately and put it in the host's protected environment. This cross-platform generator prints a value for you to store:
 
 ```bash
 node -e "console.log(require('node:crypto').randomBytes(48).toString('base64url'))"
 ```
 
-Store that value as `SESSION_SECRET` in your host's protected server environment. The value must contain at least 32 characters and remain stable across restarts and replicas. Do not commit it, send it to analytics/logs, or prefix it with `NEXT_PUBLIC_`. The generator prints the value for you to store; `npm run setup` is the local alternative that writes `.env.local` without printing it.
+Never commit it, send it to logs or analytics, or prefix it with `NEXT_PUBLIC_`. Keep app and worker secrets identical. Normal paid routes need no operator `TREG_TOKEN` or `TREG_ORG`; users supply their own team key. The server receives those keys over HTTPS, so keep bodies, cookies, authorization headers, and database content out of access logs.
 
-Users paste their own team-scoped Treg key at `/login`. Normal browser/API operation requires no operator `TREG_TOKEN` or `TREG_ORG`; paid routes cannot inherit them. The application server receives submitted keys over HTTPS, so operate that server as trusted infrastructure and keep bodies/cookies out of request logs.
+Next resolves configuration in this order: process environment, the mode's `.env.*.local`, `.env.local` outside test mode, the mode's `.env.*`, then `.env`. An empty higher-priority assignment can shadow a valid one. `doctor -- --production` checks the effective production secret and hides its value. Next expands dotenv variable references; setup-generated base64url avoids interpolation. Restart affected processes after configuration changes.
 
-Next.js resolves an existing value in this order:
+The worker defaults to production configuration. If testing monitoring against a development server that relies on `.env.development.local`, explicitly run its process in development mode with the same secret and origin. The worker reads `MONITOR_BASE_URL` and `TREG_DATA_DIR` from the effective environment/configuration files too. Use literal values: worker/backup scripts do not perform Next's dotenv `$VARIABLE` interpolation. Server environment values take precedence.
 
-1. Process/server environment.
-2. `.env.production.local` in production, or `.env.development.local` in development.
-3. `.env.local` outside test mode.
-4. `.env.production` or `.env.development` for that mode.
-5. `.env`.
+Rotating `SESSION_SECRET` invalidates sessions, changes workspace namespaces, and makes old encrypted monitoring credentials unreadable. It is not a routine setup repair or an automatic data migration. Back up data and preserve the original secret separately before a planned migration; revoke exposed Treg keys upstream when appropriate.
 
-A higher-priority empty or old assignment can shadow the expected file. Local setup preserves valid existing secrets and refuses nonempty invalid ones. `npm run doctor -- --production` checks production precedence and hides the value. Next expands `$VARIABLE` references inside dotenv files; setup-generated base64url values avoid that interpolation. Restart the process after changing runtime configuration.
+## Monitoring worker
 
-On Windows PowerShell, an optional port override is `$env:PORT = "3001"` followed by `npm start`; the explicit `--port` argument above is cross-platform. Remove a temporary override with `Remove-Item Env:PORT` afterward.
+The web process does not start a scheduler. Run a supervised second process from the checkout while the app server is available:
+
+```bash
+npm run monitor
+```
+
+The worker sends an authenticated tick approximately once per minute. A host scheduler can instead invoke one tick each minute:
+
+```bash
+npm run monitor -- --once
+```
+
+Run one persistent loop **or** a scheduled once-only invocation. The durable global lease also prevents overlapping workers from claiming the same work. A tick handles at most one due schedule. A large backlog can therefore take multiple ticks; an enabled schedule is not a guarantee of execution at an exact second. The app displays the worker's last heartbeat and health.
+
+Users explicitly choose daily or weekly monitoring, UTC timing, prompts/engines, a per-audit ceiling between $0.001 and $1, and a monthly ceiling up to $1,000. Monthly limits cover scheduled audits only. Manual research and other Treg use are outside that ledger. The worker revalidates the retained key, quotes current prices, and atomically reserves the ceiling before provider calls.
+
+Enabling monitoring retains the signed-in key encrypted with AES-256-GCM and workspace-bound associated data. It continues after browser close or logout. Pause/delete removes that retained credential and prevents future calls. An in-flight provider request may finish and its evidence is still saved.
+
+Unknown charges retain the full reservation. Partial failures, ambiguous outcomes, budget exhaustion, and interrupted paid jobs pause for review; there is no automatic resubmission of uncertain paid work. Check Treg activity before explicitly re-enabling. The original month retains its accounting records after a calendar rollover. Monitor configuration, jobs, reservations, and credentials depend on the database and stable secret, so back them up as sensitive server state.
+
+The internal tick endpoint accepts a purpose-derived runner bearer token, not user session authentication. Let the worker generate it; do not publish it, place it in browser code, or treat knowledge of an ordinary Treg key as runner authorization. Remote workers require an HTTPS origin and do not follow redirects.
 
 ## HTTPS and proxy behavior
 
-Configure the public hostname and a valid TLS certificate at your reverse proxy or ingress. Preserve the public `Host`, including a non-default port when used. Lens compares a browser's `Origin` against that host; an internal listener hostname can cause legitimate requests to fail with 403.
+Configure the public hostname and certificate at a trusted reverse proxy. Preserve public `Host`, including any non-default port, because browser `Origin` validation compares it with that host. Overwrite incoming forwarded headers; trusting a client-supplied first `X-Forwarded-For` permits evading manual route guards.
 
-Your trusted proxy must overwrite client-supplied forwarded headers. Set `X-Forwarded-Proto` to the actual public scheme and provide the real client address as the first `X-Forwarded-For` entry. The application's current rate guards use that first address; trusting arbitrary incoming values permits evasion, while forwarding one proxy address for everyone can throttle unrelated users together.
-
-For example, inside an **already configured HTTPS nginx server block** that accepts only your intended public hostname:
+Inside an already configured HTTPS nginx server block:
 
 ```nginx
 location / {
+    client_max_body_size 8m;
     proxy_pass http://127.0.0.1:3000;
     proxy_set_header Host $http_host;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -71,28 +95,42 @@ location / {
 }
 ```
 
-This example assumes nginx is the public edge. If another trusted proxy sits in front, configure that trust chain and client-IP handling explicitly. Adapt certificate, hostname, body-size, and access-log settings to the deployment. Preserve `Set-Cookie` and private/no-store responses; do not cache authenticated pages, session endpoints, or paid API responses at a shared edge.
+This assumes nginx is the public edge. Configure any additional trusted proxy chain explicitly. Preserve cookies and private/no-store responses; do not share-cache authenticated pages, workspace APIs, monitoring state, or paid results. Permit workspace JSON requests up to 8 MiB; research routes retain their smaller 16 KiB limit.
 
-The host and proxy must support requests lasting up to **300 seconds** for audits and discovery; source research declares 120 seconds. A proxy timeout increase cannot override a hosting platform's hard limit. When a connection times out, check Treg activity before starting another paid request. See [API limits and retries](API.md) for ceilings and ambiguous outcomes.
+The host must support audit/discovery requests up to 300 seconds and source research up to 120 seconds. Raising a proxy timeout does not override the hosting platform's limit. Do not blindly repeat a paid request after timeout.
 
-## Multiple instances and operations
+## Health and operations
 
-Use the same stable session secret and application revision across replicas. Current rate and concurrency guards are process-local, expire on restart, and are best-effort duplicate-spend protection. Before offering a public multi-instance service, add a shared atomic limiter and operational monitoring. The app does not provide durable jobs, global tenant quotas, a shared audit ledger, or resumable upstream work.
+`GET /api/health` makes no Treg call and exposes no workspace information. It returns `200 {"status":"ok","storage":"ready"}` when the SQLite connection responds, or 503 with unavailable status when it cannot. This is a local application/storage probe, not proof of provider availability, funding, free disk space, HTTPS configuration, or an active monitor worker.
 
-An anonymous `GET /api/aeo/status` normally returns `200` with `{"configured":false}`. It describes the current caller's session; it is **not a readiness proof** for the server secret, key validation, upstream providers, balance, or authenticated access. Use it only as a basic route/liveness check. `doctor` checks local configuration; verify sign-in separately through the public HTTPS origin. A valid zero-balance key can exercise sign-in without a paid call.
+`GET /api/aeo/status` describes the caller's verified session. Anonymous `{"configured":false}` is expected; it is not a deployment readiness signal. Verify HTTPS login, logout, durable save/reload, and worker heartbeat separately. A valid zero-balance key can verify sign-in without paid research.
 
-Normal app operation does not need OpenSSL on `PATH`. The full [end-to-end suite](TESTING.md) needs it to generate a temporary test HTTPS certificate. Tests use synthetic credentials and a fail-closed Treg fixture, not your production account.
+Monitor disk capacity, filesystem permissions, database backups, app/worker availability, and Treg billing. Durable monitor leases and reservations do not replace a shared limiter for manual routes. Do not offer a multi-host service with independent SQLite files and claim a shared budget or workspace.
 
-## Data, upgrades, and rollback
+## Backups, restore, and upgrades
 
-Workspace settings, prompts, audit results, completed moves, and source research are ordinary browser `localStorage`, scoped by origin, key, and deployment secret. They are not encrypted backups or a shared database. Prompts, seeds/queries, and source URLs submitted for live research go to Treg and its upstream providers. Protect exported reports and browser profiles accordingly.
+Workspace JSON import/export is a user-level backup of research and project content. It does not restore sessions, retained schedule credentials, monitoring consent, or the server's spending ledger. Export before replacing a workspace or resolving a save conflict. CSV is a filtered answer report, not a complete restore format.
 
-Before an upgrade, save the deployed revision and lockfile, retain the stable secret securely, and ask users to export the relevant date range as JSON. CSV is an answer-row report; JSON preserves richer research but has no supported import/restore workflow. Check schema changes and their migration behavior before deploying. A server filesystem backup does not include users' browser histories.
+For a transactionally consistent online server backup, use a **new file** outside the checkout in protected storage:
 
-Build a new revision in a separate release directory, run `npm run check` and the appropriate [E2E checks](TESTING.md), then switch the supervised process to the new build. Keep the previous complete release available for rollback. Recheck the public page, HTTPS login, logout, and export; use a deliberate budget if validating paid work.
+```bash
+npm run backup -- /private/backups/treg-lens-2026-10-19.sqlite
+```
 
-Rollback means restoring the previous application revision, lockfile/dependencies, and build with its compatible runtime configuration. Reverting code does not automatically revert browser schema changes or recover deleted local data. Keep the public origin stable if existing browser history should remain accessible.
+Replace the example path with a private path on your host; Windows can use a quoted absolute Windows filename. The command uses SQLite `VACUUM INTO`, includes committed WAL data, sets mode 0600 where supported, and refuses to overwrite an existing destination. It can run while the app is online. Keep the matching `SESSION_SECRET` separately, with access controls appropriate for decryption credentials.
 
-Rotating `SESSION_SECRET` invalidates sessions and changes workspace namespaces. Old records remain in browser storage but are not automatically remapped into the new namespace. Export before a planned rotation when safe; revoke exposed Treg keys upstream if the key itself is compromised. Follow [SECURITY.md](../SECURITY.md) for incidents and private reporting.
+Alternatively, stop both app and worker before copying the entire private data directory. Copying only the main SQLite file while writes are active can omit committed data. A user full-workspace JSON backup does not contain server schedules or ledger state.
 
-Fork operators should update the repository links in `src/lib/site.ts`, package metadata, and community documents, and enable their own private vulnerability reporting. Use [getting started](GETTING-STARTED.md), [the agent quickstart](AGENT-QUICKSTART.md), and [the API reference](API.md) when extending the deployment.
+During a server restore, stop the app and worker. Restore the consistent backup as `treg-lens.sqlite` in the private data directory; do not combine it with stale WAL/SHM files from another database state. Preserve a separate copy of the previous data directory before replacement. An old database contains old schedule state and an old spending ledger; restoring it does not undo charges already made in Treg.
+
+Before restarting automated execution, run against the restored data directory:
+
+```bash
+npm run monitor -- --pause-all
+```
+
+This offline operator action disables all restored schedules and clears their retained credentials. Keep app and worker stopped while doing it. Then reconcile Treg activity since the backup, restart the app, and let each owner deliberately reconnect and enable a reviewed schedule. Start the worker only after that review. Do not start a worker against a stale backup and assume idempotency will cover newly generated job IDs.
+
+Keep the previous application revision, lockfile, compatible build, data backup, and configuration before upgrades. Validate the new release, switch the supervised app, and verify login, server save/reload, import/export, and worker status before enabling monitoring. Reverting application code does not revert database changes or restore external billing state. Keep the public origin and secret stable unless performing a deliberate migration.
+
+The supported arrangement is a single persistent host. Docker, managed multi-region databases, team collaboration, notifications, and automated publishing are not provided by this deployment recipe. Fork operators should update repository/support destinations and enable their own private security reporting. See [SECURITY.md](../SECURITY.md), [getting started](GETTING-STARTED.md), and [the agent quickstart](AGENT-QUICKSTART.md).

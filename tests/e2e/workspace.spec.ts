@@ -1,7 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_PROMPTS } from "../../src/lib/workspace-data";
-import { freshAddress, missingPrompt, nav, openAudit, primaryKey, secondaryKey, seedWorkspace, signIn, storagePrefix, trackedPrompt } from "./support/workspace-helpers";
+import { contextKey, waitForServerSave, freshAddress, missingPrompt, nav, openAudit, primaryKey, secondaryKey, seedWorkspace, signIn, storagePrefix, trackedPrompt } from "./support/workspace-helpers";
 
 const clientErrors = new WeakMap<Page, string[]>();
 test.beforeEach(async ({ page }) => {
@@ -390,7 +390,7 @@ test("workspace data is isolated per signed-in key and restored when returning t
     const form = page.locator(".signin-form-panel");
     await expect(form).toBeVisible();
     await form.getByRole("button", { name: "Use a different API key" }).click();
-    await form.getByLabel("Treg API key", { exact: true }).fill(token);
+    await form.getByLabel("Treg API key", { exact: true }).fill(contextKey(page.context(), token));
     await form.getByRole("button", { name: "Open my workspace" }).click();
     await expect(page).toHaveURL(/\/app$/);
     await nav(page, "Overview");
@@ -401,6 +401,7 @@ test("workspace data is isolated per signed-in key and restored when returning t
   const originalKey = await seedWorkspace(page);
   await nav(page, "Opportunities");
   await page.getByRole("button", { name: "Mark done", exact: true }).click();
+  await waitForServerSave(page);
   const secondKey = await switchThroughLogin(secondaryKey);
   expect(secondKey).not.toBe(originalKey);
   await expect(page.getByRole("heading", { name: "Your baseline starts here" })).toBeVisible();
