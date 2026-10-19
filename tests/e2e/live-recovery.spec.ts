@@ -117,22 +117,23 @@ test("monitoring recovery merges only after confirmation, preserves current reco
   expect(new Set(repeated.runs.map((run: SavedRun) => run.id)).size).toBe(4);
 });
 
-test("a valid workspace just below 8 MiB exports compactly and restores its complete answer data", async ({ page }) => {
+test("a workspace at the exact 8 MiB limit exports compactly and restores its complete answer data", async ({ page }) => {
   test.slow();
   await signIn(page);
   const large = storedFixture();
   large.runs[0].results[0].answer = "";
-  const answerLength = MAX_WORKSPACE_BYTES - 1024 - Buffer.byteLength(JSON.stringify(large));
+  const answerLength = MAX_WORKSPACE_BYTES - Buffer.byteLength(JSON.stringify(large));
   large.runs[0].results[0].answer = "x".repeat(answerLength);
   const expectedDigest = digest(large.runs[0].results[0].answer);
-  expect(Buffer.byteLength(JSON.stringify(large))).toBe(MAX_WORKSPACE_BYTES - 1024);
+  expect(Buffer.byteLength(JSON.stringify(large))).toBe(MAX_WORKSPACE_BYTES);
   await saveServerSnapshot(page, large);
   await page.reload();
   await waitForServerSave(page);
   const backup = await openBackup(page);
   const bytes = await exportBackup(page, backup);
   const exported = JSON.parse(bytes.toString("utf8"));
-  expect(bytes.byteLength).toBeLessThan(MAX_WORKSPACE_BYTES);
+  expect(bytes.byteLength).toBeGreaterThan(MAX_WORKSPACE_BYTES);
+  expect(bytes.byteLength).toBeLessThanOrEqual(MAX_WORKSPACE_BYTES + 4096);
   expect(bytes.toString("utf8")).toBe(JSON.stringify(exported));
   expect(exported.snapshot.runs[0].results[0].answer.length).toBe(answerLength);
   expect(digest(exported.snapshot.runs[0].results[0].answer)).toBe(expectedDigest);

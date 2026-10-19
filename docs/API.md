@@ -26,7 +26,7 @@ Next.js supplies `OPTIONS` with an `Allow` header and `HEAD` for GET-enabled rou
 
 ## Request and authentication rules
 
-Research/authentication JSON requests and monitor PUT use `Content-Type: application/json` and fit within **16,384 bytes**, including when sent without `Content-Length`. Workspace PUT has a separate **8 MiB** streamed body limit. The internal tick and DELETE routes do not require JSON bodies. Invalid JSON or invalid fields return `400`; oversized bodies return `413`; other content types return `415`. Unknown fields are ignored by the current validators.
+Research/authentication JSON requests and monitor PUT use `Content-Type: application/json` and fit within **16,384 bytes**, including when sent without `Content-Length`. Workspace PUT allows **8 MiB of snapshot data plus 4 KiB of JSON-envelope overhead**, with a bounded streamed body reader. The internal tick and DELETE routes do not require JSON bodies. Invalid JSON or invalid fields return `400`; oversized bodies return `413`; other content types return `415`. Unknown fields are ignored by the current validators.
 
 Public mutations inspect `Origin` when supplied; the workspace route also checks it on GET. The internal runner instead requires its bearer credential. A valid HTTP(S) origin must have the same host and port as the request's `Host` header; the check does not compare the incoming request scheme. Requests without `Origin`, such as server-side scripts, are accepted. These routes do not configure cross-origin browser access.
 
@@ -117,7 +117,7 @@ The verified key and stable deployment secret determine the namespace. The same 
 
 ### PUT `/api/workspace`
 
-Body: `{ "snapshot": { ... }, "revision": 0 }`, using the revision most recently loaded. The route validates the snapshot and writes only known fields, excluding credential fields. Audit IDs must be nonempty and unique. JSON bodies are limited to 8 MiB even without Content-Length. Revision must be a nonnegative safe integer.
+Body: `{ "snapshot": { ... }, "revision": 0 }`, using the revision most recently loaded. The route validates the snapshot and writes only known fields, excluding credential fields. Audit IDs must be nonempty and unique. Snapshot data is limited to 8 MiB; the entire JSON body may use another 4 KiB for its envelope, including without Content-Length. Revision must be a nonnegative safe integer.
 
 A successful transaction returns the envelope with an incremented revision. A stale revision returns **409** with `{ error, snapshot, revision, updatedAt }` containing the current saved state. Preserve/export unsaved edits and explicitly refresh before choosing a replacement. Do not simply retry an old snapshot with the new revision. Invalid data is 400, oversized HTTP input is 413, and unavailable storage is 503.
 
@@ -453,7 +453,7 @@ Application errors use `{ "error": "human-readable message" }` and `Cache-Contro
 | `403` | Rejected `Origin` header |
 | `409` | Stale workspace revision or an attempt to edit a running monitoring schedule |
 | `405` | Unsupported HTTP method; framework response |
-| `413` | Request body exceeds its route limit: 16 KiB normally, 8 MiB for workspace PUT |
+| `413` | Request body exceeds its route limit: 16 KiB normally, 8 MiB plus 4 KiB envelope for workspace PUT |
 | `415` | Request is not JSON |
 | `429` | Process-local attempt, concurrency, or cooldown guard |
 | `503` | Missing sign-in configuration, unavailable validation/pricing, or an unexpected server failure |
@@ -469,7 +469,7 @@ Partial provider errors usually return `200` with an `errors` array, including u
 | Paid discovery | Nominally 3 active discoveries; 10-second cooldown per forwarded address |
 | Paid source | Nominally 3 active source lookups; 5-second cooldown per forwarded address |
 | Monitor tick | Durable global SQLite lease; one due job per tick, per-workspace monitoring budgets |
-| Workspace | Atomic revision compare-and-swap and 8 MiB body/snapshot bound |
+| Workspace | Atomic revision compare-and-swap, 8 MiB snapshot bound and 4 KiB envelope allowance |
 | Estimates, session GET/DELETE, status | No application rate guard |
 
 Each route owns a separate in-memory counter/map. The address is the first `x-forwarded-for` value or `local`; a trusted reverse proxy must overwrite forwarded headers. No `Retry-After` or rate-limit headers are returned. Manual-route counters reset with the process and are not shared between instances. Monitoring leases/reservations and workspace revisions persist in the SQLite database. Source DNS preflight happens before its active counter is acquired, so its guard is best-effort rather than an atomic concurrency guarantee. Add an atomic shared limiter if your deployment needs a durable spending boundary.

@@ -84,7 +84,7 @@ Inside an already configured HTTPS nginx server block:
 
 ```nginx
 location / {
-    client_max_body_size 8m;
+    client_max_body_size 9m;
     proxy_pass http://127.0.0.1:3000;
     proxy_set_header Host $http_host;
     proxy_set_header X-Forwarded-Proto $scheme;
@@ -95,7 +95,7 @@ location / {
 }
 ```
 
-This assumes nginx is the public edge. Configure any additional trusted proxy chain explicitly. Preserve cookies and private/no-store responses; do not share-cache authenticated pages, workspace APIs, monitoring state, or paid results. Permit workspace JSON requests up to 8 MiB; research routes retain their smaller 16 KiB limit.
+This assumes nginx is the public edge. Configure any additional trusted proxy chain explicitly. Preserve cookies and private/no-store responses; do not share-cache authenticated pages, workspace APIs, monitoring state, or paid results. Workspace data is capped at 8 MiB, with a separate 4 KiB request-envelope allowance. The 9 MiB proxy limit accommodates that wrapper; the app still enforces its tighter limits. Research routes retain their smaller 16 KiB limit.
 
 The host must support audit/discovery requests up to 300 seconds and source research up to 120 seconds. Raising a proxy timeout does not override the hosting platform's limit. Do not blindly repeat a paid request after timeout.
 

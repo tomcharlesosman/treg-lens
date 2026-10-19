@@ -7,6 +7,9 @@ import {
 } from "@/lib/workspace-repository";
 
 const headers = { "Cache-Control": "private, no-store" };
+// Snapshot validation still enforces 8 MiB. Leave bounded room for its
+// { snapshot, revision } envelope so a full valid backup remains restorable.
+const MAX_WORKSPACE_REQUEST_BYTES = MAX_WORKSPACE_BYTES + 4096;
 class RequestError extends Error {
   constructor(message: string, public status: number) { super(message); }
 }
@@ -18,8 +21,8 @@ async function session() {
 async function readWorkspaceRequest(request: Request): Promise<unknown> {
   if (!request.headers.get("content-type")?.includes("application/json"))
     throw new RequestError("Send the request as JSON.", 415);
-  if (Number(request.headers.get("content-length")) > MAX_WORKSPACE_BYTES)
-    throw new RequestError("Workspace request is too large (8 MiB maximum).", 413);
+  if (Number(request.headers.get("content-length")) > MAX_WORKSPACE_REQUEST_BYTES)
+    throw new RequestError("Workspace request exceeds 8 MiB of data plus its 4 KiB envelope allowance.", 413);
   const reader = request.body?.getReader();
   const chunks: Uint8Array[] = [];
   let length = 0;
@@ -27,9 +30,9 @@ async function readWorkspaceRequest(request: Request): Promise<unknown> {
     const { done, value } = await reader.read();
     if (done) break;
     length += value.byteLength;
-    if (length > MAX_WORKSPACE_BYTES) {
+    if (length > MAX_WORKSPACE_REQUEST_BYTES) {
       await reader.cancel();
-      throw new RequestError("Workspace request is too large (8 MiB maximum).", 413);
+      throw new RequestError("Workspace request exceeds 8 MiB of data plus its 4 KiB envelope allowance.", 413);
     }
     chunks.push(value);
   }

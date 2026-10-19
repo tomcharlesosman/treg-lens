@@ -58,7 +58,7 @@ test("workspace writes validate revisions, schema, origins, content and body bou
   }
   expect((await request.put("/api/workspace", { data: "{}", headers: { ...headers(user.cookie), "content-type": "text/plain" } })).status()).toBe(415);
   expect((await request.put("/api/workspace", { data: Buffer.from("{broken"), headers: { ...headers(user.cookie), "content-type": "application/json" } })).status()).toBe(400);
-  expect((await request.put("/api/workspace", { data: Buffer.from(JSON.stringify({ padding: "x".repeat(8 * 1024 * 1024) })), headers: { ...headers(user.cookie), "content-type": "application/json" } })).status()).toBe(413);
+  expect((await request.put("/api/workspace", { data: Buffer.from(JSON.stringify({ padding: "x".repeat(8 * 1024 * 1024 + 4096) })), headers: { ...headers(user.cookie), "content-type": "application/json" } })).status()).toBe(413);
   expect((await request.post("/api/workspace", { data: {}, headers: headers(user.cookie) })).status()).toBe(405);
 });
 
