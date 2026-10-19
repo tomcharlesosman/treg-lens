@@ -135,9 +135,9 @@ test("discovery caps combined selections at eight and resets choices before tryi
   const discovery = page.getByRole("dialog", { name: "Find your next question." });
   const launch = discovery.getByRole("button", { name: "Discover prompts", exact: true });
   await expect(launch).toBeEnabled();
-  const firstStartedAt = Date.now();
   await launch.click();
   await expect(discovery.getByRole("tab", { name: /^Questions/ })).toHaveAttribute("aria-selected", "true");
+  const firstCompletedAt = Date.now();
   await discovery.getByRole("tab", { name: /^Keywords/ }).click();
   await discovery.getByRole("button", { name: "Select top 6", exact: true }).click();
   await expect(discovery.locator(".lens-discovery-selected-count")).toHaveText("6 / 8 selected");
@@ -169,7 +169,7 @@ test("discovery caps combined selections at eight and resets choices before tryi
   await expect(launch).toBeEnabled();
   // This is the actual server's ten-second duplicate-spend cooldown,
   // rather than a timing delay used to synchronize the UI.
-  await new Promise((resolve) => setTimeout(resolve, Math.max(0, 10_250 - (Date.now() - firstStartedAt))));
+  await new Promise((resolve) => setTimeout(resolve, Math.max(0, 10_250 - (Date.now() - firstCompletedAt))));
   await launch.click();
   await expect(discovery.getByRole("tab", { name: /^Questions/ })).toHaveAttribute("aria-selected", "true");
   await expect(discovery.locator(".lens-discovery-selected-count")).toHaveText("3 / 8 selected");
