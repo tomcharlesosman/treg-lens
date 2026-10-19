@@ -402,7 +402,13 @@ test("corrupt local data recovers to an empty workspace and legacy unscoped data
   await expect(page.getByRole("button", { name: /Treg workspace/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your baseline starts here" })).toBeVisible();
   await expect(page.getByText("Legacy secret", { exact: true })).toHaveCount(0);
-  expect(await page.evaluate(() => sessionStorage.getItem("treg-lens-token"))).toBeNull();
+  await expect.poll(() => page.evaluate(() => sessionStorage.getItem("treg-lens-token"))).toBeNull();
+  await expect.poll(() => page.evaluate((key) => {
+    try {
+      const value = JSON.parse(localStorage.getItem(key)!);
+      return { brand: value.project?.brand, runs: value.runs?.length };
+    } catch { return null; }
+  }, key)).toEqual({ brand: "Treg", runs: 0 });
   const restored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), key);
   expect(restored.project.brand).toBe("Treg");
 });
@@ -417,6 +423,12 @@ for (const malformed of ["missing brand", "null answer list"] as const) {
       localStorage.setItem(key, JSON.stringify(saved));
     }, { key, malformed });
     await page.reload();
+    await expect.poll(() => page.evaluate((key) => {
+      try {
+        const value = JSON.parse(localStorage.getItem(key)!);
+        return { brand: value.project?.brand, runs: value.runs?.length };
+      } catch { return null; }
+    }, key)).toEqual({ brand: "Treg", runs: 0 });
     await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Your baseline starts here" })).toBeVisible();
     await expect(page.getByRole("button", { name: /Treg workspace/ })).toBeVisible();
