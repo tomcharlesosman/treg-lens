@@ -7,13 +7,13 @@ The [coverage guide](./TESTING.md) maps the implemented features to their browse
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
 | HTTP API | 81 | 0 / 0 |
-| Chromium browser workflows | 52 | 0 / 0 |
-| Firefox browser workflows | 52 | 0 / 0 |
-| WebKit browser workflows | 52 | 0 / 0 |
+| Chromium browser workflows | 54 | 0 / 0 |
+| Firefox browser workflows | 54 | 0 / 0 |
+| WebKit browser workflows | 54 | 0 / 0 |
 | Library tests | 47 | 0 / 0 |
-| **Total** | **284** | **0 / 0** |
+| **Total** | **290** | **0 / 0** |
 
-The complete 237-case API/browser run passed with retries disabled. Lint, TypeScript and the production build also passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths. All three browser engines completed the same 52 scenarios.
+The complete 243-case API/browser run passed with retries disabled. Lint, TypeScript and the production build also passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths. All three browser engines completed the same 54 scenarios.
 
 ## Issues found and fixed
 
@@ -25,6 +25,8 @@ The complete 237-case API/browser run passed with retries disabled. Lint, TypeSc
 6. **Slow initial sign-in:** Linux WebKit exposed a race where a key could be entered before React attached its change handlers, leaving the submit button disabled. Key controls now wait for client readiness. A regression test deliberately holds JavaScript downloads before entering a key.
 7. **Switching keys without signing out:** cached client navigation could retain the previous workspace's in-memory state when a different key selected a fresh storage namespace. The authenticated workspace is now mounted with that namespace as its React key. The isolation regression switches keys through the real UI, verifies an empty second workspace, then switches back and checks the original history and completed moves.
 8. **Returning to a cached sign-in form:** a successful submission left the cached form busy, so switching back to a different key could leave its input disabled. Successful verification now clears the busy state, and changing keys resets the form's error and visibility state.
+9. **Late session checks:** an in-flight session lookup could replace a key form after the user had started entering a different key. Explicit key entry now takes priority over the background lookup. The regression holds the session response until another key has been entered, then verifies that exact key is submitted.
+10. **Delayed dialog focus:** the dialog's opening animation frame could move focus from an already selected textarea to the brand field, sending typing into the wrong control. Initial focus now preserves an existing selection inside the dialog. The regression holds and releases the opening frame after focusing the prompt field.
 
 Each fix is covered by an end-to-end regression. The storage validator also has library regression tests. Browser tests fail on uncaught page errors.
 

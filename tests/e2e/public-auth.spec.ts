@@ -78,6 +78,34 @@ test.describe("Public marketing and navigation", () => {
 });
 
 test.describe("API-key sign-in and encrypted browser session", () => {
+  test("keeps deliberate key entry when an earlier session check finishes late", async ({ page }) => {
+    expect((await page.request.post("/api/auth/session", { data: { token: PRIMARY_TOKEN } })).ok()).toBe(true);
+    let release!: () => void;
+    const sessionGate = new Promise<void>((resolve) => { release = resolve; });
+    await page.route("**/api/auth/session", async (route) => {
+      if (route.request().method() !== "GET") return route.continue();
+      await sessionGate;
+      await route.fulfill({ status: 200, json: { authenticated: true, workspaceId: "existing-session" } });
+    });
+    await page.goto("/login");
+    const key = page.getByLabel("Treg API key", { exact: true });
+    try {
+      await key.fill("treg-e2e-secondary");
+    } finally {
+      const response = page.waitForResponse((response) => response.url().endsWith("/api/auth/session") && response.request().method() === "GET");
+      release();
+      await response;
+    }
+    // Cross two paints so the late response has reached the client before submitting.
+    await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
+    await expect(key).toBeVisible();
+    await expect(key).toHaveValue("treg-e2e-secondary");
+    const verification = page.waitForRequest((request) => request.url().endsWith("/api/auth/session") && request.method() === "POST");
+    await page.getByRole("button", { name: "Open my workspace" }).click();
+    expect((await verification).postDataJSON()).toEqual({ token: "treg-e2e-secondary" });
+    await expect(page).toHaveURL(/\/app$/);
+  });
+
   test("waits for client readiness before accepting a key on a slow initial load", async ({ page }) => {
     let release!: () => void;
     const scripts = new Promise<void>((resolve) => { release = resolve; });
@@ -247,8 +275,16 @@ test.describe("API-key sign-in and encrypted browser session", () => {
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByLabel("YOUR TREG API KEY", { exact: true })).toBeVisible();
     expect((await context.cookies()).find((cookie) => cookie.name === "treg_lens_session")).toBeUndefined();
-    await page.goto("/app");
-    await expect(page).toHaveURL(/\/login$/);
+    // A new tab shares the cleared cookie jar while allowing the home page's
+    // Next.js link prefetches to finish. Hard-navigation during those requests
+    // makes WebKit report unload cancellations as uncaught fetch errors.
+    const gatedPage = await context.newPage();
+    const gateErrors: string[] = [];
+    gatedPage.on("pageerror", (error) => gateErrors.push(error.message));
+    await gatedPage.goto("/app");
+    await expect(gatedPage).toHaveURL(/\/login$/);
+    await expect(gatedPage.getByLabel("Treg API key", { exact: true })).toBeVisible();
+    expect(gateErrors, "The gated tab must not emit uncaught page errors").toEqual([]);
   });
 
   test("keeps the active session when logout fails and allows a successful retry", async ({ page }) => {

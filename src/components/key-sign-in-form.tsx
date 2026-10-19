@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useId, useState, useSyncExternalStore } from "react";
+import { useEffect, useId, useRef, useState, useSyncExternalStore } from "react";
 import {
   ArrowRight,
   Check,
@@ -33,12 +33,13 @@ export default function KeySignInForm({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
+  const editingKey = useRef(false);
   useEffect(() => {
     const controller = new AbortController();
     fetch("/api/auth/session", { signal: controller.signal, cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
-        if (!controller.signal.aborted)
+        if (!controller.signal.aborted && !editingKey.current)
           setAuthenticated(data.authenticated === true);
       })
       .catch(() => {});
@@ -87,6 +88,7 @@ export default function KeySignInForm({
         <button
           className="key-other-account"
           onClick={() => {
+            editingKey.current = true;
             setBusy(false);
             setError("");
             setVisible(false);
@@ -113,6 +115,7 @@ export default function KeySignInForm({
           type={visible ? "text" : "password"}
           value={token}
           onChange={(e) => {
+            editingKey.current = true;
             setToken(e.target.value);
             if (error) setError("");
           }}

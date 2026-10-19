@@ -166,6 +166,7 @@ export function DialogFrame({
         ) ?? [],
       ).filter((element) => element.getClientRects().length > 0);
     const frame = window.requestAnimationFrame(() => {
+      if (panelRef.current?.contains(document.activeElement)) return;
       const initial = panelRef.current?.querySelector<HTMLElement>(
         "[data-initial-focus]",
       );

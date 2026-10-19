@@ -26,6 +26,32 @@ async function browserData(page: Page) {
   return page.evaluate(() => JSON.stringify({ local: { ...localStorage }, session: { ...sessionStorage } }));
 }
 
+test("a delayed dialog opening frame preserves the field the user already focused", async ({ page }) => {
+  await signIn(page);
+  await page.evaluate(() => {
+    const nativeFrame = window.requestAnimationFrame.bind(window);
+    const harness = window as typeof window & { releaseDialogFrame?: () => void };
+    window.requestAnimationFrame = (callback) => {
+      if (document.querySelector(".lens-audit-dialog")) {
+        window.requestAnimationFrame = nativeFrame;
+        harness.releaseDialogFrame = () => callback(performance.now());
+        return nativeFrame(() => {});
+      }
+      return nativeFrame(callback);
+    };
+  });
+  await page.getByRole("button", { name: "Run an audit", exact: true }).first().click();
+  const audit = page.getByRole("dialog", { name: "See where you stand." });
+  const prompts = audit.getByLabel("Prompts to track");
+  await prompts.focus();
+  await expect.poll(() => page.evaluate(() => typeof (window as typeof window & { releaseDialogFrame?: () => void }).releaseDialogFrame)).toBe("function");
+  await page.evaluate(() => (window as typeof window & { releaseDialogFrame?: () => void }).releaseDialogFrame!());
+  await expect(prompts).toBeFocused();
+  await prompts.fill("[partial] Which tools should I use?");
+  await expect(audit.getByLabel("Brand name", { exact: true })).toHaveValue("Treg");
+  await expect(prompts).toHaveValue("[partial] Which tools should I use?");
+});
+
 test("empty authenticated workspace, settings validation, persistence, and memory-only key override", async ({ page }) => {
   const storageKey = await signIn(page);
   await expect(page.getByRole("heading", { name: "Your baseline starts here" })).toBeVisible();

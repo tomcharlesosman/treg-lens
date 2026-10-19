@@ -27,7 +27,7 @@ npm run test:e2e:report
 | Area | Coverage |
 | --- | --- |
 | Public pages | Product links, fork destinations, navigation anchors, all FAQ disclosures, compact sign-in, and demo entry points |
-| Sign-in and session | Slow JavaScript/client readiness, required key, reveal/hide, trimmed input, invalid and unscoped keys, unavailable/malformed upstream responses, busy states, retries, encrypted cookie flags, reload, switching keys, logout and logout failure |
+| Sign-in and session | Slow JavaScript/client readiness, late session responses during key entry, required key, reveal/hide, trimmed input, invalid and unscoped keys, unavailable/malformed upstream responses, busy states, retries, encrypted cookie flags, reload, switching keys, logout and logout failure |
 | Demo boundaries | All paid/account entry points require sign-in, demo edits stay separate from private saved workspaces, exports are labeled illustrative |
 | Settings and storage | Empty workspace, project validation, competitors, persistence, per-key isolation, in-memory credential overrides, malformed JSON/records, legacy key removal |
 | Audits | Live estimate UI, price breakdown, prompt/engine validation, example prompts, four-engine run, result details, partial/all failures, balance errors, unknown billing, persistence and rechecks |
@@ -37,7 +37,7 @@ npm run test:e2e:report
 | Sources | Paid Moz/Exa route integration, authority/metadata, excerpts, observed contacts, missing fields, partial failures, cache/reopen, refresh and costs |
 | Opportunities | Gap selection, content brief, clipboard success/fallback, mark complete/reopen and persistence |
 | Reports | Workspace JSON and CSV, individual audit downloads, data integrity, multiline/Unicode/formula escaping and absence of credentials |
-| Interaction | Mobile navigation, activity/help links, dialog naming, focus containment/restoration, Escape and layout at 320, 390, 768 and 1440 pixels |
+| Interaction | Mobile navigation, activity/help links, dialog naming, delayed opening focus, focus containment/restoration, Escape and layout at 320, 390, 768 and 1440 pixels |
 | HTTP boundaries | Every route's supported methods, JSON/body limits, origin checks, anonymous denial, explicit-key validation, no operator-key fallback, revoked/tampered sessions, duplicate throttling and private-URL/DNS rejection |
 | Untrusted content | Safe Markdown, no executed HTML/scripts, blocked unsafe links and no remote tracking images |
 
