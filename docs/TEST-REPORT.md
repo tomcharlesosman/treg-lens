@@ -7,13 +7,13 @@ The [coverage guide](./TESTING.md) maps the implemented features to their browse
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
 | HTTP API | 81 | 0 / 0 |
-| Chromium browser workflows | 59 | 0 / 0 |
-| Firefox browser workflows | 59 | 0 / 0 |
-| WebKit browser workflows | 59 | 0 / 0 |
+| Chromium browser workflows | 67 | 0 / 0 |
+| Firefox browser workflows | 67 | 0 / 0 |
+| WebKit browser workflows | 67 | 0 / 0 |
 | Library tests | 47 | 0 / 0 |
-| **Total** | **305** | **0 / 0** |
+| **Total** | **329** | **0 / 0** |
 
-The complete 258-case API/browser run passed with retries disabled. Lint, TypeScript and the production build also passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths. All three browser engines completed the same 59 scenarios. Coverage includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and successful backup exports when browser storage rejects writes.
+The complete 282-case API/browser run passed with retries disabled. Lint, TypeScript and the production build also passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. All three browser engines completed the same 67 scenarios. Coverage includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and successful backup exports when browser storage rejects writes.
 
 ## Issues found and fixed
 

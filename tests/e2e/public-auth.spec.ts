@@ -68,10 +68,14 @@ test.describe("Public marketing and navigation", () => {
     await expect(page.getByRole("link", { name: "Fork the repo" })).toHaveAttribute("href", FORK_URL);
     await page.getByRole("link", { name: "Explore the demo", exact: true }).click();
     await expect(page).toHaveURL(/\/demo$/);
-    await page.goto("/login");
     await page.getByRole("link", { name: "Treg Lens home" }).click();
     await expect(page).toHaveURL(/\/$/);
-    await page.goto("/login");
+    await page.locator(".marketing-nav").getByRole("link", { name: "Log in" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    await page.getByRole("link", { name: "Treg Lens home" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    await page.locator(".marketing-nav").getByRole("link", { name: "Log in" }).click();
+    await expect(page).toHaveURL(/\/login$/);
     await page.getByRole("link", { name: "Back to the bigger picture" }).click();
     await expect(page).toHaveURL(/\/$/);
   });
@@ -241,15 +245,20 @@ test.describe("API-key sign-in and encrypted browser session", () => {
 
   test("existing sessions offer continue and support switching keys", async ({ page }) => {
     await signIn(page);
-    for (const path of ["/", "/login"]) {
-      await page.goto(path);
-      await expect(page.getByText("Your Treg session is ready.")).toBeVisible();
-      await expect(page.getByRole("link", { name: "Open your workspace" })).toHaveAttribute("href", "/app");
-    }
-    await page.getByRole("button", { name: "Use a different API key" }).click();
-    await expect(page.getByLabel("Treg API key", { exact: true })).toBeVisible();
-    await page.getByLabel("Treg API key", { exact: true }).fill("treg-e2e-secondary");
-    await page.getByRole("button", { name: "Open my workspace" }).click();
+    await page.getByRole("link", { name: "Treg Lens home" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    const compact = page.locator("#connect");
+    await expect(compact.getByText("Your Treg session is ready.")).toBeVisible();
+    await expect(compact.getByRole("link", { name: "Open your workspace" })).toHaveAttribute("href", "/app");
+    await page.locator(".marketing-nav").getByRole("link", { name: "Log in" }).click();
+    await expect(page).toHaveURL(/\/login$/);
+    const form = page.locator(".signin-form-panel");
+    await expect(form.getByText("Your Treg session is ready.")).toBeVisible();
+    await expect(form.getByRole("link", { name: "Open your workspace" })).toHaveAttribute("href", "/app");
+    await form.getByRole("button", { name: "Use a different API key" }).click();
+    await expect(form.getByLabel("Treg API key", { exact: true })).toBeVisible();
+    await form.getByLabel("Treg API key", { exact: true }).fill("treg-e2e-secondary");
+    await form.getByRole("button", { name: "Open my workspace" }).click();
     await expect(page).toHaveURL(/\/app$/);
     await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
   });
@@ -423,9 +432,9 @@ test.describe("Public demo safeguards", () => {
 
 test.describe("Responsive public routes", () => {
   for (const width of [320, 390, 768, 1440]) {
-    test(`marketing, login, and demo remain usable at ${width}px`, async ({ page }) => {
-      await page.setViewportSize({ width, height: 900 });
-      for (const path of ["/", "/login", "/demo"]) {
+    for (const [name, path] of [["marketing", "/"], ["login", "/login"], ["demo", "/demo"]] as const) {
+      test(`${name} remains usable at ${width}px`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
         await page.goto(path);
         await expect(page.getByRole("heading", path === "/login" ? { name: /Let’s bring your brand into focus/ } : { level: 1 })).toBeVisible();
         await expectNoHorizontalOverflow(page);
@@ -444,7 +453,7 @@ test.describe("Responsive public routes", () => {
             await expectNoHorizontalOverflow(page);
           }
         }
-      }
-    });
+      });
+    }
   }
 });
