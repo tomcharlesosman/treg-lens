@@ -14,6 +14,13 @@
 .ob-text-button:hover { color: var(--treg-ink); }
 .ob-text-button:disabled { opacity: .5; cursor: default; }
 .ob-main { max-width: 1144px; width: calc(100% - 80px); margin: auto; padding: 44px 0 76px; }
+.ob-review-banner { display:flex; align-items:flex-start; gap:24px; padding:22px 24px; margin-bottom:36px; background:var(--treg-mint); border:1px solid var(--treg-mint-line); border-radius:14px; }
+.ob-review-banner > div:first-child { flex:1; min-width:0; }
+.ob-review-banner strong { font-size:17px; letter-spacing:-.35px; }
+.ob-review-banner p { font-size:12px; line-height:1.75; color:var(--treg-body); margin-top:8px; }
+.ob-review-actions { display:flex; flex-direction:column; align-items:flex-start; flex-shrink:0; gap:8px; }
+.ob-review-actions .ob-button { background:var(--treg-surface); border:1px solid var(--treg-mint-line); }
+@media(max-width:700px) { .ob-review-banner { flex-direction:column; padding:20px; gap:14px; } .ob-review-actions { flex-wrap:wrap; flex-direction:row; align-items:center; gap:8px 20px; } }
 .ob-progress { display: flex; width: min(100%, 520px); margin: 0 auto 50px; }
 .ob-progress > button { display: flex; flex: 1; align-items: center; gap: 8px; font: 11px var(--ob-mono); color: var(--treg-muted); padding: 0; text-align: left; }
 .ob-progress > button:last-child { flex: 0; }

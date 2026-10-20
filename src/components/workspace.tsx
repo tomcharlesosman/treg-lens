@@ -516,9 +516,11 @@ function TrendChart({
 export default function Workspace({
   demoMode = false,
   storageId,
+  reviewOnboarding = false,
 }: {
   demoMode?: boolean;
   storageId?: string;
+  reviewOnboarding?: boolean;
 }) {
   const router = useRouter();
   const storageKey = storageId ? `${STORE}:${storageId}` : STORE;
@@ -563,6 +565,16 @@ export default function Workspace({
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const workspaceHeading = useRef<HTMLHeadingElement>(null);
+  const wasReviewing = useRef(reviewOnboarding);
+  useEffect(() => {
+    const returning = wasReviewing.current && !reviewOnboarding;
+    wasReviewing.current = reviewOnboarding;
+    if (returning && !auditOpen) {
+      const frame = requestAnimationFrame(() => workspaceHeading.current?.focus());
+      return () => cancelAnimationFrame(frame);
+    }
+  }, [reviewOnboarding, auditOpen]);
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(""), 4500);
@@ -706,19 +718,30 @@ export default function Workspace({
     setSettingsOpen(false);
     setToast("Workspace settings saved.");
   };
-  const completeOnboarding = async (profile: Pick<WorkspaceSnapshot, "project" | "prompts">, openAudit: boolean) => {
+  const completeOnboarding = async (profile: Pick<WorkspaceSnapshot, "project" | "prompts">, openAudit: boolean, expectedRevision?: number) => {
     // Keep the review mounted until its exact snapshot is acknowledged by the server.
     setFinishingOnboarding(true);
     if (sync.phase === "conflict" || sync.phase === "offline" || sync.phase === "saving") return false;
     const next = { ...profile.project, onboardingCompletedAt: new Date().toISOString() };
-    if (!await workspace.saveProfile({ project: next, prompts: profile.prompts })) return false;
+    if (!await workspace.saveProfile({ project: next, prompts: profile.prompts }, { expectedRevision, preservePrompts: reviewOnboarding })) return false;
     setFinishingOnboarding(false);
+    if (reviewOnboarding) router.replace("/app");
     if (openAudit) {
       auditProject.current = next;
       setAuditPrompts(profile.prompts);
       setAuditOpen(true);
     }
     setToast("Your brand is ready. Review the estimate before starting an audit.");
+    return true;
+  };
+  const rerunOnboarding = async () => {
+    if (!await workspace.save() || !await workspace.refresh()) return false;
+    setSettingsOpen(false);
+    setAuditOpen(false);
+    setDiscoveryOpen(false);
+    setMobileOpen(false);
+    setToast("");
+    router.push("/app?setup=review");
     return true;
   };
   const openSettings = () => {
@@ -891,12 +914,15 @@ export default function Workspace({
       />
     );
   if (!loaded) return <div className="workspace-loading" role="status"><p>Loading your saved workspace…</p></div>;
-  if (!demoMode && (finishingOnboarding || needsBrandOnboarding(workspace.snapshot))) return (
+  const onboarding = !demoMode && (reviewOnboarding || finishingOnboarding || needsBrandOnboarding(workspace.snapshot)) ? (
       <BrandOnboarding
         initialProject={isExampleProfile(workspace.snapshot) ? { brand: "", domain: "", competitors: [] } : project}
         initialPrompts={isExampleProfile(workspace.snapshot) ? [] : prompts}
-        storageKey={storageKey}
+        storageKey={reviewOnboarding ? `${storageKey}:review` : storageKey}
+        initialRevision={reviewOnboarding ? sync.revision ?? undefined : undefined}
         onComplete={completeOnboarding}
+        onExit={reviewOnboarding ? async () => { await workspace.refresh(); setFinishingOnboarding(false); setToast("Brand review paused. Your draft is kept; your saved workspace is available."); router.replace("/app"); } : undefined}
+        onReload={reviewOnboarding ? workspace.reloadProfile : undefined}
         onLogout={logout}
         error={sync.error || (loggingOut ? "Signing out…" : toast)}
         recovery={(sync.phase === "offline" || sync.phase === "conflict") && (
@@ -906,7 +932,7 @@ export default function Workspace({
           <div className="sync-actions">
             <button className="button" onClick={() => downloadWorkspaceBackup(workspace.snapshot)}>Download unsaved workspace</button>
             <button className="button" onClick={() => { void workspace.retry(); }}>Retry sync</button>
-            {sync.phase === "conflict" && <button className="button" onClick={async () => {
+            {sync.phase === "conflict" && !reviewOnboarding && <button className="button" onClick={async () => {
               if (window.confirm("Load the latest saved workspace? Your onboarding draft stays in this browser. Download any other unsaved workspace changes first.")) {
                 if (await workspace.loadServer()) setFinishingOnboarding(false);
               }
@@ -915,10 +941,14 @@ export default function Workspace({
         </section>
         )}
       />
-  );
+  ) : null;
   return (
+    <>
+    {onboarding}
     <div
       className="app-shell"
+      style={onboarding ? { display: "none" } : undefined}
+      inert={!!onboarding}
       onClickCapture={(event) => {
         // Safari does not focus clicked buttons. Establish the opener before
         // mounting a dialog so closing it can return keyboard focus reliably.
@@ -1129,7 +1159,7 @@ export default function Workspace({
               <div className="eyebrow">
                 <span className="live-dot" /> THE ANSWER ENGINE WORKSPACE
               </div>
-              <h1>{TITLES[view].title}</h1>
+              <h1 ref={workspaceHeading} tabIndex={-1}>{TITLES[view].title}</h1>
               <p>{TITLES[view].description}</p>
             </div>
             <div className="heading-actions">
@@ -2174,6 +2204,7 @@ export default function Workspace({
         project={project}
         token={token}
         onSave={saveProject}
+        onRerunOnboarding={demoMode ? undefined : rerunOnboarding}
       />
       {newPrompt !== null && (
         <Modal
@@ -2398,7 +2429,7 @@ export default function Workspace({
           </div>
         </Modal>
       )}
-      {toast && (
+      {toast && !onboarding && (
         <div className="toast" role="status">
           <span>
             <Check size={15} />
@@ -2413,5 +2444,6 @@ export default function Workspace({
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -141,6 +141,8 @@ Optional `researchReceipts` retains the last five original onboarding outcomes i
 
 All new fields are optional, so older snapshots remain valid without migration. Unsupported markets or malformed/oversized metadata are rejected. Nested unknown fields are excluded from saved data. A competitor `sourceUrl` is retained only when it matches a safe citation in the retained research receipt and the competitor's domain; without it, the suggestion is unverified. Backups are user-supplied evidence, not independently authenticated provider records.
 
+The Settings rerun flow is an authenticated UI mode at `/app?setup=review`; it introduces no reset endpoint or authentication bypass. It uses the same research and workspace routes. Its browser draft holds the starting revision separately from the active snapshot. Saving refuses a changed revision and retains existing prompts, audits, completed moves and source research while applying the reviewed profile and adding selected questions. It does not write monitoring state. `PUT /api/workspace` itself retains its existing full-snapshot/CAS contract; third-party API clients remain responsible for retaining the fields they want to keep.
+
 ### PUT `/api/workspace`
 
 Body: `{ "snapshot": { ... }, "revision": 0 }`, using the revision most recently loaded. The route validates the snapshot and writes only known fields, excluding credential fields. Audit IDs must be nonempty and unique. Snapshot data is limited to 8 MiB; the entire JSON body may use another 4 KiB for its envelope, including without Content-Length. Revision must be a nonnegative safe integer.

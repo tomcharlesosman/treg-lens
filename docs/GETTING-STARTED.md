@@ -78,6 +78,16 @@ Setup drafts stay in this browser, scoped to the signed-in workspace, so a reloa
 
 Perplexity uses the Sonar model API; the other engines use web-interface answers. Audits use United States / English parameters. Repeat the same inputs when comparing runs, and treat scores as prioritization heuristics rather than promises of visibility.
 
+## Rerun onboarding with your existing key
+
+Open **Settings → Rerun onboarding** in your signed-in workspace. Save or close any pending Settings edits first. Lens pre-fills your saved website, buyer context, competitors and questions; you do not need a new key or another account. Opening the review makes no paid request. Choose **Set up manually** to edit without research, or approve a fresh estimate to research again.
+
+**Back to workspace** leaves your saved profile and work in place and keeps this review draft in the current browser. Reopen it from Settings to resume; reload also keeps your place. Drafts remain isolated to the signed-in key and separate from first-time setup. Clearing browser storage removes unfinished drafts, not server-saved work.
+
+Saving applies the reviewed profile and adds selected questions to your existing tracked questions. Existing audits, answers, completed moves and source research are preserved. Original research receipts retain their sources and costs within the existing five-receipt history limit. Historical audits keep their original brand, so changing the selected brand changes which audits appear in its dashboard. **Save and review audit** opens a separate cost review; it does not start an audit. Existing monitoring keeps its saved brand, questions, cadence, budget and enabled/paused state; update it separately if needed.
+
+If another tab or scheduled audit changes the workspace, Lens refuses to apply the stale review. **Reload saved profile** asks before replacing review edits with the latest saved profile and questions, while retaining new research receipts and interrupted-request warnings. If the workspace itself has unsynced results, first return to save or back them up; reloading the profile cannot discard them. Review again before saving. A failed or ambiguously acknowledged save retains the draft and never repeats research automatically. You can return to the workspace to inspect the saved version.
+
 ## Save, back up, and restore
 
 Settings, prompts, audits, completed moves, and source research are saved in the selected server database: built-in SQLite locally or optional hosted Postgres. The same verified key and deployment secret identify the same workspace across browsers. Another key opens a separate workspace. Possession of a shared Treg key grants access to that key's workspace; Lens does not provide team invitations or roles.

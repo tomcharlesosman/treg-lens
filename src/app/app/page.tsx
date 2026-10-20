@@ -8,15 +8,16 @@ export const metadata: Metadata = {
   title: "Your workspace — Treg Lens",
   robots: { index: false, follow: false },
 };
-async function AuthenticatedWorkspace() {
+async function AuthenticatedWorkspace({ searchParams }: PageProps<"/app">) {
   // Session decryption checks the current time. Keep it out of speculative
   // prerendering and only authenticate after the actual request arrives.
   await connection();
   const session = await getTregSession();
   if (!session) redirect("/login");
-  return <Workspace key={session.workspaceId} storageId={session.workspaceId} />;
+  const reviewOnboarding = (await searchParams).setup === "review";
+  return <Workspace key={session.workspaceId} storageId={session.workspaceId} reviewOnboarding={reviewOnboarding} />;
 }
-export default function AppPage() {
+export default function AppPage(props: PageProps<"/app">) {
   return (
     <Suspense
       fallback={
@@ -29,7 +30,7 @@ export default function AppPage() {
         </div>
       }
     >
-      <AuthenticatedWorkspace />
+      <AuthenticatedWorkspace {...props} />
     </Suspense>
   );
 }

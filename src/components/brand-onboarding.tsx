@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { SUPPORTED_MARKET, type BuyerQuestion, type BuyerQuestionIntent, type CompetitorDetail, type MeasurementMarket, type OnboardingResearch, type Project } from "@/lib/workspace-data";
 import { appendResearchReceipt } from "@/lib/workspace-onboarding";
-import { safeEvidenceUrl } from "@/lib/workspace-profile";
+import { cleanResearchReceipt, isResearchReceipt, safeEvidenceUrl } from "@/lib/workspace-profile";
 import { editCompetitor, inferQuestionIntent, onboardingWebsite as website, QUESTION_INTENT_LABELS, starterQuestionIndexes } from "@/lib/onboarding-review";
 import MarketingLogo from "./marketing-logo";
 import "./marketing.css";
@@ -26,6 +26,7 @@ type Question = BuyerQuestion & { id: string; selected: boolean };
 type Step = 0 | 1 | 2;
 type Draft = {
   version: 1;
+  revision?: number;
   step: Step;
   url: string;
   brand: string;
@@ -43,10 +44,14 @@ export type BrandOnboardingProps = {
   initialProject: Project;
   initialPrompts: string[];
   storageKey: string;
+  initialRevision?: number;
   onComplete: (
     data: { project: Project; prompts: string[] },
     openAudit: boolean,
+    expectedRevision?: number,
   ) => Promise<boolean>;
+  onExit?: () => void | Promise<void>;
+  onReload?: () => Promise<{ project: Project; prompts: string[]; revision: number } | null>;
   onLogout?: () => void;
   error?: string;
   recovery?: ReactNode;
@@ -89,6 +94,8 @@ function readQuestion(value: Record<string, unknown>, fallback: BuyerQuestion["p
 
 function readReceipt(value: unknown): Research | null {
   if (!object(value) || value.kind !== "research") return null;
+  // Valid stored receipts keep their exact optional fields across a review reload.
+  if (isResearchReceipt(value)) return cleanResearchReceipt(value);
   const cost = (n: unknown) => typeof n === "number" && Number.isFinite(n) && n >= 0 ? n : null;
   const input = object(value.input) && object(value.input.market) &&
     value.input.market.country === "US" && value.input.market.language === "en" &&
@@ -117,24 +124,31 @@ function readReceipt(value: unknown): Research | null {
   };
 }
 
-function restore(key: string, project: Project, prompts: string[]): Draft {
-  const base: Draft = {
+function initialDraft(project: Project, prompts: string[], revision?: number): Draft {
+  const selected = new Set(prompts.slice(0, 8).map((prompt) => prompt.toLowerCase()));
+  return {
+    ...(revision !== undefined ? { revision } : {}),
     version: 1, step: 0, url: project.domain, brand: project.brand, domain: project.domain,
     description: project.description ?? "", audience: project.audience ?? "", market: { ...SUPPORTED_MARKET },
     competitors: project.competitors.slice(0, 8).map((name, i) => ({ ...project.competitorDetails?.find((c) => c.name.toLowerCase() === name.toLowerCase()), id: `initial-c-${i}`, name })),
     questions: (project.buyerQuestions?.length ? project.buyerQuestions.slice(0, 16) : (prompts.length ? prompts.slice(0, 8) : [""]).map((value) => ({ text: value, intent: inferQuestionIntent(value, project.brand), provenance: "manual" as const })))
-      .map((question, i) => ({ ...question, id: `initial-q-${i}`, selected: prompts.some((prompt) => prompt.toLowerCase() === question.text.toLowerCase()) || !question.text })),
+      .map((question, i) => ({ ...question, id: `initial-q-${i}`, selected: selected.has(question.text.toLowerCase()) || !question.text })),
     receipt: null, receipts: project.researchReceipts ?? [], interrupted: false,
   };
+}
+
+function restore(key: string, project: Project, prompts: string[], revision?: number): Draft {
+  const base = initialDraft(project, prompts, revision);
   try {
     const raw = localStorage.getItem(key);
     if (!raw || raw.length > 500_000) return base;
     const saved: unknown = JSON.parse(raw);
     if (!object(saved) || saved.version !== 1) return base;
     return {
+      ...(Number.isSafeInteger(saved.revision) && Number(saved.revision) >= 0 ? { revision: Number(saved.revision) } : revision !== undefined ? { revision } : {}),
       version: 1, step: saved.step === 1 || saved.step === 2 ? saved.step : 0,
       url: text(saved.url, 2048), brand: text(saved.brand, 100),
-      domain: text(saved.domain, 200), description: text(saved.description, 1000),
+      domain: text(saved.domain, 200), description: text(saved.description, 1200),
       audience: text(saved.audience, 600), market: { ...SUPPORTED_MARKET },
       competitors: Array.isArray(saved.competitors) ? saved.competitors.filter(object).slice(0, 8).map((c, i) => ({
         id: `restored-c-${i}`, name: text(c.name, 100), domain: text(c.domain, 200), reason: text(c.reason, 240), sourceUrl: safeLink(text(c.sourceUrl, 2048)) || undefined, suggested: c.suggested === true,
@@ -155,12 +169,12 @@ export default function BrandOnboarding(props: BrandOnboardingProps) {
   return <OnboardingForm key={props.storageKey} {...props} />;
 }
 
-function OnboardingForm({ initialProject, initialPrompts, storageKey, onComplete, onLogout, error: externalError, recovery }: BrandOnboardingProps) {
+function OnboardingForm({ initialProject, initialPrompts, initialRevision, storageKey, onComplete, onExit, onReload, onLogout, error: externalError, recovery }: BrandOnboardingProps) {
   const id = useId();
   const draftKey = `${storageKey}:onboarding:v1`;
-  const [draft, setDraft] = useState(() => restore(draftKey, initialProject, initialPrompts));
+  const [draft, setDraft] = useState(() => restore(draftKey, initialProject, initialPrompts, initialRevision));
   const [quote, setQuote] = useState<Estimate | null>(null);
-  const [busy, setBusy] = useState<"quote" | "research" | "save" | null>(null);
+  const [busy, setBusy] = useState<"quote" | "research" | "save" | "reload" | null>(null);
   const [error, setError] = useState("");
   const [urlError, setUrlError] = useState("");
   const [notice, setNotice] = useState("");
@@ -171,6 +185,13 @@ function OnboardingForm({ initialProject, initialPrompts, storageKey, onComplete
   const researchButton = useRef<HTMLButtonElement>(null);
   const urlInput = useRef<HTMLInputElement>(null);
   const lastStep = useRef(draft.step);
+  const focusedReview = useRef(false);
+  useEffect(() => {
+    if (onExit && !focusedReview.current) {
+      focusedReview.current = true;
+      heading.current?.focus();
+    }
+  }, [onExit]);
   const competitors = unique(draft.competitors.map((c) => c.name));
   const prompts = unique(draft.questions.filter((q) => q.selected).map((q) => q.text));
   const selectedCount = draft.questions.filter((q) => q.selected).length;
@@ -215,6 +236,26 @@ function OnboardingForm({ initialProject, initialPrompts, storageKey, onComplete
   }
   function navigate(step: Step) {
     if (!locked.current) update({ step });
+  }
+  async function exitReview() {
+    if (!onExit || locked.current) return;
+    locked.current = true; setBusy("reload");
+    try { await onExit(); }
+    catch { setError("Could not return to your workspace. Your draft is still here. Please try again."); }
+    finally { locked.current = false; setBusy(null); }
+  }
+  async function reloadProfile() {
+    if (!onReload || locked.current || !window.confirm("Reload the latest saved brand profile and questions? This replaces your review edits. New research receipts and interrupted-request warnings are kept; saved work and monitoring are unchanged.")) return;
+    locked.current = true; setBusy("reload"); setError(""); setQuote(null);
+    try {
+      const latest = await onReload();
+      if (!latest) throw new Error("Could not load the saved profile. Your draft is still here. Check the workspace connection and try again.");
+      setDraft((current) => ({ ...initialDraft(latest.project, latest.prompts, latest.revision),
+        receipts: [...(latest.project.researchReceipts ?? []), ...current.receipts].reduce((history, receipt) => appendResearchReceipt(history, receipt), [] as Research[]),
+        receipt: current.receipt, interrupted: current.interrupted }));
+      setNotice("Loaded your latest saved profile. Review changes again before saving. New research receipts are still available below.");
+    } catch (failure) { setError(failure instanceof Error ? failure.message : "Could not load the saved profile. Your draft is still here."); }
+    finally { locked.current = false; setBusy(null); }
   }
   function forWebsite(input: ReturnType<typeof website>): Draft {
     const previousDomain = draft.domain.toLowerCase().replace(/^www\./, "");
@@ -374,7 +415,7 @@ function OnboardingForm({ initialProject, initialPrompts, storageKey, onComplete
           onboardingCompletedAt: new Date().toISOString(),
         },
         prompts,
-      }, openAudit);
+      }, openAudit, draft.revision);
       if (!saved) {
         setError("Your setup hasn’t been saved yet. Your draft is still here. Resolve the workspace issue and try saving again.");
         return;
@@ -397,6 +438,10 @@ function OnboardingForm({ initialProject, initialPrompts, storageKey, onComplete
         {onLogout && <button className="ob-text-button" onClick={onLogout} disabled={!!busy}>Sign out</button>}
       </header>
       <main className="ob-main">
+        {onExit && <section className="ob-review-banner" aria-label="Review existing workspace">
+          <div><strong>A fresh look. The same workspace.</strong><p>Use your signed-in Treg key to review your brand again. Saving updates your profile and adds selected questions; existing tracked questions, audits, completed moves and source research stay saved. Monitoring keeps its existing configuration.</p><p>Opening this review is free. New research and audits each need a separate cost approval. Returning keeps this review draft for later.</p></div>
+          <div className="ob-review-actions"><button className="ob-button" type="button" disabled={!!busy} onClick={() => void exitReview()}><ArrowLeft size={15} /> Back to workspace</button>{onReload && <button className="ob-text-button" type="button" disabled={!!busy} onClick={() => void reloadProfile()}>Reload saved profile</button>}</div>
+        </section>}
         <nav className="ob-progress" aria-label="Brand setup progress">
           {["Website", "Brand", "Questions"].map((label, index) => (
             <button key={label} type="button" aria-current={draft.step === index ? "step" : undefined}
@@ -473,7 +518,7 @@ function OnboardingForm({ initialProject, initialPrompts, storageKey, onComplete
                   <fieldset disabled={!!busy} className="ob-fields">
                     <label className="ob-field" htmlFor={`${id}-brand`}>Brand name<input id={`${id}-brand`} value={draft.brand} maxLength={100} required placeholder="Your brand name" onChange={(event) => update({ brand: event.target.value })} /></label>
                     <label className="ob-field" htmlFor={`${id}-domain`}>Brand website<input id={`${id}-domain`} value={draft.domain} maxLength={200} required autoCapitalize="none" spellCheck={false} onChange={(event) => update({ domain: event.target.value })} /></label>
-                    <label className="ob-field" htmlFor={`${id}-description`}>Business description <span className="ob-optional">optional</span><textarea id={`${id}-description`} rows={3} value={draft.description} maxLength={1000} placeholder="What do you do, and who do you help?" onChange={(event) => update({ description: event.target.value })} /></label>
+                    <label className="ob-field" htmlFor={`${id}-description`}>Business description <span className="ob-optional">optional</span><textarea id={`${id}-description`} rows={3} value={draft.description} maxLength={1200} placeholder="What do you do, and who do you help?" onChange={(event) => update({ description: event.target.value })} /></label>
                     <BuyerContext id={`${id}-audience`} value={draft.audience} disabled={!!busy} onChange={(audience) => update({ audience })} />
                     <div className="ob-section-title"><div><h3>Your competitive set</h3><p>Add the brands your buyers compare you with.</p></div><span>{draft.competitors.length}/8</span></div>
                     <div className="ob-competitors">
@@ -516,10 +561,10 @@ function OnboardingForm({ initialProject, initialPrompts, storageKey, onComplete
                     </div>
                     {draft.questions.length < 16 && <button className="ob-add" type="button" onClick={() => update({ questions: [...draft.questions, { id: crypto.randomUUID(), text: "", selected: selectedCount < 8, intent: "other", provenance: "manual" }] })}><Plus size={15} /> Add buyer question</button>}
                   </fieldset>
-                  <div className="ob-ready-note"><CheckCircle2 size={17} /><div><strong>{prompts.length} {prompts.length === 1 ? "question" : "questions"} in your first plan.</strong><p>Only selected questions are sent to answer engines. Unselected ideas and research receipts stay in your saved profile. Choose engines and approve pricing next; saving spends no credits and enables no schedule.</p></div></div>
+                  <div className="ob-ready-note"><CheckCircle2 size={17} /><div><strong>{prompts.length} {prompts.length === 1 ? "question" : "questions"} in {onExit ? "this audit plan" : "your first plan"}.</strong><p>{onExit ? "Selected questions are added to your tracked questions and used for this audit review. Existing tracked questions and history stay saved. " : "Only selected questions are sent to answer engines. Unselected ideas and research receipts stay in your saved profile. "}Choose engines and approve pricing next; saving spends no credits and enables no schedule.</p></div></div>
                   <div className="ob-save-actions">
                     <button className="ob-button ob-primary ob-wide" type="button" onClick={() => void complete(true)} disabled={!!busy || invalidQuestions}>
-                      {busy === "save" ? <><LoaderCircle size={17} className="ob-spin" /> Saving your workspace…</> : <>Save and review first audit <ArrowRight size={17} /></>}
+                      {busy === "save" ? <><LoaderCircle size={17} className="ob-spin" /> Saving your workspace…</> : <>{onExit ? "Save and review audit" : "Save and review first audit"} <ArrowRight size={17} /></>}
                     </button>
                     <button className="ob-text-button ob-save-later" type="button" onClick={() => void complete(false)} disabled={!!busy || invalidQuestions}>Save and open workspace</button>
                     <button className="ob-text-button" type="button" onClick={() => navigate(1)} disabled={!!busy}><ArrowLeft size={14} /> Brand</button>

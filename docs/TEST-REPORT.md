@@ -1,19 +1,19 @@
 # Full feature verification — 20 October 2026
 
-The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This local before-PR pass covers improved URL-led brand onboarding, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Earlier real-Neon, public Vercel and paid-provider checks are recorded separately below; they do not verify this unpushed working tree against live services.
+The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This local pass covers rerunning onboarding from Settings with an existing key, URL-led setup, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Earlier real-Neon, public Vercel and paid-provider checks are recorded separately below; they are separate evidence and do not establish current live-provider behavior.
 
 ## Results
 
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
 | HTTP API | 161 | 0 / 0 |
-| Chromium browser workflows | 111 | 0 / 0 |
-| Firefox browser workflows | 111 | 0 / 0 |
-| WebKit browser workflows | 111 | 0 / 0 |
+| Chromium browser workflows | 120 | 0 / 0 |
+| Firefox browser workflows | 120 | 0 / 0 |
+| WebKit browser workflows | 120 | 0 / 0 |
 | Library, setup and operations tests | 153 | 0 / 0 |
-| **Total** | **647** | **0 / 0** |
+| **Total** | **674** | **0 / 0** |
 
-The complete 494-case production API/browser run passed in 4.9 minutes with zero failures, retries or skips: 161 HTTP tests plus 111 browser scenarios in each of Chromium, Firefox and WebKit. The 153 library/setup/operations tests also passed. Lint, fresh route type generation, TypeScript, 184 local documentation links and the production build passed. The production app was built first, then `npx playwright test` ran all four projects against the isolated test server; `npm run check` passed again after the final UI changes. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
+The complete 521-case production API/browser run passed in 3.8 minutes with zero failures, retries or skips: 161 HTTP tests plus 120 browser scenarios in each of Chromium, Firefox and WebKit. The 153 library/setup/operations tests also passed. Lint, fresh route type generation, TypeScript, 184 local documentation links and the production build passed. After the final code changes, `npm run check` and `npm run test:e2e` passed; the latter builds first and runs all four projects against the isolated production test server. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
 
 New coverage includes server durability after clearing the browser cache, scoped legacy migration, failed-save recovery, revision conflicts, complete backup restoration, confirmed audit deletion, idempotent monitoring recovery merges, and an exact-8 MiB backup round trip with answer hashes checked. Worker HTTP tests make isolated schedules due and execute the actual auth, pricing, provider adapters, ledger and workspace routes. They cover success, UTC cadence, revocation, per-run/monthly budgets, partial failures, missing charges, pending reservations, and retained paid results when the workspace is full.
 
@@ -21,9 +21,27 @@ Library/operations regressions exercise cross-process SQLite reads, atomic rollb
 
 Hosted transport coverage exercises owner-bound uploads above the 3 MiB direct-save threshold, 1 MiB chunk limits, UTF-8 character boundaries, exact 8 MiB round trips, checksum/schema failures, immutable chunk replay, concurrent revision conflicts, expiry/abort, encrypted staging, bounded retention, and replay of the original committed snapshot after later edits. Client tests cover lost commit acknowledgments without duplicate writes; streamed JSON tests round-trip Unicode above the platform response limit. Hosted cron tests reject absent/incorrect bearer values and spoofed Vercel headers. The local POST runner and hosted GET dispatcher share the tested monitor domain logic. Remote-mode operations tests confirm local backup and pause commands refuse without touching an unrelated SQLite database or exposing credentials.
 
+## Rerun onboarding from Settings — 20 October 2026
+
+This change is based on standalone revision `5454b1d`. An existing key can open **Settings → Rerun onboarding**, return to its original workspace without applying draft edits, and reopen/reload the same separate review draft. No key replacement, server reset, completion-marker clearing, new dependency or database migration is used.
+
+Nine new browser scenarios run against the real production session, research and storage routes with synthetic upstream responses. They verify:
+
+- Prefilled context, phone layout, draft resume and an unchanged saved snapshot after returning.
+- Retained audits/answers, all existing tracked questions, completed moves, source research, legacy receipts and long business descriptions after saving; separately configured monitoring is unchanged.
+- A newly approved research request uses the current session once, retains old/new receipts through return and reload, and saves before opening a separate unpaid audit review.
+- A rejected save preserves both the draft and old server snapshot, and a later deliberate save succeeds.
+- A newer server revision adopted by a free refresh cannot be attached to stale review edits; explicit profile reload retains the new research receipt before review resumes.
+- A lost save acknowledgment produces neither another paid request nor a stale overwrite; the committed result remains inspectable on return.
+- Unsaved Settings edits prevent accidental entry, and switching keys cannot inherit another key's review draft.
+- An already submitted audit remains mounted/running through entry and return, then records exactly one purchased result.
+- Unsynced paid answers from a simulated append failure cannot be discarded by profile reload; returning and retrying normal sync retains them on the server.
+
+The append-failure case changes only the test's isolated synthetic snapshot and delays/edits its HTTP response; it does not add a production bypass or touch real databases. Opening, returning, reloading and saving the wizard are checked for no implicit research/audit/schedule requests. The phone screenshot was inspected. All paid provider results remain fixtures; this run makes no paid live Treg calls. Hosted release checks are separate from these automated counts.
+
 ## Before-PR onboarding improvements — 20 October 2026
 
-This pass targets the original standalone repository at `/Users/ozzy/Projects/treg-lens`, on top of `56aa1cb`. It is local working-tree verification: no PR, push or deployment was made. The separate native Treg integration and OpenSEO reference fork were not changed. No runtime dependency was added.
+This earlier pass targeted the original standalone repository at `/Users/ozzy/Projects/treg-lens`, on top of `56aa1cb`, before the later `5454b1d` release. At verification time no PR, push or deployment had been made. The separate native Treg integration and OpenSEO reference fork were not changed. No runtime dependency was added.
 
 The reviewed profile now includes buyer context, explicit US/English measurement coverage, editable competitor websites, evidence-linked suggestions, and buyer-question intent and provenance. Three questions form a small starter selection; owners can revise it and retain reviewed unselected ideas. Original research input, sources and charges are saved separately from profile edits and can be reopened from the workspace. A name-only correction keeps a competitor's website while invalidating its old research rationale and supporting link.
 
@@ -33,7 +51,7 @@ First-audit findings use saved answers and citations, with exact evidence links 
 
 New production browser regressions cover competitor correction through back/reload/server save, buyer context and intent/provenance persistence, original receipt input after later profile edits, free manual setup, stale approvals, safe citations, partial/unverified research, blocked storage, saved receipt access, and partial first-result inspection at phone width. New HTTP/library cases cover context bounds, unsupported markets, approved estimate ceilings with zero provider submissions, metadata validation, bounded receipts, backward-compatible workspace snapshots, and finding denominators/deduplication. The first targeted run exposed ambiguous accessible names on two controls and an outdated URL-error assertion; those were corrected and the affected cases rerun.
 
-All new upstream responses are synthetic fixtures. This pass makes **zero paid live Treg calls** and does not establish current provider suggestion quality or hosted behavior. Desktop website/profile/question screens and phone findings were inspected visually. The hosted checks later in this document retain their original scope and do not apply to this unpushed working tree.
+All new upstream responses were synthetic fixtures. This earlier pass made **zero paid live Treg calls** and did not establish current provider suggestion quality or hosted behavior. Desktop website/profile/question screens and phone findings were inspected visually. The hosted checks later in this document retain their original scope.
 
 ## URL-led brand onboarding baseline — 20 October 2026
 

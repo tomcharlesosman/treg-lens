@@ -184,12 +184,25 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
       return false;
     }
   }, [adopt, publish, readServer]);
-  const saveProfile = useCallback(async (profile: Pick<WorkspaceSnapshot, "project" | "prompts">): Promise<boolean> => {
+  const reloadProfile = useCallback(async () => {
+    if (state.current.dirty || pendingUpload.current)
+      throw new Error("Return to your workspace and save or back up its unsynced changes before reloading the review profile.");
+    if (!await loadServer()) return null;
+    const current = state.current;
+    return { project: current.snapshot.project, prompts: current.snapshot.prompts, revision: current.revision! };
+  }, [loadServer]);
+  const saveProfile = useCallback(async (profile: Pick<WorkspaceSnapshot, "project" | "prompts">, options?: { expectedRevision?: number; preservePrompts?: boolean }): Promise<boolean> => {
     const current = state.current;
     if (demoMode || !current.loaded || !current.serverVerified || current.disposed ||
       current.saving || current.refreshing || current.conflict || current.revision === null || current.dirty) return false;
+    if (options?.expectedRevision !== undefined && options.expectedRevision !== current.revision) {
+      current.conflict = { snapshot: current.snapshot, revision: current.revision, updatedAt: current.updatedAt };
+      publish("conflict", "Your saved workspace changed during brand review. Reload the saved profile before applying changes; your review draft and research receipts are retained.");
+      return false;
+    }
     const version = current.version;
-    const submitted = { ...current.snapshot, ...profile };
+    const submitted = { ...current.snapshot, ...profile,
+      prompts: options?.preservePrompts ? [...new Set([...current.snapshot.prompts, ...profile.prompts])] : profile.prompts };
     current.saving = true;
     publish("saving");
     try {
@@ -314,5 +327,5 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
     const timer = window.setInterval(onFocus, 30_000);
     return () => { window.removeEventListener("focus", onFocus); document.removeEventListener("visibilitychange", onFocus); window.clearInterval(timer); };
   }, [demoMode, refresh]);
-  return { snapshot, sync, loaded: demoMode || sync.phase !== "loading", change, field, save, saveProfile, refresh, retry, loadServer, acceptAudit };
+  return { snapshot, sync, loaded: demoMode || sync.phase !== "loading", change, field, save, saveProfile, reloadProfile, refresh, retry, loadServer, acceptAudit };
 }

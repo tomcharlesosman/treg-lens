@@ -39,7 +39,7 @@ Need a different port, setup help, or a complete first audit? Follow [getting st
 
 ## What works today
 
-- **Guided brand setup:** reviewed buyer context, editable competitor websites, questions grouped by intent, explicit research/audit approvals and saved research receipts. Measurement coverage is US/English.
+- **Guided brand setup:** reviewed buyer context, editable competitor websites, questions grouped by intent, explicit research/audit approvals and saved research receipts. Reopen it from **Settings → Rerun onboarding** with your existing key while keeping saved work. Measurement coverage is US/English.
 - **Prompt discovery:** Google keyword suggestions and actual People Also Ask questions from 2–3 seed phrases; select up to 8 prompts to track.
 - **Answer monitoring:** ChatGPT, Gemini, Google AI Mode, and Perplexity; up to 8 questions of 500 characters each across four engines.
 - **Competitive visibility:** brand mentions, inferred recommendation positions, source coverage, trends, and share of voice from saved answers.

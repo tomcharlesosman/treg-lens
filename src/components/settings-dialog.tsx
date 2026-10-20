@@ -7,6 +7,7 @@ import {
   ExternalLink,
   Globe2,
   KeyRound,
+  RotateCcw,
   Settings2,
   ShieldCheck,
   X,
@@ -22,6 +23,7 @@ type SettingsDialogProps = {
   project: ProjectSettings;
   onSave: (project: ProjectSettings, token: string) => void;
   token?: string;
+  onRerunOnboarding?: () => Promise<boolean>;
 };
 
 export function SettingsDialog({
@@ -30,6 +32,7 @@ export function SettingsDialog({
   project,
   onSave,
   token = "",
+  onRerunOnboarding,
 }: SettingsDialogProps) {
   const id = useId();
   const [brand, setBrand] = useState(project.brand);
@@ -44,6 +47,11 @@ export function SettingsDialog({
     null,
   );
   const wasOpen = useRef(false);
+  const [startingSetup, setStartingSetup] = useState(false);
+  const [setupError, setSetupError] = useState("");
+  const settingsChanged = brand !== project.brand || domain !== project.domain ||
+    description !== (project.description ?? "") || audience !== (project.audience ?? "") ||
+    competitors !== project.competitors.join(", ") || apiToken !== token;
   const competitorList = competitors
     .split(/[\n,]/)
     .map((value) => value.trim())
@@ -57,6 +65,7 @@ export function SettingsDialog({
       setAudience(project.audience ?? "");
       setCompetitors(project.competitors.join(", "));
       setApiToken(token);
+      setSetupError("");
     }
     wasOpen.current = open;
   }, [open, project, token]);
@@ -123,6 +132,19 @@ export function SettingsDialog({
         }}
       >
         <div className="lens-dialog-body">
+          {onRerunOnboarding && <section className="lens-setup-entry" aria-label="Revisit brand setup">
+            <RotateCcw size={19} aria-hidden="true" />
+            <div><h3>A fresh look at your brand.</h3><p>Reopen onboarding with your signed-in Treg key. Your saved work stays intact; review changes before saving. New research needs its own cost approval.</p>
+              <button className="button" type="button" disabled={startingSetup || settingsChanged} onClick={async () => {
+                setStartingSetup(true); setSetupError("");
+                try { if (!await onRerunOnboarding()) setSetupError("Save or resolve workspace synchronization before reopening onboarding. Your settings are still here."); }
+                catch { setSetupError("Could not open onboarding. Your saved workspace has not changed. Please try again."); }
+                finally { setStartingSetup(false); }
+              }}>{startingSetup ? "Opening brand setup…" : "Rerun onboarding"}<ArrowUpRight size={13} /></button>
+              {settingsChanged && <p>Save or close your settings edits before rerunning onboarding.</p>}
+              {setupError && <p role="alert" className="lens-inline-error">{setupError}</p>}
+            </div>
+          </section>}
           <div className="lens-field-section-label">
             <span>01</span> BRAND PROFILE
           </div>

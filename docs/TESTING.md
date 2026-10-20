@@ -32,13 +32,14 @@ npm run test:e2e:report
 
 ## Coverage
 
-The complete local pass on **20 October 2026** passed **647 test executions**: 153 library/setup/operations tests and 494 production E2E tests (161 HTTP API plus 111 scenarios in each of Chromium, Firefox and WebKit), with zero failures, retries or skips. This verifies the standalone repository's local before-PR working tree on top of `56aa1cb`. It made no paid live calls, push, PR or deployment. See [the dated report](TEST-REPORT.md) for scope and separate earlier real-Neon/public-Vercel checks.
+The complete local pass on **20 October 2026** passed **674 test executions**: 153 library/setup/operations tests and 521 production E2E tests (161 HTTP API plus 120 scenarios in each of Chromium, Firefox and WebKit), with zero failures, retries or skips. This verifies the standalone repository's Settings rerun changes on top of `5454b1d` using fixtures, with no paid live calls. See [the dated report](TEST-REPORT.md) for scope and separate earlier real-Neon/public-Vercel checks; automated results alone are not hosted verification.
 
 | Area | Coverage |
 | --- | --- |
 | Public pages | Product links, fork destinations, navigation anchors, all FAQ disclosures, compact sign-in, and demo entry points |
 | Sign-in and session | Slow JavaScript/client readiness, late session responses during key entry, required key, reveal/hide, trimmed input, invalid and unscoped keys, unavailable/malformed upstream responses, busy states, retries, encrypted cookie flags, reload, switching keys, logout and logout failure |
 | Brand onboarding | URL validation, free manual setup, buyer context and honest US/English coverage, fresh consent after context changes, editable competitor domains, safe supporting citations, three-question starter selection, editable intent and factual provenance, reviewed unselected ideas, original research receipts, and recovery without automatic paid retries |
+| Rerun onboarding | Existing-key Settings entry, independent resumable draft, return without applying edits, retained audits/questions/completed moves/source research/receipts, unchanged monitoring, no implicit paid calls, long descriptions, stale-revision rejection after refresh, explicit rebase, failed/lost saves, key isolation, an audit kept running through entry/return, and unsynced paid evidence protected from profile reload |
 | Demo boundaries | All paid/account entry points require sign-in, demo edits stay separate from private saved workspaces, exports are labeled illustrative |
 | Settings and storage | Empty workspace, project validation, competitors, durable server save/reload, cross-browser per-key isolation, revision conflicts, browser recovery/migration, recovered or retried saves that already match the server, malformed data, legacy key removal, and backup of unsaved changes |
 | Full backups | Complete versioned workspace export/import, replacement confirmation, rejected filtered/demo/credential-bearing files, exact-8 MiB round trips, confirmed audit deletion, idempotent recovery merges, and source-research preservation |
