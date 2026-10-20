@@ -5,6 +5,8 @@ import {
   ArrowDown,
   ArrowRight,
   Check,
+  Download,
+  History,
   ChevronDown,
   CircleHelp,
   Compass,
@@ -25,15 +27,21 @@ import type {
   DiscoveryEstimate,
   DiscoveryResult,
 } from "@/lib/discovery";
+import { createSavedDiscovery, parseSavedDiscovery, suggestedDiscoverySeeds, type SavedDiscovery } from "@/lib/discovery-research";
+import type { Project } from "@/lib/workspace-data";
 import "./discovery-dialog.css";
 
 type DiscoveryDialogProps = {
   open: boolean;
   onClose: () => void;
-  onAdd: (prompts: string[]) => void;
+  onAdd: (receipt: SavedDiscovery, selectedIds: string[]) => Promise<boolean>;
+  onSave: (receipt: SavedDiscovery) => Promise<boolean>;
   token?: string;
-  brand: string;
+  project: Project;
+  storageKey: string;
+  savedResearch: SavedDiscovery[];
 };
+type Recovery = { pending: boolean; startedAt: string; input: SavedDiscovery["input"]; estimate: DiscoveryEstimate; receipt?: SavedDiscovery };
 const money = (amount: number) =>
   new Intl.NumberFormat("en-US", {
     style: "currency",
@@ -43,145 +51,188 @@ const money = (amount: number) =>
   }).format(amount);
 
 export function DiscoveryDialog({
-  open,
-  onClose,
-  onAdd,
-  token = "",
-  brand,
+  open, onClose, onAdd, onSave, token = "", project, storageKey, savedResearch,
 }: DiscoveryDialogProps) {
+  const brand = project.brand;
   const id = useId();
-  const [seeds, setSeeds] = useState([
-    "AI agent tools",
-    "AI search visibility",
-  ]);
+  const [seeds, setSeeds] = useState(() => suggestedDiscoverySeeds(project));
   const [apiToken, setApiToken] = useState(token);
-  const [serverConfigured, setServerConfigured] = useState<boolean | null>(
-    null,
-  );
-  const [quoteState, setQuoteState] = useState<{
-    request: string;
-    estimate: DiscoveryEstimate | null;
-    error: string;
-  } | null>(null);
+  const [serverConfigured, setServerConfigured] = useState<boolean | null>(null);
+  const [quoteState, setQuoteState] = useState<{ request: string; estimate: DiscoveryEstimate | null; error: string } | null>(null);
   const [running, setRunning] = useState(false);
   const runningRef = useRef(false);
   const [result, setResult] = useState<DiscoveryResult | null>(null);
+  const [receipt, setReceipt] = useState<SavedDiscovery | null>(null);
+  const [saveState, setSaveState] = useState<"saving" | "saved" | "error" | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [interrupted, setInterrupted] = useState(false);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"question" | "keyword">(
-    "question",
-  );
+  const [activeTab, setActiveTab] = useState<"question" | "keyword">("question");
   const wasOpen = useRef(false);
-  const cleanSeeds = useMemo(
-    () => seeds.map((seed) => seed.trim()).filter(Boolean),
-    [seeds],
-  );
-  const validSeeds =
-    cleanSeeds.length >= 2 &&
-    cleanSeeds.length <= 3 &&
-    cleanSeeds.every((seed) => seed.length >= 2 && seed.length <= 100) &&
-    new Set(cleanSeeds.map((seed) => seed.toLowerCase())).size ===
-      cleanSeeds.length;
-  const quoteRequest = useMemo(
-    () => JSON.stringify({ seeds: cleanSeeds, brand, estimateOnly: true }),
-    [cleanSeeds, brand],
-  );
-  const estimate =
-    quoteState?.request === quoteRequest ? quoteState.estimate : null;
-  const quoteError =
-    quoteState?.request === quoteRequest ? quoteState.error : "";
-  const loadingQuote =
-    open &&
-    validSeeds &&
-    !result &&
-    !running &&
-    quoteState?.request !== quoteRequest;
+  const loadedKey = useRef("");
+  const seedContext = useRef("");
+  const projectContext = JSON.stringify([project.brand, project.domain, project.description, project.audience, project.buyerQuestions]);
+  const recoveryKey = `${storageKey}:discovery:v1`;
+  const cleanSeeds = useMemo(() => seeds.map((seed) => seed.trim()).filter(Boolean), [seeds]);
+  const validSeeds = cleanSeeds.length >= 2 && cleanSeeds.length <= 3 && cleanSeeds.every((seed) => seed.length >= 2 && seed.length <= 100) && new Set(cleanSeeds.map((seed) => seed.toLowerCase())).size === cleanSeeds.length;
+  const quoteRequest = useMemo(() => JSON.stringify({ seeds: cleanSeeds, brand, estimateOnly: true }), [cleanSeeds, brand]);
+  const estimate = quoteState?.request === quoteRequest ? quoteState.estimate : null;
+  const quoteError = quoteState?.request === quoteRequest ? quoteState.error : "";
+  const loadingQuote = open && validSeeds && !result && !running && !interrupted && quoteState?.request !== quoteRequest;
 
+  function persistRecovery(value: Recovery) {
+    try {
+      const raw = JSON.stringify(value);
+      localStorage.setItem(recoveryKey, raw);
+      return localStorage.getItem(recoveryKey) === raw;
+    } catch { return false; }
+  }
+  function clearRecovery(reviewedOrNotSubmitted = false) {
+    try {
+      // A viewed/imported historical receipt is unrelated to an interrupted
+      // submission. Only explicit activity review (or a pre-submission refusal)
+      // can clear a pending marker; acknowledged returned receipts use pending:false.
+      if (!reviewedOrNotSubmitted && JSON.parse(localStorage.getItem(recoveryKey) || "null")?.pending === true) return;
+      localStorage.removeItem(recoveryKey);
+    } catch { /* An acknowledged server copy remains safe. */ }
+  }
+  function showReceipt(saved: SavedDiscovery, previouslySaved = true) {
+    setReceipt(saved);
+    setResult(saved.result);
+    setSeeds(saved.input.seeds);
+    const questions = saved.result.candidates.filter((candidate) => candidate.kind === "question");
+    setActiveTab(questions.length ? "question" : "keyword");
+    setSelected(saved.selectedCandidateIds.length ? saved.selectedCandidateIds : questions.slice(0, 3).map((candidate) => candidate.id));
+    setSaveState(previouslySaved ? "saved" : "error");
+    setError("");
+  }
+  async function saveReceipt(saved: SavedDiscovery) {
+    setSaveState("saving");
+    try {
+      if (await onSave(saved)) {
+        setSaveState("saved");
+        clearRecovery();
+        setError("");
+        return true;
+      }
+    } catch { /* Keep the original paid receipt recoverable. */ }
+    setSaveState("error");
+    setError("Research returned, but its server save was not acknowledged. Keep this result, retry saving, or download it before leaving. No research will be repeated.");
+    return false;
+  }
+  function downloadRecovery() {
+    const recovery = receipt ?? (() => { try { return JSON.parse(localStorage.getItem(recoveryKey) || "null"); } catch { return null; } })();
+    if (!recovery) return;
+    const url = URL.createObjectURL(new Blob([JSON.stringify(recovery, null, 2)], { type: "application/json" }));
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `treg-lens-discovery-${receipt?.id ?? "interrupted"}.json`;
+    link.click();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  }
   useEffect(() => {
     if (open && !wasOpen.current && !runningRef.current) setApiToken(token);
     wasOpen.current = open;
-  }, [open, token]);
+    if (!open || !storageKey) return;
+    const restoring = loadedKey.current !== recoveryKey;
+    if (!restoring && (seedContext.current === projectContext || result || interrupted || runningRef.current)) return;
+    const timer = window.setTimeout(() => {
+    seedContext.current = projectContext;
+    setSeeds(suggestedDiscoverySeeds(project));
+    if (!restoring) return;
+    loadedKey.current = recoveryKey;
+    try {
+      const raw = JSON.parse(localStorage.getItem(recoveryKey) || "null") as Recovery | null;
+      const recovered = parseSavedDiscovery(raw?.receipt);
+      setInterrupted(raw?.pending === true);
+      if (recovered) {
+        setReceipt(recovered); setResult(recovered.result); setSeeds(recovered.input.seeds);
+        setActiveTab(recovered.result.questionCount ? "question" : "keyword");
+        setSelected(recovered.selectedCandidateIds.length ? recovered.selectedCandidateIds : recovered.result.candidates.filter((c) => c.kind === "question").slice(0, 3).map((c) => c.id));
+        setSaveState("error"); setError("Recovered returned research. Save this result without making another paid call.");
+      } else if (raw?.pending === true) {
+        setInterrupted(true);
+        setError("A discovery was interrupted before a result was acknowledged. Check Treg activity before deliberately starting again. It will not be repeated automatically.");
+      }
+    } catch { /* Invalid recovery data cannot authorize research. */ }
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [open, token, storageKey, recoveryKey, project, projectContext, result, interrupted]);
   useEffect(() => {
     if (!open) return;
     const controller = new AbortController();
-    fetch("/api/aeo/status", { signal: controller.signal })
-      .then((response) => response.json())
-      .then((data) => setServerConfigured(data.configured === true))
-      .catch(() => {
-        if (!controller.signal.aborted) setServerConfigured(false);
-      });
+    fetch("/api/aeo/status", { signal: controller.signal }).then((response) => response.json()).then((data) => setServerConfigured(data.configured === true)).catch(() => { if (!controller.signal.aborted) setServerConfigured(false); });
     return () => controller.abort();
   }, [open]);
   useEffect(() => {
-    if (!open || !validSeeds || running || result) return;
+    if (!open || !validSeeds || running || result || interrupted) return;
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       try {
-        const response = await fetch("/api/aeo/discover", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: quoteRequest,
-          signal: controller.signal,
-        });
+        const response = await fetch("/api/aeo/discover", { method: "POST", headers: { "Content-Type": "application/json" }, body: quoteRequest, signal: controller.signal });
         const data = await response.json();
-        if (!response.ok)
-          throw new Error(data.error || "Could not load discovery pricing.");
-        if (!controller.signal.aborted)
-          setQuoteState({ request: quoteRequest, estimate: data, error: "" });
+        if (!response.ok) throw new Error(data.error || "Could not load discovery pricing.");
+        if (!controller.signal.aborted) setQuoteState({ request: quoteRequest, estimate: data, error: "" });
       } catch (error) {
-        if (!controller.signal.aborted)
-          setQuoteState({
-            request: quoteRequest,
-            estimate: null,
-            error:
-              error instanceof Error
-                ? error.message
-                : "Could not load discovery pricing.",
-          });
+        if (!controller.signal.aborted) setQuoteState({ request: quoteRequest, estimate: null, error: error instanceof Error ? error.message : "Could not load discovery pricing." });
       }
     }, 450);
-    return () => {
-      window.clearTimeout(timer);
-      controller.abort();
-    };
-  }, [open, validSeeds, running, result, quoteRequest]);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [open, validSeeds, running, result, interrupted, quoteRequest]);
 
   async function discover() {
-    if (!validSeeds || !estimate || runningRef.current) return;
-    setError("");
-    setRunning(true);
-    runningRef.current = true;
+    if (!validSeeds || !estimate || runningRef.current || interrupted) return;
+    try {
+      if (JSON.parse(localStorage.getItem(recoveryKey) || "null")?.pending === true) {
+        setInterrupted(true);
+        setError("Review the interrupted discovery in Treg activity before starting new paid research.");
+        return;
+      }
+    } catch { /* The recovery write below still has to succeed before submission. */ }
+    const originalInput = { brand, domain: project.domain, seeds: [...cleanSeeds] };
+    const pending: Recovery = { pending: true, startedAt: new Date().toISOString(), input: originalInput, estimate };
+    if (!persistRecovery(pending)) {
+      setError("Browser recovery storage is unavailable. Enable storage before paid discovery so an interrupted request cannot be repeated accidentally.");
+      return;
+    }
+    setError(""); setRunning(true); runningRef.current = true;
     try {
       const response = await fetch("/api/aeo/discover", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          seeds: cleanSeeds,
-          brand,
-          ...(apiToken.trim() ? { token: apiToken.trim() } : {}),
-        }),
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...originalInput, maxCostUsd: estimate.totalCostUsd, ...(apiToken.trim() ? { token: apiToken.trim() } : {}) }),
       });
-      const data: DiscoveryResult & { error?: string } = await response.json();
-      if (!response.ok)
-        throw new Error(data.error || "Discovery could not finish.");
-      setResult(data);
-      const questions = data.candidates.filter(
-        (candidate) => candidate.kind === "question",
-      );
+      const data: DiscoveryResult & { error?: string; savedReceipt?: SavedDiscovery } = await response.json();
+      if (!response.ok) {
+        if ([400, 401, 403, 409, 429].includes(response.status)) clearRecovery(true);
+        else setInterrupted(true);
+        if (response.status === 409) setQuoteState(null);
+        throw new Error(data.error || "Discovery could not finish. Check Treg activity before another request.");
+      }
+      const saved = parseSavedDiscovery(data.savedReceipt) ?? createSavedDiscovery(originalInput, originalInput.seeds, data.acceptedEstimate ?? estimate, data);
+      setReceipt(saved); setResult(saved.result);
+      const questions = saved.result.candidates.filter((candidate) => candidate.kind === "question");
       setActiveTab(questions.length ? "question" : "keyword");
       setSelected(questions.slice(0, 3).map((candidate) => candidate.id));
+      // The server normally already appended this receipt. Keep an independent
+      // credential-free browser copy until its workspace acknowledgement arrives.
+      persistRecovery({ ...pending, pending: false, receipt: saved });
+      await saveReceipt(saved);
     } catch (error) {
-      setError(
-        error instanceof Error
-          ? error.message
-          : "Discovery could not finish. Check Treg activity before retrying.",
-      );
-    } finally {
-      setRunning(false);
-      runningRef.current = false;
-    }
+      setError(error instanceof Error ? error.message : "Discovery could not finish. Check Treg activity before retrying.");
+      try { if (JSON.parse(localStorage.getItem(recoveryKey) || "null")?.pending === true) setInterrupted(true); } catch { setInterrupted(true); }
+    } finally { setRunning(false); runningRef.current = false; }
   }
-
+  async function importSelected() {
+    if (!receipt || !selected.length || importing) return;
+    setImporting(true); setError("");
+    try {
+      if (await onAdd(receipt, selected)) {
+        clearRecovery(); setResult(null); setReceipt(null); setSelected([]); setSaveState(null); onClose();
+      } else setError("The import was not acknowledged. Your original research is retained. Resolve the workspace save before trying to import again.");
+    } catch { setError("The import could not be saved. Your original research is retained; no paid request was repeated."); }
+    finally { setImporting(false); }
+  }
   function toggle(candidate: DiscoveryCandidate) {
     setSelected((previous) =>
       previous.includes(candidate.id)
@@ -193,9 +244,6 @@ export function DiscoveryDialog({
   }
   const visibleCandidates =
     result?.candidates.filter((candidate) => candidate.kind === activeTab) ??
-    [];
-  const selectedCandidates =
-    result?.candidates.filter((candidate) => selected.includes(candidate.id)) ??
     [];
 
   return (
@@ -228,6 +276,17 @@ export function DiscoveryDialog({
           Start with a category. Discover what people are already asking.
         </p>
       </div>
+      {savedResearch.length > 0 && (
+        <details className="lens-discovery-history">
+          <summary><History size={14} /> Saved research <span>{savedResearch.length}</span></summary>
+          <p>Reopen original evidence without buying it again. Latest 20 receipts are retained in full workspace backups.</p>
+          {[...savedResearch].reverse().map((saved) => (
+            <button type="button" key={saved.id} disabled={running || importing || saveState === "saving" || (Boolean(receipt) && saveState === "error")} onClick={() => showReceipt(saved)}>
+              <span><strong>{saved.input.seeds.join(" · ")}</strong><small>{saved.input.brand} · {new Date(saved.result.completedAt).toLocaleString("en-US")} · {saved.result.candidates.length} candidates</small></span><ArrowRight size={13} />
+            </button>
+          ))}
+        </details>
+      )}
       {result ? (
         <>
           <div className="lens-discovery-result-intro">
@@ -247,7 +306,7 @@ export function DiscoveryDialog({
               </span>
             </div>
             <p>
-              Choose up to 8 prompts for {brand || "your brand"}. Questions come
+              Choose up to 8 prompts for {receipt?.input.brand || "your brand"}. Questions come
               directly from Google’s People Also Ask; keyword ideas keep their
               original phrasing.
             </p>
@@ -288,6 +347,13 @@ export function DiscoveryDialog({
               </p>
             )}
           </div>
+          <div className="lens-discovery-save-status" role="status" aria-live="polite">
+            <span>{saveState === "saved" ? "Original research saved to your workspace." : saveState === "saving" ? "Saving original research…" : "Original research needs a server save."}</span>
+            {saveState === "error" && receipt && <button type="button" onClick={() => void saveReceipt(receipt)}>Retry saving research</button>}
+            <button type="button" onClick={downloadRecovery}><Download size={12} /> Download research</button>
+          </div>
+          {error && <div role="alert" className="lens-dialog-notice lens-dialog-notice-error lens-discovery-save-error">{error}</div>}
+          {result.callIds.length > 0 && <details className="lens-discovery-call-ids"><summary>Treg call IDs</summary>{result.callIds.map((callId) => <code key={callId}>{callId}</code>)}</details>}
           <div className="lens-discovery-result-toolbar">
             <div role="tablist" aria-label="Discovered prompts">
               <button
@@ -403,11 +469,8 @@ export function DiscoveryDialog({
             <button
               className="lens-discovery-back"
               type="button"
-              onClick={() => {
-                setResult(null);
-                setSelected([]);
-                setError("");
-              }}
+              disabled={saveState !== "saved" || importing}
+              onClick={() => { setResult(null); setReceipt(null); setSelected([]); setError(""); setSaveState(null); }}
             >
               <Search size={13} /> Try different seeds
             </button>
@@ -417,15 +480,10 @@ export function DiscoveryDialog({
             <button
               className="lens-dialog-primary"
               type="button"
-              disabled={selected.length === 0}
-              onClick={() => {
-                onAdd(selectedCandidates.map((candidate) => candidate.text));
-                setResult(null);
-                setSelected([]);
-                onClose();
-              }}
+              disabled={selected.length === 0 || saveState !== "saved" || importing}
+              onClick={() => void importSelected()}
             >
-              Add {selected.length || "selected"}{" "}
+              {importing ? "Saving" : "Add"} {selected.length || "selected"}{" "}
               {selected.length === 1 ? "prompt" : "prompts"} <Plus size={15} />
             </button>
             <p className="lens-cost-note">
@@ -442,12 +500,20 @@ export function DiscoveryDialog({
           }}
         >
           <div className="lens-dialog-body">
-            <fieldset className="lens-dialog-fieldset" disabled={running}>
+            {interrupted && (
+              <div className="lens-discovery-interrupted">
+                <strong>Review interrupted research</strong>
+                <p>Any returned server evidence appears in Saved research. Review Treg activity for pending or settled calls before approving fresh research.</p>
+                <button type="button" onClick={downloadRecovery}><Download size={12} /> Download recovery record</button>
+                <button type="button" onClick={() => { clearRecovery(true); setInterrupted(false); setError(""); setQuoteState(null); }}>I checked Treg activity — start new research</button>
+              </div>
+            )}
+            <fieldset className="lens-dialog-fieldset" disabled={running || interrupted}>
               <div className="lens-field-section-label">
                 <span>01</span> PLANT A FEW SEEDS
               </div>
               <p className="lens-discovery-seed-description">
-                Add 2–3 terms your customers use to describe your category.
+                {suggestedDiscoverySeeds(project).some(Boolean) ? "Starting points from your reviewed buyer questions and business context. Edit them to focus this research." : `Describe what ${brand || "your business"} sells and who buys it. Add 2–3 relevant terms; nothing runs until you approve.`}
               </p>
               <div className="lens-discovery-seeds">
                 {seeds.map((seed, index) => (
@@ -472,9 +538,9 @@ export function DiscoveryDialog({
                         }
                         placeholder={
                           index === 0
-                            ? "AI agent tools"
+                            ? "Your product or service category"
                             : index === 1
-                              ? "AI search visibility"
+                              ? "A buyer problem or use case"
                               : "Your next category"
                         }
                         maxLength={100}
@@ -582,7 +648,7 @@ export function DiscoveryDialog({
                       onChange={(event) => setApiToken(event.target.value)}
                       placeholder={
                         serverConfigured
-                          ? "Using server credentials"
+                          ? "Using your signed-in key"
                           : "Enter your Treg API token"
                       }
                       autoComplete="off"
@@ -591,7 +657,7 @@ export function DiscoveryDialog({
                   </label>
                   <p className="lens-field-help">
                     {serverConfigured
-                      ? "Your server is connected. Add a token to use another account."
+                      ? "Using your signed-in Treg key. Add a token to use another account."
                       : "Used only for this discovery and never saved to disk."}{" "}
                     <a
                       href="https://treg.to/aeo"
@@ -660,6 +726,7 @@ export function DiscoveryDialog({
                 !estimate ||
                 loadingQuote ||
                 running ||
+                interrupted ||
                 (serverConfigured === false && !apiToken.trim())
               }
             >

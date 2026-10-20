@@ -2,6 +2,7 @@ import { withStorage, type StorageSession } from "./storage-database";
 import { parseWorkspaceSnapshot, type WorkspaceSnapshot } from "./workspace-storage";
 import type { SavedRun } from "./workspace-data";
 import { MAX_WORKSPACE_BYTES, WorkspaceValidationError, sanitizeWorkspaceSnapshot } from "./workspace-validation";
+import { MAX_DISCOVERY_RESEARCH, parseSavedDiscovery, type SavedDiscovery } from "./discovery-research";
 export { MAX_WORKSPACE_BYTES, WorkspaceValidationError, sanitizeWorkspaceSnapshot } from "./workspace-validation";
 
 export type WorkspaceEnvelope = {
@@ -71,5 +72,23 @@ export async function appendWorkspaceRun(workspaceId: string, run: SavedRun): Pr
       ? { ...current.snapshot, runs: [...current.snapshot.runs, initial.runs[0]] }
       : initial;
     return writeWorkspace(tx, workspaceId, snapshot, current.revision + 1);
+  }, { write: true, lock: `workspace:${workspaceId}` });
+}
+
+/** Paid discovery appends original evidence without replacing concurrent profile edits. */
+export async function appendWorkspaceDiscovery(workspaceId: string, receipt: SavedDiscovery): Promise<WorkspaceEnvelope> {
+  assertWorkspaceId(workspaceId);
+  const clean = parseSavedDiscovery(receipt);
+  if (!clean) throw new WorkspaceValidationError("Discovery research could not be validated.");
+  return withStorage(async (tx) => {
+    const current = await getWorkspaceInSession(tx, workspaceId);
+    if (current.snapshot?.discoveryResearch?.some((item) => item.id === clean.id)) return current;
+    const snapshot = current.snapshot ?? {
+      project: { brand: clean.input.brand, domain: clean.input.domain, competitors: [] },
+      prompts: [], runs: [], done: [], sourceResearch: {},
+    };
+    return writeWorkspace(tx, workspaceId, { ...snapshot,
+      discoveryResearch: [...(snapshot.discoveryResearch ?? []), clean].slice(-MAX_DISCOVERY_RESEARCH),
+    }, current.revision + 1);
   }, { write: true, lock: `workspace:${workspaceId}` });
 }

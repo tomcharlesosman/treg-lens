@@ -1,4 +1,5 @@
 import type { AnswerResult, Engine } from "./aeo";
+import type { MeasurementScope } from "./measurement";
 export const SUPPORTED_MARKET = { country: "US", language: "en" } as const;
 export type MeasurementMarket = typeof SUPPORTED_MARKET;
 export const BUYER_QUESTION_INTENTS = ["category", "comparison", "use-case", "purchase", "branded", "other"] as const;
@@ -58,6 +59,9 @@ export type SavedRun = {
   prompts?: string[];
   competitors?: string[];
   engines?: Engine[];
+  /** Frozen collection identities; absent on legacy runs, never inferred retroactively. */
+  measurement?: MeasurementScope;
+  competitorDetails?: CompetitorDetail[];
   results: AnswerResult[];
   errors: { prompt: string; engine: string; error: string }[];
   totalCostUsd: number;

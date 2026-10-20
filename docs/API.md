@@ -127,6 +127,8 @@ type WorkspaceSnapshot = {
     onboardingCompletedAt?: string;
   };
   prompts: string[];
+  promptRecords?: PromptRecord[];
+  discoveryResearch?: SavedDiscovery[];
   runs: SavedRun[];
   done: string[];
   sourceResearch: Record<string, SourceResearch>;
@@ -135,7 +137,46 @@ type WorkspaceSnapshot = {
 
 The verified key and stable deployment secret determine the namespace. The same key reaches the same instance's saved workspace across browsers. An unrelated key cannot select or read it by changing request fields.
 
-`competitors` and `prompts` remain the canonical tracked values for existing clients and backups. Optional `competitorDetails` has at most eight entries, matched by competitor name; removed names lose their metadata. Names are at most 100 characters, domains 253, and reasons 240. `buyerQuestions` holds up to sixteen reviewed ideas, including unselected questions; text is at most 500 characters and reasons 240. Only the selected `prompts` determine audit scope. Missing metadata for a newly selected prompt is labeled manual with `other` intent.
+`competitors` and `prompts` remain compatible tracked values for existing clients and backups. In the UI, `prompts` contains active manual audit defaults; an individual execution selects at most eight. Optional `competitorDetails` has at most eight entries, matched by competitor name; removed names lose their metadata. Names are at most 100 characters, domains 253, and reasons 240. `buyerQuestions` holds up to sixteen reviewed ideas, including unselected questions; text is at most 500 characters and reasons 240. Missing metadata for a newly selected prompt is labeled manual with `other` intent.
+
+Optional `promptRecords` holds at most 512 records. Its contract is:
+
+```ts
+type PromptRecord = {
+  id: string; // unique, 1–100 characters
+  text: string; // unique exact trimmed wording, 1–500 characters
+  intent: "category" | "comparison" | "use-case" | "purchase" | "branded" | "other";
+  kind: "neutral" | "branded";
+  provenance: "generated" | "manual" | "discovered";
+  topic?: string; // at most 100 characters
+  paused: boolean;
+  archived: boolean;
+  evidence?: { discoveryId: string; candidateId: string }; // each 1–200 characters
+};
+```
+
+Editing wording creates/restores a separate identity and retains the original history. Neutral/branded classification is reviewable; classification changes affect future scopes, not captured runs. Pause/archive do not alter a separately approved monitoring schedule. Older snapshots can omit this inventory; the UI derives compatible records from original wording without inventing missing historical provider settings.
+
+Optional `discoveryResearch` holds at most 20 validated `SavedDiscovery` receipts, defined under [prompt discovery](#prompt-discovery). Original candidates, receipt selection IDs, estimates, errors, locale, call IDs and known/unknown/reserved costs survive full-backup export/import. A prompt's `evidence` links its discovery/candidate IDs; retaining the original candidate is what preserves seed/provider/origin/volume provenance. Old receipts may be evicted by the bounded newest-20 policy, so export a full backup before pruning/researching beyond the retained history.
+
+`SavedRun` can optionally include `competitorDetails` and `measurement`. Competitor details are frozen name/domain pairs for the selected competitor names, not a reference to current project settings. `measurement` has this bounded contract:
+
+```ts
+type MeasurementScope = {
+  version: 1;
+  market: { country: "US"; language: "en" };
+  brand: { name: string; domain: string };
+  prompts: Array<{ id: string; text: string; kind: "neutral" | "branded" }>;
+  collectors: Array<{
+    engine: "chatgpt" | "perplexity" | "gemini" | "google";
+    sourceKind: "web-interface" | "model-api";
+    provider: string;
+    model: string;
+  }>;
+};
+```
+
+A scope contains 1–8 question identities and 1–4 distinct engines and must match its run's declared identity/configuration. Provider/model labels are at most 100 characters. Collector defaults carry an explicit unreported model-version label; they do not claim a pinned underlying model. Legacy runs may omit both fields and remain readable. Their missing competitor domains stay unknown and their missing collector settings prevent progress comparisons. Comparable trends require matching recorded scope and at least 90% answered/requested coverage; use the [measurement rules](ARCHITECTURE.md#analytics-and-evidence) when interpreting them. Original raw observations remain inspectable.
 
 Optional `researchReceipts` retains the last five original onboarding outcomes independently of current profile edits or question selections. Each retains original URL, sources, questions, call IDs, completion time and known/unknown billing. New receipts also retain `input` with the normalized submitted URL, optional reviewed audience and fixed market, separate from any inferred audience suggestion. Older receipts may omit it. Applying the same receipt twice does not duplicate it. Profile identity changes retain these receipts as workspace evidence, while brand-specific audience, competitor and question context is inherited only for the same brand/domain. Explicit workspace replacement or backup import still replaces the supplied snapshot; this history is not an immutable billing ledger.
 
@@ -327,10 +368,12 @@ type AuditResponse = {
   workspaceRevision?: number;
   workspaceUpdatedAt?: string | null;
   storageError?: string;
+  measurement: MeasurementScope;
+  competitorDetails: Array<{ name: string; domain?: string }>;
 };
 ```
 
-The route atomically appends the result to server history. With a session, the signed-in workspace owns the evidence even when an explicit in-memory key pays. Without a session, an explicit key owns its own derived namespace. `saved:false` preserves the paid result in the HTTP response and includes a storage warning; export/reconcile it rather than rerunning the paid request to save it.
+The route atomically appends the result to server history. With a session, the signed-in workspace owns the evidence even when an explicit in-memory key pays. Without a session, an explicit key owns its own derived namespace. `saved:false` preserves the paid result in the HTTP response and includes a storage warning; export/reconcile it rather than rerunning the paid request to save it. The route captures question identities and competitor domains from the matching saved project before provider execution, and returns the same `measurement`/`competitorDetails` snapshot whether or not append succeeds. Current profile edits never backfill an old audit's identity metadata.
 
 The response can contain partial results or even zero successful answers. Inspect `errors` and cost flags after every `200`. Individual provider authorization, billing, timeout, and availability failures appear in `errors`; their upstream HTTP statuses are not necessarily the Lens response status.
 
@@ -403,13 +446,16 @@ After a paid submission, upstream errors return a `200` research receipt with er
 
 ```json
 {
-  "seeds": ["AI agent tools", "AI search visibility"],
+  "seeds": ["commercial bakery equipment", "bakery ovens for small businesses"],
   "brand": "Your Brand",
+  "domain": "your-brand.com",
   "estimateOnly": true
 }
 ```
 
-`seeds` must contain 2–3 single-line strings, each 2–100 trimmed characters, with at least two distinct values after case-insensitive deduplication. `brand` is optional and at most 100 trimmed characters. `estimateOnly` must be a boolean when supplied and defaults to `false`. Paid requests can include `token`.
+`seeds` must contain 2–3 single-line strings, each 2–100 trimmed characters, with at least two distinct values after case-insensitive deduplication. `brand` is optional and at most 100 trimmed characters. Optional `domain` is a single-line project-context string of at most 253 characters; it is retained in the receipt, not fetched by discovery. `estimateOnly` must be a boolean when supplied and defaults to `false`. Paid requests can include `token` and `maxCostUsd` (finite, nonnegative, at most `$0.10`). The browser always submits its accepted quote as the ceiling. A higher fresh quote returns `409` before provider work. Legacy API clients may omit the ceiling, retaining the global `$0.10` bound.
+
+The UI suggests editable seeds from reviewed nonbranded buyer questions, description or audience using saved context only. It makes no model call to create defaults and leaves missing context empty for user input. Generated onboarding questions remain distinct from observed discovery.
 
 With `estimateOnly: true`, no authentication or paid call is required. The `200` response is:
 
@@ -454,10 +500,27 @@ type DiscoveryResult = {
   errors: Array<{ stage: "keywords" | "questions"; seed: string; error: string }>;
   completedAt: string;
   locale: { country: "US"; language: "en" };
+  callIds: string[];
+  acceptedEstimate?: DiscoveryEstimate;
+  savedReceipt: SavedDiscovery;
+  savedWorkspaceId: string;
+  saved: boolean;
+  storageError?: string;
+};
+type SavedDiscovery = {
+  id: string;
+  input: { brand: string; domain: string; seeds: string[] };
+  estimate: DiscoveryEstimate; // fresh accepted catalog quote
+  result: Omit<DiscoveryResult, "savedReceipt" | "savedWorkspaceId" | "saved" | "storageError" | "acceptedEstimate">;
+  selectedCandidateIds: string[];
 };
 ```
 
 Questions have `searchVolume: null`; keyword volume is present only when returned by the provider. No questions are synthesized. Failed stages remain in `errors` while successful candidates survive. A pending upstream `202` adds a stage error, marks billing incomplete, and reports its known reservation in `reservedCostUsd`; Lens does not poll the call or start a replacement. The eight-prompt import selection limit belongs to the UI, not the candidate response.
+
+Before responding, the route atomically appends the original validated receipt to the owner workspace, retaining the latest 20 without replacing concurrent profile edits. With a session, the signed-in workspace owns the receipt even when an in-memory override key pays; an API-only caller uses its own derived namespace. Duplicate receipt IDs do not append twice. Responses retain candidates, `savedReceipt` and `saved:false`/`storageError` when persistence fails; save/export this evidence rather than spending again. Imports are a separate revision-checked workspace save that adds selected questions/provenance and updates the receipt's selected candidate IDs; the UI reports success only after acknowledgment.
+
+The browser stores a credential-free pending marker before requesting paid discovery and a returned receipt until its workspace save is acknowledged. Recovery-storage failure blocks starting new paid research. Reload or an ambiguous network failure never authorizes automatic resubmission. A receipt download is recovery evidence; the full-workspace backup remains the supported complete restore format. Opening saved receipts, changing selection or retrying persistence does not run discovery again.
 
 ## Source research
 
@@ -548,7 +611,7 @@ All monetary values are USD. Catalog estimates are reservations, not receipts. P
 | Discovery | `totalCostKnown: false`; known settled sum stays in `totalCostUsd`; known pending reservations stay separately in `reservedCostUsd` |
 | Source | `costKnown: false`, `totalCostUsd: null`, and known partial sum in `knownCostUsd` |
 
-Zero and unknown are different. Reconcile ambiguous failures, pending calls and final charges in Treg activity before retrying. Manual research routes do not provide automatic retries or caller-supplied idempotency. Scheduled audit jobs have their separate durable lease/reservation/idempotency path described above. Each upstream call gets a fresh UUID idempotency key; repeating a Lens request is a new potential spend. Closing a dialog does not cancel its running audit/discovery in the current tab; manual discovery can lose its response on reload/disconnect even if upstream work continues. A manual audit attempts a server-side append, but the client must still check its saved flag or reload history before assuming durability.
+Zero and unknown are different. Reconcile ambiguous failures, pending calls and final charges in Treg activity before retrying. Manual research routes do not provide automatic retries or caller-supplied idempotency. Scheduled audit jobs have their separate durable lease/reservation/idempotency path described above. Each upstream call gets a fresh UUID idempotency key; repeating a Lens request is a new potential spend. Closing a dialog does not cancel its running audit/discovery in the current tab. Audit and discovery routes attempt a server-side append before responding, but a closed/reloaded browser can lose its response while upstream work continues. Check saved history/research and billing before deliberately retrying; neither route is an indefinitely resumable job queue. Inspect the saved flag and preserve returned evidence when append fails.
 
 Discovery exposes a separate pending reservation and call IDs when a provider returns HTTP 202. Audit and source adapters treat HTTP 202 as still processing: its billing header is a reservation rather than a settled charge, no completed answer/page is invented, and the relevant cost-known flag is false. They do not poll for completion. A scheduled audit with an unsettled response pauses and retains its full reserved ceiling. Reconcile these calls through Treg before submitting another paid request.
 

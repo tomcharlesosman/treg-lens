@@ -1,25 +1,40 @@
 # Full feature verification — 20 October 2026
 
-The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This local pass covers rerunning onboarding from Settings with an existing key, URL-led setup, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Earlier real-Neon, public Vercel and paid-provider checks are recorded separately below; they are separate evidence and do not establish current live-provider behavior.
+The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This local pass covers saved discovery research, stable question identities, comparable trends and citation exploration, alongside URL-led setup, rerunning onboarding, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Earlier real-Neon, public Vercel and paid-provider checks are recorded separately below; they are separate evidence and do not establish current live-provider behavior.
 
 ## Results
 
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
-| HTTP API | 161 | 0 / 0 |
-| Chromium browser workflows | 120 | 0 / 0 |
-| Firefox browser workflows | 120 | 0 / 0 |
-| WebKit browser workflows | 120 | 0 / 0 |
-| Library, setup and operations tests | 153 | 0 / 0 |
-| **Total** | **674** | **0 / 0** |
+| HTTP API | 164 | 0 / 0 |
+| Chromium browser workflows | 136 | 0 / 0 |
+| Firefox browser workflows | 136 | 0 / 0 |
+| WebKit browser workflows | 136 | 0 / 0 |
+| Library, setup and operations tests | 192 | 0 / 0 |
+| **Total** | **764** | **0 / 0** |
 
-The complete 521-case production API/browser run passed in 3.8 minutes with zero failures, retries or skips: 161 HTTP tests plus 120 browser scenarios in each of Chromium, Firefox and WebKit. The 153 library/setup/operations tests also passed. Lint, fresh route type generation, TypeScript, 184 local documentation links and the production build passed. After the final code changes, `npm run check` and `npm run test:e2e` passed; the latter builds first and runs all four projects against the isolated production test server. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
+The complete 572-case production API/browser run passed with zero failures, retries or skips: 164 HTTP tests plus 136 browser scenarios in each of Chromium, Firefox and WebKit. The 192 library/setup/operations tests also passed. Lint, fresh route type generation, TypeScript, local documentation links and the production build passed. After the final code changes, `npm run check` and `npm run test:e2e` passed; the latter builds first and runs all four projects against the isolated production test server. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
 
 New coverage includes server durability after clearing the browser cache, scoped legacy migration, failed-save recovery, revision conflicts, complete backup restoration, confirmed audit deletion, idempotent monitoring recovery merges, and an exact-8 MiB backup round trip with answer hashes checked. Worker HTTP tests make isolated schedules due and execute the actual auth, pricing, provider adapters, ledger and workspace routes. They cover success, UTC cadence, revocation, per-run/monthly budgets, partial failures, missing charges, pending reservations, and retained paid results when the workspace is full.
 
 Library/operations regressions exercise cross-process SQLite reads, atomic rollback, encrypted credential ownership, concurrent runner leases, crashes before and after journaling, exact quote execution, UTC slot alignment, online WAL-consistent backups, and the real worker CLI against an isolated HTTP server. Existing coverage also includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and backup exports when browser storage rejects writes.
 
 Hosted transport coverage exercises owner-bound uploads above the 3 MiB direct-save threshold, 1 MiB chunk limits, UTF-8 character boundaries, exact 8 MiB round trips, checksum/schema failures, immutable chunk replay, concurrent revision conflicts, expiry/abort, encrypted staging, bounded retention, and replay of the original committed snapshot after later edits. Client tests cover lost commit acknowledgments without duplicate writes; streamed JSON tests round-trip Unicode above the platform response limit. Hosted cron tests reject absent/incorrect bearer values and spoofed Vercel headers. The local POST runner and hosted GET dispatcher share the tested monitor domain logic. Remote-mode operations tests confirm local backup and pause commands refuse without touching an unrelated SQLite database or exposing credentials.
+
+## Discovery, comparable trends and citation exploration — 20 October 2026
+
+This release extends standalone revision `e3adaef`. No runtime dependency, database schema, identity provider or monitoring consent was added. Existing snapshots/backups remain readable; new evidence metadata is optional and validated/field-projected on save and restore.
+
+New production HTTP/browser scenarios use the real application routes with synthetic upstreams:
+
+- Relevant editable discovery seeds, empty guidance, acknowledged original research saves, no-selection history, downloads/imports, partial/unknown billing and call IDs.
+- A lost paid response whose original receipt remains on the server; blocked browser recovery; and historical viewing/import that cannot clear a separate interrupted request.
+- Stable question IDs, pause/edit/archive/restore, searchable type/intent/topic filters, bounded rendering, complete topic edits under a live filter, unchanged approved schedules and a paused question's one-off audit without reactivation.
+- Same-scope daily comparisons, separate mention/citation rates, neutral/branded filters, visible answer coverage, low-coverage/model-change suppression, legacy inspection and historical competitor identity gaps.
+- Every cited page retained under domain/page views, safe ownership filters, distinct answered-check coverage, per-engine counts, independent competitor citation rates and exact answer/page drilldowns without a paid lookup.
+- A full browser backup round trip preserving receipts, prompt metadata and collection snapshots; server-side owner isolation with an alternate paying key, and rejection of inconsistent scope metadata and stale accepted discovery prices.
+
+Library regressions additionally cover atomic concurrent discovery/audit appends, unchanged originals, idempotent receipt replay, legacy round trips, credential stripping and context isolation. Detailed cases live in [the testing guide](TESTING.md). These automated checks do not use live paid providers; deployment smoke checks are recorded separately.
 
 ## Rerun onboarding from Settings — 20 October 2026
 

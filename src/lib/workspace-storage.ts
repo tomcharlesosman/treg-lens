@@ -1,7 +1,10 @@
 import type { AnswerResult } from "./aeo";
 import type { SourceResearch } from "./source-research";
-import type { Project, SavedRun } from "./workspace-data";
+import { normalizeDomain, type Project, type SavedRun } from "./workspace-data";
 import { normalizeProjectMetadata, validateProjectMetadata } from "./workspace-profile";
+import { validatePromptRecords, cleanPromptRecords, type PromptRecord } from "./prompt-library";
+import { validateMeasurementScope } from "./measurement";
+import { parseDiscoveryResearch, type SavedDiscovery } from "./discovery-research";
 
 export type WorkspaceSnapshot = {
   project: Project;
@@ -9,6 +12,8 @@ export type WorkspaceSnapshot = {
   runs: SavedRun[];
   done: string[];
   sourceResearch: Record<string, SourceResearch>;
+  promptRecords?: PromptRecord[];
+  discoveryResearch?: SavedDiscovery[];
 };
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -39,6 +44,7 @@ function answer(value: unknown): value is AnswerResult {
       (number(value.position) && Number(value.position) > 0)) &&
     number(value.costUsd) &&
     optional(value.costKnown, (v) => typeof v === "boolean") &&
+    optional(value.provider, (v) => typeof v === "string" && v.length <= 100) &&
     optional(
       value.sourceKind,
       (v) => v === "web-interface" || v === "model-api",
@@ -52,6 +58,17 @@ function answer(value: unknown): value is AnswerResult {
   );
 }
 
+function measurementMatchesRun(value: Record<string, unknown>): boolean {
+  if (value.measurement === undefined) return true;
+  if (!validateMeasurementScope(value.measurement)) return false;
+  const scope = value.measurement;
+  if (scope.brand.name.trim().toLowerCase() !== String(value.brand).trim().toLowerCase() ||
+    normalizeDomain(scope.brand.domain) !== normalizeDomain(String(value.domain))) return false;
+  const same = (a: string[], b: string[]) => JSON.stringify([...new Set(a)].sort()) === JSON.stringify([...new Set(b)].sort());
+  return (!strings(value.prompts) || same(value.prompts, scope.prompts.map((item) => item.text))) &&
+    (!strings(value.engines) || same(value.engines, scope.collectors.map((item) => item.engine)));
+}
+
 function run(value: unknown): value is SavedRun {
   return (
     record(value) &&
@@ -60,6 +77,8 @@ function run(value: unknown): value is SavedRun {
     optional(value.prompts, strings) &&
     optional(value.competitors, strings) &&
     optional(value.engines, (v) => Array.isArray(v) && v.every(engine)) &&
+    measurementMatchesRun(value) &&
+    validateProjectMetadata({ competitorDetails: value.competitorDetails }) &&
     number(value.totalCostUsd) &&
     optional(value.totalCostKnown, (v) => typeof v === "boolean") &&
     Array.isArray(value.results) &&
@@ -138,6 +157,8 @@ export function parseWorkspaceSnapshot(
       !optional(saved.project.onboardingCompletedAt, date) ||
       !validateProjectMetadata(saved.project) ||
       !strings(saved.prompts) ||
+      !optional(saved.promptRecords, validatePromptRecords) ||
+      !optional(saved.discoveryResearch, (v) => parseDiscoveryResearch(v) !== null) ||
       !Array.isArray(saved.runs) ||
       !saved.runs.every(run)
     )
@@ -145,6 +166,8 @@ export function parseWorkspaceSnapshot(
     return {
       project: normalizeProjectMetadata(saved.project as Project, saved.prompts),
       prompts: saved.prompts,
+      ...(saved.promptRecords !== undefined ? { promptRecords: cleanPromptRecords(saved.promptRecords as PromptRecord[]) } : {}),
+      ...(saved.discoveryResearch !== undefined ? { discoveryResearch: parseDiscoveryResearch(saved.discoveryResearch)! } : {}),
       runs: saved.runs,
       done: strings(saved.done) ? saved.done : [],
       sourceResearch: record(saved.sourceResearch)

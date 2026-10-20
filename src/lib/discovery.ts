@@ -15,8 +15,10 @@ type Fetcher = typeof fetch;
 export interface DiscoveryInput {
   seeds: string[];
   brand: string;
+  domain?: string;
   token?: string;
   estimateOnly?: boolean;
+  maxCostUsd?: number;
 }
 export interface DiscoveryCandidate {
   id: string;
@@ -43,6 +45,7 @@ export interface DiscoveryEstimate {
   pricedAt: string;
 }
 export interface DiscoveryResult {
+  acceptedEstimate?: DiscoveryEstimate;
   candidates: DiscoveryCandidate[];
   keywordCount: number;
   questionCount: number;
@@ -55,6 +58,7 @@ export interface DiscoveryResult {
     error: string;
   }>;
   completedAt: string;
+  callIds: string[];
   locale: { country: "US"; language: "en" };
 }
 const object = (value: unknown): JsonRecord =>
@@ -91,7 +95,7 @@ export function validateDiscoveryInput(value: unknown): DiscoveryInput {
       typeof seed !== "string" ||
       seed.trim().length < 2 ||
       seed.trim().length > 100 ||
-      /[\r\n]/.test(seed)
+      /[\u0000-\u001f\u007f]/.test(seed)
     )
       throw new AeoError(
         "Each seed must contain 2–100 characters on one line.",
@@ -103,9 +107,11 @@ export function validateDiscoveryInput(value: unknown): DiscoveryInput {
     throw new AeoError("Use at least 2 different seed keywords.");
   if (
     input.brand !== undefined &&
-    (typeof input.brand !== "string" || input.brand.trim().length > 100)
+    (typeof input.brand !== "string" || input.brand.trim().length > 100 || /[\u0000-\u001f\u007f]/.test(input.brand))
   )
     throw new AeoError("Brand name must contain at most 100 characters.");
+  if (input.domain !== undefined && (typeof input.domain !== "string" || input.domain.length > 253 || /[\u0000-\u001f\u007f]/.test(input.domain)))
+    throw new AeoError("Send a valid project domain.");
   if (
     input.token !== undefined &&
     (typeof input.token !== "string" ||
@@ -118,13 +124,18 @@ export function validateDiscoveryInput(value: unknown): DiscoveryInput {
     typeof input.estimateOnly !== "boolean"
   )
     throw new AeoError("estimateOnly must be a boolean.");
+  if (input.maxCostUsd !== undefined &&
+    (typeof input.maxCostUsd !== "number" || !Number.isFinite(input.maxCostUsd) || input.maxCostUsd < 0 || input.maxCostUsd > 0.1))
+    throw new AeoError("Accept a valid discovery ceiling up to $0.10.");
   return {
     seeds,
     brand: string(input.brand).trim(),
+    ...(typeof input.domain === "string" ? { domain: input.domain.trim() } : {}),
     ...(string(input.token).trim()
       ? { token: string(input.token).trim() }
       : {}),
     estimateOnly: input.estimateOnly === true,
+    ...(typeof input.maxCostUsd === "number" ? { maxCostUsd: input.maxCostUsd } : {}),
   };
 }
 
@@ -267,7 +278,7 @@ export function normalizeKeywordIdeas(
             object(item.keyword_info).search_volume ??
             object(keywordData.keyword_info).search_volume,
         ),
-        provider,
+        provider: plainText(provider).slice(0, 100) || "anyapi",
       },
     ];
   });
@@ -329,7 +340,10 @@ export async function runDiscovery(
 ): Promise<DiscoveryResult> {
   const credentials = resolveCredentials(input);
   const { estimate, excludeProviders } = await quote(input, fetcher);
+  if (input.maxCostUsd !== undefined && estimate.totalCostUsd > input.maxCostUsd + 0.0000001)
+    throw new AeoError("Discovery pricing changed above your accepted ceiling. Refresh the estimate; no paid calls were made.", 409);
   const errors: DiscoveryResult["errors"] = [];
+  const callIds: string[] = [];
   let totalCostUsd = 0;
   let totalCostKnown = true;
   let reservedCostUsd = 0;
@@ -367,6 +381,8 @@ export async function runDiscovery(
         signal: AbortSignal.timeout(90_000),
       });
       receivedResponse = true;
+      const callId = response.headers.get("X-Treg-Call-Id");
+      if (callId && callId.length <= 200 && !/[\u0000-\u001f\u007f]/.test(callId) && !callId.includes(credentials.token)) callIds.push(callId);
       const micro = response.headers.get("X-Treg-Cost-Micro");
       const validCharge =
         micro !== null &&
@@ -465,6 +481,7 @@ export async function runDiscovery(
     return true;
   });
   return {
+    acceptedEstimate: estimate,
     candidates: [...questions, ...keywords],
     keywordCount: keywords.length,
     questionCount: questions.length,
@@ -473,6 +490,7 @@ export async function runDiscovery(
     reservedCostUsd,
     errors,
     completedAt: new Date().toISOString(),
+    callIds: [...new Set(callIds)],
     locale: { country: "US", language: "en" },
   };
 }

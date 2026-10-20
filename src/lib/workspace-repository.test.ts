@@ -6,10 +6,11 @@ import { tmpdir } from "node:os";
 import { spawnSync } from "node:child_process";
 import { getDatabase } from "./database";
 import {
-  appendWorkspaceRun, getWorkspace, saveWorkspace, sanitizeWorkspaceSnapshot,
+  appendWorkspaceRun, appendWorkspaceDiscovery, getWorkspace, saveWorkspace, sanitizeWorkspaceSnapshot,
   WorkspaceConflictError, WorkspaceValidationError,
 } from "./workspace-repository";
 import type { Project, SavedRun } from "./workspace-data";
+import type { SavedDiscovery } from "./discovery-research";
 
 const directory = mkdtempSync(join(tmpdir(), "treg-workspace-unit-"));
 const previous = process.env.TREG_DATA_DIR;
@@ -23,6 +24,25 @@ const run = (id: string): SavedRun => ({
   prompts: ["Which toolkit?"], engines: ["chatgpt"], results: [],
   errors: [{ prompt: "Which toolkit?", engine: "chatgpt", error: "Provider unavailable" }],
   totalCostUsd: 0, totalCostKnown: true, completedAt: "2026-10-19T12:00:00Z",
+});
+
+test("discovery appends coexist with audit appends, preserve profile edits and reject stale snapshots", async () => {
+  const id = owner("9");
+  const initial = await saveWorkspace(id, snapshot(), 0);
+  const receipt: SavedDiscovery = {
+    id: "durable-discovery", input: { brand: "Treg", domain: "treg.to", seeds: ["Toolkit", "Research"] },
+    estimate: { currency: "USD", totalCostUsd: 0.01, maxCalls: 5, breakdown: [], note: "Fixture", pricedAt: "2026-10-20T12:00:00Z" },
+    result: { candidates: [], keywordCount: 0, questionCount: 0, totalCostUsd: 0, totalCostKnown: false, reservedCostUsd: 0.01, errors: [], completedAt: "2026-10-20T12:00:00Z", locale: { country: "US", language: "en" }, callIds: ["call-one"] },
+    selectedCandidateIds: [],
+  };
+  await Promise.all([appendWorkspaceDiscovery(id, receipt), appendWorkspaceRun(id, run("concurrent-audit"))]);
+  const saved = await getWorkspace(id);
+  assert.deepEqual(saved.snapshot?.project, initial.snapshot?.project);
+  assert.equal(saved.snapshot?.runs[0].id, "concurrent-audit");
+  assert.deepEqual(saved.snapshot?.discoveryResearch, [receipt]);
+  assert.equal(saved.revision, initial.revision + 2);
+  assert.deepEqual(await appendWorkspaceDiscovery(id, receipt), saved);
+  await assert.rejects(() => saveWorkspace(id, initial.snapshot, initial.revision), WorkspaceConflictError);
 });
 
 before(() => { process.env.TREG_DATA_DIR = directory; process.env.TREG_STORAGE = "sqlite"; });

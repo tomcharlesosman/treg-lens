@@ -32,7 +32,7 @@ npm run test:e2e:report
 
 ## Coverage
 
-The complete local pass on **20 October 2026** passed **674 test executions**: 153 library/setup/operations tests and 521 production E2E tests (161 HTTP API plus 120 scenarios in each of Chromium, Firefox and WebKit), with zero failures, retries or skips. This verifies the standalone repository's Settings rerun changes on top of `5454b1d` using fixtures, with no paid live calls. See [the dated report](TEST-REPORT.md) for scope and separate earlier real-Neon/public-Vercel checks; automated results alone are not hosted verification.
+The complete local pass on **20 October 2026** passed **764 test executions**: 192 library/setup/operations tests and 572 production E2E tests (164 HTTP API plus 136 scenarios in each of Chromium, Firefox and WebKit), with zero failures, retries or skips. This verifies the standalone repository's saved discovery, question inventory, comparable trends and citation exploration changes on top of `e3adaef` using fixtures, with no paid live calls. See [the dated report](TEST-REPORT.md) for scope and separate earlier real-Neon/public-Vercel checks; automated results alone are not hosted verification.
 
 | Area | Coverage |
 | --- | --- |
@@ -47,10 +47,10 @@ The complete local pass on **20 October 2026** passed **674 test executions**: 1
 | Scheduled monitoring | Explicit configuration/consent, encrypted credentials, runner authorization, UTC schedule/heartbeat, budgets/reservations, fixture-backed due-job execution, retained partial evidence, interruption pauses, and recovery download |
 | Hosted cron and operations | Independent cron bearer auth, rejection of spoofed platform headers, shared monitor execution rules, fail-closed storage selection and remote refusal by SQLite-only backup/pause commands |
 | Audits | Live estimate UI, price breakdown, prompt/engine validation, example prompts, supported market and engine scope, refreshed-estimate approval ceilings, four-engine run, result details, partial/all failures, balance errors, unknown billing, background completion across close/reopen without duplicate requests, completed rechecks and latest-answer persistence |
-| Prompt tracking | Add, case-insensitive duplicate prevention, remove, tabs, search, keyboard shortcut, empty answers and prompt recheck |
-| Discovery | Seed validation, estimates, keyword/People Also Ask results, volumes, tabs, deduplication, selection/import, combined eight-selection limit, reset/change seeds, background continuation and retained results, partial failures and pending reservations |
-| Analytics | Date/engine filters, metric denominators, chart legends, competitor comparisons, source coverage, answer evidence and history |
-| Sources | Paid Moz/Exa route integration, authority/metadata, excerpts, observed contacts, missing fields, partial failures, cache/reopen, refresh and costs |
+| Prompt tracking | Add and duplicate prevention, stable identities, wording edits, pause/archive/restore, type/intent/topic/search filters, pagination, retained history, and a one-off audit that leaves a paused question out of future defaults; approved monitoring remains unchanged |
+| Discovery | Reviewed business seeds or empty guidance, accepted estimate ceilings, original server-saved research and call IDs, keyword/PAA provenance, unknown volumes/charges, saved-history reopening/downloads/imports, combined eight-selection limit, background continuation, blocked browser recovery, lost responses and interrupted markers that historical viewing/import cannot clear |
+| Analytics | Date/engine filters, separate mention/citation rates, requested/answered coverage, matching question/collector/market/brand scopes, latest UTC daily sample, neutral/branded filters, low-coverage and legacy states, changed competitor identity gaps, chart legends and inspectable observations |
+| Sources | Page/domain exploration, historical ownership, exact answer and page drilldowns, deduplicated coverage and per-engine counts, independent competitor mentions/citations, plus approved Moz/Exa research, metadata, excerpts, observed contacts, missing fields, cache, refresh and costs |
 | Opportunities | Gap selection, content brief, clipboard success/fallback, mark complete/reopen and persistence |
 | First audit findings | Saved-answer evidence for competitor gaps and cited pages, distinct answered/requested counts, missing-answer and unknown-charge warnings, safe source links, exact answer inspection, and a phone layout without horizontal overflow |
 | Reports | Workspace JSON and CSV, individual audit downloads, data integrity, multiline/Unicode/formula escaping and absence of credentials |

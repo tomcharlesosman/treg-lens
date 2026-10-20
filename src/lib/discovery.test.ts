@@ -53,6 +53,8 @@ test("discovery validation bounds seeds and rejects duplicate seeds and credenti
     ["one", "ONE"],
     ["a", "two"],
     ["a\nb", "two"],
+    ["a\tb", "two"],
+    ["a\u0000b", "two"],
     ["x".repeat(101), "two"],
   ])
     assert.throws(() => validateDiscoveryInput({ ...input, seeds }), AeoError);
@@ -207,7 +209,7 @@ test("discovery uses fixed routes, bounded US/en requests, and actual charge hea
           _treg: { served_by: "anyapi.google.keywords.ideas" },
           cost: 999,
         },
-        { headers: { "X-Treg-Cost-Micro": "990" } },
+        { headers: { "X-Treg-Cost-Micro": "990", "X-Treg-Call-Id": `fixture-${body.keyword}` } },
       );
     }
     assert.ok(path.endsWith("cloro.google.serp.organic"));
@@ -236,6 +238,8 @@ test("discovery uses fixed routes, bounded US/en requests, and actual charge hea
     searches[1].startsWith(input.seeds[1]),
     "Provider ordering interleaves seeds",
   );
+  assert.equal(result.callIds.length, 2);
+  assert.ok(result.acceptedEstimate);
   assert.equal(result.keywordCount, 5);
   assert.equal(result.questionCount, 4);
   assert.equal(result.totalCostUsd, 0.00798);
@@ -298,4 +302,25 @@ test("a successful result without a charge header remains useful but billing is 
   assert.equal(result.questionCount, 1);
   assert.equal(result.totalCostKnown, false);
   assert.equal(result.totalCostUsd, 0);
+});
+
+
+test("discovery refuses stale accepted ceilings before a paid call", async () => {
+  let paid = 0;
+  await assert.rejects(() => runDiscovery({ ...input, maxCostUsd: 0.001 }, async (url) => {
+    const fixture = catalogFixture(String(url));
+    if (fixture) return fixture;
+    paid += 1;
+    return Response.json({});
+  }), /accepted ceiling/);
+  assert.equal(paid, 0);
+  for (const maxCostUsd of [-1, 0.11, "0.01", Infinity]) assert.throws(() => validateDiscoveryInput({ ...input, maxCostUsd }), AeoError);
+});
+
+
+test("discovery bounds provider metadata before persisting a paid result", () => {
+  const [candidate] = normalizeKeywordIdeas({ keywords: [{ keyword: "weather", volume: 12500000 }] }, "weather forecast", "<b>" + "provider".repeat(30) + "\n</b>");
+  assert.equal(candidate.searchVolume, 12500000);
+  assert.equal(candidate.provider.length, 100);
+  assert.doesNotMatch(candidate.provider, /[<>\n]/);
 });

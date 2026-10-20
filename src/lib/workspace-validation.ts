@@ -1,6 +1,9 @@
 import { parseWorkspaceSnapshot, type WorkspaceSnapshot } from "./workspace-storage";
 import type { SavedRun } from "./workspace-data";
 import { normalizeProjectMetadata } from "./workspace-profile";
+import { cleanPromptRecords } from "./prompt-library";
+import { cleanMeasurementScope } from "./measurement";
+import { parseDiscoveryResearch } from "./discovery-research";
 
 export const MAX_WORKSPACE_BYTES = 8 * 1024 * 1024;
 export class WorkspaceValidationError extends Error {
@@ -16,6 +19,8 @@ function cleanRun(run: SavedRun): SavedRun {
     ...(run.prompts ? { prompts: [...run.prompts] } : {}),
     ...(run.competitors ? { competitors: [...run.competitors] } : {}),
     ...(run.engines ? { engines: [...run.engines] } : {}),
+    ...(run.measurement ? { measurement: cleanMeasurementScope(run.measurement) } : {}),
+    ...(run.competitorDetails ? { competitorDetails: run.competitorDetails.map(({ name, domain }) => ({ name, ...(domain ? { domain } : {}) })) } : {}),
     results: run.results.map((answer) => ({
       id: answer.id, prompt: answer.prompt, engine: answer.engine, answer: answer.answer,
       citations: answer.citations.map(({ url, title, domain }) => ({ url, title, domain })),
@@ -52,6 +57,8 @@ export function sanitizeWorkspaceSnapshot(value: unknown): WorkspaceSnapshot {
   return {
     project: normalizeProjectMetadata(snapshot.project, snapshot.prompts),
     prompts: [...snapshot.prompts], runs: snapshot.runs.map(cleanRun), done: [...snapshot.done],
+    ...(snapshot.promptRecords !== undefined ? { promptRecords: cleanPromptRecords(snapshot.promptRecords) } : {}),
+    ...(snapshot.discoveryResearch !== undefined ? { discoveryResearch: parseDiscoveryResearch(snapshot.discoveryResearch)! } : {}),
     sourceResearch: Object.fromEntries(Object.entries(snapshot.sourceResearch).map(([key, source]) => [key, {
       kind: source.kind, url: source.url, domain: source.domain, brand: source.brand,
       title: source.title, excerpt: source.excerpt, contentCharacters: source.contentCharacters,

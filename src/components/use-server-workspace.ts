@@ -6,6 +6,9 @@ import type { WorkspaceSnapshot } from "@/lib/workspace-storage";
 import { sanitizeWorkspaceSnapshot } from "@/lib/workspace-validation";
 import { saveWorkspaceSnapshot, type WorkspaceSaveAttempt } from "@/lib/workspace-upload-client";
 import { updateProjectProfile } from "@/lib/workspace-onboarding";
+import type { SavedDiscovery } from "@/lib/discovery-research";
+import { applyDiscovery } from "@/lib/discovery-workspace";
+import { syncPromptRecords, activePromptTexts } from "@/lib/prompt-library";
 
 export type WorkspaceEnvelope = { snapshot: WorkspaceSnapshot | null; revision: number; updatedAt: string | null };
 export type SyncPhase = "loading" | "sample" | "saved" | "unsaved" | "saving" | "offline" | "conflict";
@@ -203,6 +206,12 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
     const version = current.version;
     const submitted = { ...current.snapshot, ...profile,
       prompts: options?.preservePrompts ? [...new Set([...current.snapshot.prompts, ...profile.prompts])] : profile.prompts };
+    // Preserve the established inventory when review adds questions; legacy
+    // workspaces get identities when users next edit their tracked inventory.
+    if (current.snapshot.promptRecords) {
+      submitted.promptRecords = syncPromptRecords(current.snapshot.promptRecords, submitted.prompts, profile.project);
+      submitted.prompts = activePromptTexts(submitted.promptRecords);
+    }
     current.saving = true;
     publish("saving");
     try {
@@ -233,7 +242,16 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
     }
   }, [adopt, demoMode, publish]);
   const acceptAudit = useCallback(async (run: SavedRun, persistence?: AuditPersistence, originalProject?: Project) => {
-    const append = (value: WorkspaceSnapshot, selectProject: boolean): WorkspaceSnapshot => ({ ...value, runs: [...value.runs.filter((old) => old.id !== run.id), run], ...(selectProject ? { project: updateProjectProfile(value.project, { brand: run.brand, domain: run.domain, competitors: run.competitors ?? value.project.competitors }), prompts: [...new Set([...value.prompts, ...(run.prompts ?? [])])] } : {}) });
+    const append = (value: WorkspaceSnapshot, selectProject: boolean): WorkspaceSnapshot => {
+      const next = { ...value, runs: [...value.runs.filter((old) => old.id !== run.id), run] };
+      if (!selectProject) return next;
+      const project = updateProjectProfile(value.project, { brand: run.brand, domain: run.domain, competitors: run.competitors ?? value.project.competitors });
+      const additions = (run.prompts ?? []).filter((text) => !value.promptRecords?.some((record) => record.text === text && (record.paused || record.archived)));
+      const prompts = [...new Set([...value.prompts, ...additions])];
+      return { ...next, project, prompts,
+        ...(value.promptRecords ? { promptRecords: syncPromptRecords(value.promptRecords, prompts, project) } : {}),
+      };
+    };
     const current = state.current;
     if (persistence?.saved) {
       const requestedVersion = current.version;
@@ -265,6 +283,18 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
     change((value) => append(value, !originalProject || JSON.stringify(originalProject) === JSON.stringify(value.project)));
     if (persistence?.storageError) publish("offline", persistence.storageError);
   }, [adopt, cache, change, publish, readServer]);
+
+  const saveDiscovery = useCallback(async (receipt: SavedDiscovery, selectedIds?: string[]): Promise<boolean> => {
+    if (demoMode || !state.current.loaded || state.current.disposed) return false;
+    // The paid route appends evidence atomically. Adopt its acknowledged
+    // revision only when safe; ordinary conflicts still retain both versions.
+    await refresh();
+    const current = state.current;
+    if (current.disposed) return false;
+    const next = applyDiscovery(current.snapshot, receipt, selectedIds);
+    if (JSON.stringify(next) !== JSON.stringify(current.snapshot)) change(next);
+    return save();
+  }, [change, demoMode, refresh, save]);
 
   useEffect(() => {
     const current = state.current;
@@ -327,5 +357,5 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
     const timer = window.setInterval(onFocus, 30_000);
     return () => { window.removeEventListener("focus", onFocus); document.removeEventListener("visibilitychange", onFocus); window.clearInterval(timer); };
   }, [demoMode, refresh]);
-  return { snapshot, sync, loaded: demoMode || sync.phase !== "loading", change, field, save, saveProfile, reloadProfile, refresh, retry, loadServer, acceptAudit };
+  return { snapshot, sync, loaded: demoMode || sync.phase !== "loading", change, field, save, saveProfile, reloadProfile, refresh, retry, loadServer, acceptAudit, saveDiscovery };
 }

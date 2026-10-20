@@ -1,7 +1,8 @@
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { AeoError, estimateAudit, runAudit, validateAuditInput, type AuditInput, type AuditResponse, type CostEstimate } from "./aeo";
 import { withStorage, type StorageSession } from "./storage-database";
-import { appendWorkspaceRun } from "./workspace-repository";
+import { appendWorkspaceRun, getWorkspace } from "./workspace-repository";
+import { auditContext } from "./audit-context";
 import { validateSessionSecret, validateTregKey } from "./treg-session";
 import type { MonitorInput, MonitorSchedule, MonitorState } from "./monitor-types";
 
@@ -164,6 +165,8 @@ export async function tickMonitor(secret: string, dependencies: TickDependencies
     const token = decryptMonitorToken(row.credential, row.workspace_id, secret);
     await (dependencies.validate ?? validateTregKey)(token);
     const config: AuditInput = { ...input.config, token };
+    const original = await getWorkspace(row.workspace_id);
+    const context = auditContext(config, original.snapshot);
     const quote = await (dependencies.estimate ?? estimateAudit)(config);
     const reserve = micros(quote.totalCostUsd);
     if (!Number.isSafeInteger(reserve) || reserve <= 0 || reserve > micros(input.perRunBudgetUsd))
@@ -178,7 +181,7 @@ export async function tickMonitor(secret: string, dependencies: TickDependencies
     paidStarted = true;
     const result = await (dependencies.run ?? ((data, estimate, prefix) => runAudit(data, fetch, { estimate, idempotencyPrefix: prefix })))(config, quote, id);
     settledResult = result;
-    const savedRun = { id: `monitor-${id}`, ...input.config, ...result };
+    const savedRun = { id: `monitor-${id}`, ...input.config, ...context, ...result };
     // This DB-only write is idempotent. Retrying its acknowledgement cannot
     // issue another provider request or charge the user's team again.
     const journal = () => withStorage(async (tx) => {

@@ -196,6 +196,7 @@ test("discovery validates seeds, prices requests, supports question and keyword 
   await page.getByRole("button", { name: "Discover prompts", exact: true }).click();
   const discovery = page.getByRole("dialog", { name: "Find your next question." });
   const launch = discovery.getByRole("button", { name: "Discover prompts", exact: true });
+  await discovery.getByLabel("Seed keyword 1").fill("AI agent tools");
   await discovery.getByLabel("Seed keyword 2").fill("AI agent tools");
   await expect(launch).toBeDisabled();
   await discovery.getByLabel("Seed keyword 2").fill("AI search visibility");
@@ -486,6 +487,8 @@ test("failed request-key overrides show actionable errors and permit a successfu
   await nav(page, "Prompt tracking");
   await page.getByRole("button", { name: "Discover prompts", exact: true }).click();
   const discovery = page.getByRole("dialog", { name: "Find your next question." });
+  await discovery.getByLabel("Seed keyword 1").fill("AI agent tools");
+  await discovery.getByLabel("Seed keyword 2").fill("AI search visibility");
   await discovery.getByText("API credentials", { exact: true }).click();
   await discovery.getByLabel(/^Treg API token/).fill("treg-e2e-invalid");
   await expect(discovery.getByRole("button", { name: "Discover prompts", exact: true })).toBeEnabled();

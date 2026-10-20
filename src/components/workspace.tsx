@@ -25,7 +25,6 @@ import {
   Eye,
   FileText,
   Code2,
-  Globe2,
   History,
   LayoutDashboard,
   Lightbulb,
@@ -58,6 +57,11 @@ import "./workspace-live.css";
 import SettingsDialog from "./settings-dialog";
 import BrandOnboarding, { ResearchReceipt } from "./brand-onboarding";
 import AuditFindings from "./audit-findings";
+import VisibilityTrends from "./visibility-trends";
+import PromptLibrary from "./prompt-library";
+import CitationExplorer from "./citation-explorer";
+import { syncPromptRecords, activePromptTexts, type PromptRecord } from "@/lib/prompt-library";
+import type { SavedDiscovery } from "@/lib/discovery-research";
 import { isExampleProfile, needsBrandOnboarding, updateProjectProfile } from "@/lib/workspace-onboarding";
 import type { WorkspaceSnapshot } from "@/lib/workspace-storage";
 import type { AnswerResult } from "@/lib/aeo";
@@ -254,265 +258,6 @@ function Modal({
     </dialog>
   );
 }
-function smoothPath(points: { x: number; y: number }[]) {
-  return points
-    .map((p, i) => {
-      if (!i) return `M ${p.x},${p.y}`;
-      const prev = points[i - 1];
-      return `C ${prev.x + (p.x - prev.x) * 0.5},${prev.y} ${prev.x + (p.x - prev.x) * 0.5},${p.y} ${p.x},${p.y}`;
-    })
-    .join(" ");
-}
-function TrendChart({
-  runs,
-  project,
-  engine,
-  onEngine,
-  onRun,
-}: {
-  runs: SavedRun[];
-  project: Project;
-  engine: string;
-  onEngine: (e: string) => void;
-  onRun: () => void;
-}) {
-  const [hover, setHover] = useState<number | null>(null);
-  const [hidden, setHidden] = useState<string[]>([]);
-  const brands = [project.brand, ...project.competitors.slice(0, 3)];
-  const groups = useMemo(() => {
-    const days = new Map<string, AnswerResult[]>();
-    runs.forEach((run) => {
-      const day = run.completedAt.slice(0, 10);
-      const filtered = run.results.filter(
-        (r) => engine === "all" || r.engine === engine,
-      );
-      days.set(day, [...(days.get(day) || []), ...filtered]);
-    });
-    return [...days.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [runs, engine]);
-  const series = brands.map((brand) =>
-    groups.map(([, results]) =>
-      results.length
-        ? (100 *
-            results.filter((r) =>
-              r.mentionedBrands.some(
-                (b) => b.toLowerCase() === brand.toLowerCase(),
-              ),
-            ).length) /
-          results.length
-        : 0,
-    ),
-  );
-  const width = 640,
-    height = 180;
-  const coords = series.map((values) =>
-    values.map((value, i) => ({
-      x: groups.length > 1 ? (i / (groups.length - 1)) * width : width / 2,
-      y: height - (value / 100) * height,
-    })),
-  );
-  const latest = series[0]?.at(-1) || 0;
-  const selected = hover !== null ? hover : groups.length - 1;
-  return (
-    <section className="panel trend-panel">
-      <div className="panel-heading">
-        <div>
-          <h2>
-            Visibility over time{" "}
-            <span
-              className="info-dot"
-              title="Toolkit score: 50% mentions + 30% reciprocal rank + 20% own-domain citations."
-            >
-              i
-            </span>
-          </h2>
-          <p>How often AI puts your brand in the picture.</p>
-        </div>
-        <select
-          aria-label="Filter chart by engine"
-          value={engine}
-          onChange={(e) => onEngine(e.target.value)}
-        >
-          <option value="all">All engines</option>
-          {ENGINES.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.name}
-            </option>
-          ))}
-        </select>
-      </div>
-      {!groups.length ? (
-        <Empty
-          title="Your baseline starts here"
-          description="Run your first audit to see how AI talks about your brand."
-          onRun={onRun}
-        />
-      ) : (
-        <>
-          <div className="chart-summary">
-            <strong>
-              {n(latest, 1)}
-              <span>%</span>
-            </strong>
-            <span className="chart-summary-note">
-              <span className="live-dot" /> Mention rate
-            </span>
-          </div>
-          <div className="chart">
-            <div className="chart-y">
-              {[100, 75, 50, 25, 0].map((v) => (
-                <span key={v}>{v}</span>
-              ))}
-            </div>
-            <div className="chart-plot">
-              <svg
-                viewBox={`0 0 ${width} ${height}`}
-                preserveAspectRatio="none"
-                aria-label="Brand mention rate trend"
-                role="img"
-                onMouseMove={(e) => {
-                  const bounds = e.currentTarget.getBoundingClientRect();
-                  setHover(
-                    Math.max(
-                      0,
-                      Math.min(
-                        groups.length - 1,
-                        Math.round(
-                          ((e.clientX - bounds.left) / bounds.width) *
-                            (groups.length - 1),
-                        ),
-                      ),
-                    ),
-                  );
-                }}
-                onMouseLeave={() => setHover(null)}
-              >
-                <defs>
-                  <linearGradient id="chart-fill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#118453" stopOpacity=".12" />
-                    <stop offset="100%" stopColor="#118453" stopOpacity="0" />
-                  </linearGradient>
-                </defs>
-                {[0, 45, 90, 135, 180].map((y) => (
-                  <line
-                    key={y}
-                    x1="0"
-                    x2={width}
-                    y1={y}
-                    y2={y}
-                    stroke="#e5e5e5"
-                    strokeDasharray="3 4"
-                  />
-                ))}
-                {coords[0]?.length > 1 && !hidden.includes(brands[0]) && (
-                  <path
-                    d={`${smoothPath(coords[0])} L ${width},${height} L 0,${height} Z`}
-                    fill="url(#chart-fill)"
-                  />
-                )}
-                {[...coords.keys()].reverse().map(
-                  (i) =>
-                    !hidden.includes(brands[i]) && (
-                      <g key={brands[i]}>
-                        <path
-                          d={smoothPath(coords[i])}
-                          fill="none"
-                          stroke={COLORS[i]}
-                          strokeWidth={i === 0 ? "2.8" : "1.6"}
-                          strokeDasharray={i === 0 ? "" : "4 5"}
-                          vectorEffect="non-scaling-stroke"
-                        />
-                        {coords[i].length === 1 && (
-                          <circle
-                            cx={coords[i][0].x}
-                            cy={coords[i][0].y}
-                            r="4"
-                            fill={COLORS[i]}
-                          />
-                        )}
-                      </g>
-                    ),
-                )}
-                {hover !== null && (
-                  <line
-                    x1={coords[0][hover].x}
-                    x2={coords[0][hover].x}
-                    y1="0"
-                    y2={height}
-                    stroke="#b8c9c4"
-                  />
-                )}
-                {hover !== null &&
-                  coords.map(
-                    (points, i) =>
-                      !hidden.includes(brands[i]) && (
-                        <circle
-                          key={i}
-                          cx={points[hover].x}
-                          cy={points[hover].y}
-                          r="4"
-                          fill={COLORS[i]}
-                          stroke="white"
-                          strokeWidth="2"
-                        />
-                      ),
-                  )}
-              </svg>
-              {hover !== null && (
-                <div
-                  className="chart-tooltip"
-                  style={{
-                    left: `${Math.min(78, Math.max(12, (hover / Math.max(1, groups.length - 1)) * 100))}%`,
-                  }}
-                >
-                  <b>{shortDate(groups[selected][0])}</b>
-                  {brands.map((b, i) => (
-                    <span key={b}>
-                      <i style={{ background: COLORS[i] }} />
-                      {b}
-                      <strong>{n(series[i][selected], 1)}</strong>
-                    </span>
-                  ))}
-                </div>
-              )}
-              <div className="chart-x">
-                {[
-                  ...new Set([
-                    0,
-                    Math.floor((groups.length - 1) * 0.25),
-                    Math.floor((groups.length - 1) * 0.5),
-                    Math.floor((groups.length - 1) * 0.75),
-                    groups.length - 1,
-                  ]),
-                ].map((i) => (
-                  <span key={i}>{shortDate(groups[i][0])}</span>
-                ))}
-              </div>
-            </div>
-          </div>
-          <div className="chart-legend">
-            {brands.map((b, i) => (
-              <button
-                key={b}
-                className={hidden.includes(b) ? "muted-legend" : ""}
-                onClick={() =>
-                  setHidden((old) =>
-                    old.includes(b) ? old.filter((v) => v !== b) : [...old, b],
-                  )
-                }
-              >
-                <i style={{ background: COLORS[i] }} />
-                {b}
-                {i === 0 && <span>You</span>}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </section>
-  );
-}
-
 export default function Workspace({
   demoMode = false,
   storageId,
@@ -529,7 +274,13 @@ export default function Workspace({
   const workspace = useServerWorkspace(storageKey, demoMode);
   const { snapshot: { project, prompts, runs, done, sourceResearch }, sync, loaded } = workspace;
   const setProject = (action: SetStateAction<Project>) => workspace.field("project", action);
-  const setPrompts = (action: SetStateAction<string[]>) => workspace.field("prompts", action);
+  const setPrompts = (action: SetStateAction<string[]>) => workspace.change((current) => {
+    const next = typeof action === "function" ? action(current.prompts) : action;
+    const previous = syncPromptRecords(current.promptRecords, current.prompts, current.project);
+    return { ...current, prompts: next, promptRecords: syncPromptRecords(previous, next, current.project) };
+  });
+  const promptRecords = useMemo(() => syncPromptRecords(workspace.snapshot.promptRecords, prompts, project), [workspace.snapshot.promptRecords, prompts, project]);
+  const changePromptRecords = (records: PromptRecord[]) => workspace.change((current) => ({ ...current, promptRecords: records, prompts: activePromptTexts(records) }));
   const setRuns = (action: SetStateAction<SavedRun[]>) => workspace.field("runs", action);
   const setDone = (action: SetStateAction<string[]>) => workspace.field("done", action);
   const setSourceResearch = (action: SetStateAction<Record<string, SourceResearch>>) => workspace.field("sourceResearch", action);
@@ -651,22 +402,6 @@ export default function Workspace({
     : 0;
   const brands = brandStats(results, [project.brand, ...project.competitors]);
   const sources = sourceStats(results);
-  const chronological = [...filteredRuns].sort((a, b) =>
-    a.completedAt.localeCompare(b.completedAt),
-  );
-  const hasBaseline = chronological.length > 1;
-  const firstAnswers =
-    chronological[0]?.results.filter(
-      (r) => engine === "all" || r.engine === engine,
-    ) || [];
-  const lastAnswers =
-    chronological
-      .at(-1)
-      ?.results.filter((r) => engine === "all" || r.engine === engine) || [];
-  const delta = hasBaseline
-    ? visibility(lastAnswers, project.domain) -
-      visibility(firstAnswers, project.domain)
-    : 0;
   const gaps = useMemo(
     () =>
       prompts
@@ -811,14 +546,8 @@ export default function Workspace({
       value: results.length ? n(score, 1) : "—",
       suffix: "/100",
       icon: Eye,
-      detail: hasBaseline
-        ? `${delta >= 0 ? "+" : ""}${n(delta, 1)} pts`
-        : results.length
-          ? "Baseline recorded"
-          : "Your baseline awaits",
-      foot: hasBaseline
-        ? "latest audit vs. first in period"
-        : "across selected answers",
+      detail: results.length ? "Saved answer sample" : "Your baseline awaits",
+      foot: "scope-matched change is shown below",
       spark: [12, 17, 15, 23, 19, 30, 29, 36, 34, 45, 42, 54],
     },
     {
@@ -1311,7 +1040,7 @@ export default function Workspace({
                       )}
                     </div>
                     <div className="metric-change">
-                      <span className={i === 0 && delta < 0 ? "negative" : ""}>
+                      <span>
                         {i === 0 ? (
                           <TrendingUp size={12} />
                         ) : (
@@ -1325,7 +1054,7 @@ export default function Workspace({
                 ))}
               </div>
               <div className="overview-middle">
-                <TrendChart
+                <VisibilityTrends
                   runs={filteredRuns}
                   project={project}
                   engine={engine}
@@ -1643,6 +1372,10 @@ export default function Workspace({
                   </span>
                 </div>
               </section>
+              <PromptLibrary records={promptRecords} project={project}
+                monitoringNotice="These controls change your question library. Already approved monitoring keeps its saved questions until you deliberately edit its schedule."
+                onChange={changePromptRecords}
+                onAudit={(text) => { if (demoMode) router.push("/login"); else { auditProject.current = project; setAuditPrompts([text]); setAuditOpen(true); } }} />
             </>
           )}
           {view === "competitors" && (
@@ -1707,7 +1440,7 @@ export default function Workspace({
                   </section>
                 ))}
               </div>
-              <TrendChart
+              <VisibilityTrends
                 runs={filteredRuns}
                 project={project}
                 engine={engine}
@@ -1725,122 +1458,12 @@ export default function Workspace({
               </div>
             </>
           )}
-          {view === "citations" && (
-            <>
-              <div className="citation-summary">
-                <div>
-                  <span className="eyebrow">THE SOURCE OF THE STORY</span>
-                  <h2>{n(sources.length)} sources. A world of influence.</h2>
-                  <p>
-                    These are the websites AI refers to when answering your
-                    tracked questions.
-                  </p>
-                </div>
-                <div>
-                  <strong>{n(citations)}</strong>
-                  <span>total citations</span>
-                </div>
-                <div>
-                  <strong>
-                    {results.length
-                      ? n((ownCitations / results.length) * 100, 1)
-                      : 0}
-                    %
-                  </strong>
-                  <span>cite your domain</span>
-                </div>
-              </div>
-              <section className="panel table-panel">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>SOURCE DOMAIN</th>
-                      <th>ANSWERS CITING</th>
-                      <th>COVERAGE</th>
-                      <th>ENGINES</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {sources.map((s) => (
-                      <tr key={s.domain}>
-                        <td>
-                          <div className="source-domain">
-                            <span className="source-icon">
-                              <Globe2 size={17} />
-                            </span>
-                            <div>
-                              <strong>{s.domain}</strong>
-                              <small>
-                                {s.domain === normalizeDomain(project.domain)
-                                  ? "YOUR DOMAIN"
-                                  : "CITED SOURCE"}
-                              </small>
-                            </div>
-                          </div>
-                        </td>
-                        <td>
-                          {s.answerCount}
-                          <span className="muted"> / {results.length}</span>
-                        </td>
-                        <td>
-                          <div className="table-score">
-                            <span className="table-score-track">
-                              <i style={{ width: `${s.share}%` }} />
-                            </span>
-                            <b>{n(s.share, 1)}%</b>
-                          </div>
-                        </td>
-                        <td>
-                          <EngineStack engines={s.engines} />
-                        </td>
-                        <td>
-                          <a
-                            className="icon-button"
-                            href={s.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            aria-label={`Open ${s.domain}`}
-                          >
-                            <ArrowUpRight size={16} />
-                          </a>
-                          <button
-                            className="button source-research-button"
-                            onClick={() =>
-                              demoMode
-                                ? router.push("/login")
-                                : setResearchSource({
-                                    url: s.url,
-                                    domain: s.domain,
-                                  })
-                            }
-                          >
-                            <Search size={12} />
-                            Research
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {!sources.length && (
-                  <Empty
-                    title="Find out what AI is reading"
-                    description="Cited sources will appear here after an audit."
-                    onRun={onRun}
-                  />
-                )}
-              </section>
-              <div className="method-note">
-                <ShieldCheck size={15} />
-                <p>
-                  Coverage is the percentage of successful answers that cite a
-                  source. Citation frequency is evidence of visibility; it does
-                  not prove endorsement, page strength, or factual accuracy.
-                </p>
-              </div>
-            </>
-          )}
+          {view === "citations" && <CitationExplorer
+            runs={filteredRuns.map((run) => ({ ...run, results: run.results.filter((answer) => engine === "all" || answer.engine === engine), errors: run.errors.filter((issue) => engine === "all" || issue.engine === engine) }))}
+            project={project}
+            onAnswer={setFindingAnswer}
+            onResearch={(source) => demoMode ? router.push("/login") : setResearchSource(source)}
+          />}
           {view === "opportunities" && (
             <>
               <div className="opportunity-banner">
@@ -2133,8 +1756,7 @@ export default function Workspace({
                 </code>
                 <p>
                   Share of voice is your mentions divided by all mentions of
-                  tracked brands. Failed engines are excluded. The trend uses
-                  actual saved audit dates. Demo data is always labeled.
+                  tracked brands. Failed engines are excluded. Trends compare matching question and collector scopes with coverage shown. Legacy evidence keeps its original history without an inferred comparison. Demo data is always labeled.
                   Perplexity uses the Sonar model API; the other engines return
                   web answers.
                 </p>
@@ -2171,11 +1793,15 @@ export default function Workspace({
       <DiscoveryDialog
         open={discoveryOpen}
         onClose={() => setDiscoveryOpen(false)}
-        brand={project.brand}
+        project={project}
+        storageKey={storageKey}
+        savedResearch={workspace.snapshot.discoveryResearch ?? []}
         token={token}
-        onAdd={(newPrompts) => {
-          setPrompts((old) => [...new Set([...old, ...newPrompts])]);
-          setToast(`${newPrompts.length} discovered prompts added.`);
+        onSave={(receipt: SavedDiscovery) => workspace.saveDiscovery(receipt)}
+        onAdd={async (receipt: SavedDiscovery, selectedIds: string[]) => {
+          const saved = await workspace.saveDiscovery(receipt, selectedIds);
+          if (saved) setToast(`${selectedIds.length} discovered prompts added.`);
+          return saved;
         }}
       />
       {researchSource && (

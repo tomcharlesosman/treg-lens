@@ -1,6 +1,76 @@
 .lens-discovery-dialog {
   max-width: 690px;
 }
+.lens-discovery-history {
+  margin: 0 34px 18px;
+  padding: 13px 15px;
+  border: 1px solid var(--treg-border);
+  border-radius: 8px;
+  font-size: 10px;
+  color: var(--treg-muted);
+}
+.lens-discovery-history summary {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--treg-body);
+  cursor: pointer;
+}
+.lens-discovery-history summary span { margin-left: auto; }
+.lens-discovery-history p { line-height: 1.8; }
+.lens-discovery-history button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  border-top: 1px solid var(--treg-border);
+  padding: 12px 0;
+  color: var(--treg-body);
+  background: none;
+}
+.lens-discovery-history button span { min-width: 0; }
+.lens-discovery-history strong { display: block; font-size: 10px; line-height: 1.7; font-weight: 500; overflow-wrap: anywhere; }
+.lens-discovery-history small { display: block; margin-top: 4px; color: var(--treg-muted); font-size: 9px; line-height: 1.7; }
+.lens-discovery-save-status {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px 34px;
+  font-size: 10px;
+  line-height: 1.8;
+  border-top: 1px solid var(--treg-border);
+  color: var(--treg-body);
+}
+.lens-discovery-save-status > span { flex: 1; }
+.lens-discovery-save-status button, .lens-discovery-interrupted button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--treg-border);
+  background: var(--treg-canvas);
+  color: var(--treg-body);
+  padding: 7px 9px;
+  border-radius: 5px;
+  font-size: 10px;
+}
+.lens-discovery-save-error { margin: 0 34px 15px; }
+.lens-discovery-call-ids { margin: 0 34px 15px; font-size: 9px; color: var(--treg-muted); }
+.lens-discovery-call-ids summary { cursor: pointer; }
+.lens-discovery-call-ids code { display: block; margin-top: 5px; overflow-wrap: anywhere; }
+.lens-discovery-interrupted {
+  padding: 15px;
+  margin-bottom: 20px;
+  border: 1px solid var(--treg-warning-line);
+  background: var(--treg-warning-soft);
+  border-radius: 7px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+.lens-discovery-interrupted p { margin: 8px 0; }
+.lens-discovery-interrupted button { margin: 6px 6px 0 0; }
 .lens-discovery-seed-description {
   margin: -5px 0 17px;
   color: var(--treg-muted);
@@ -420,6 +490,8 @@
   white-space: nowrap;
 }
 @media (max-width: 600px) {
+  .lens-discovery-history { margin-left: 22px; margin-right: 22px; }
+  .lens-discovery-save-status { padding-left: 22px; padding-right: 22px; }
   .lens-discovery-locale {
     gap: 5px;
   }

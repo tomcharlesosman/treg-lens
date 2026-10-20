@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react";
 import type { AnswerResult } from "@/lib/aeo";
-import { normalizeDomain, type Project } from "@/lib/workspace-data";
+import { normalizeDomain, type Project, type SavedRun } from "@/lib/workspace-data";
 import type { AuditPersistence } from "./use-server-workspace";
 import "./dialog.css";
 
@@ -43,6 +43,8 @@ export type AuditRun = {
   totalCostUsd: number;
   totalCostKnown?: boolean;
   completedAt: string;
+  measurement?: SavedRun["measurement"];
+  competitorDetails?: SavedRun["competitorDetails"];
 };
 type Engine = "chatgpt" | "perplexity" | "gemini" | "google";
 type Estimate = {
@@ -412,6 +414,8 @@ export function AuditDialog({
         competitors: competitorsList,
         engines,
         results: data.results,
+        ...(data.measurement ? { measurement: data.measurement } : {}),
+        ...(data.competitorDetails ? { competitorDetails: data.competitorDetails } : {}),
         errors: data.errors,
         totalCostUsd: data.totalCostUsd,
         totalCostKnown: data.totalCostKnown,

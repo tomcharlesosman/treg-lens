@@ -133,6 +133,8 @@ test("discovery caps combined selections at eight and resets choices before tryi
   });
   await page.getByRole("button", { name: "Discover prompts", exact: true }).click();
   const discovery = page.getByRole("dialog", { name: "Find your next question." });
+  await discovery.getByLabel("Seed keyword 1").fill("AI agent tools");
+  await discovery.getByLabel("Seed keyword 2").fill("AI search visibility");
   const launch = discovery.getByRole("button", { name: "Discover prompts", exact: true });
   await expect(launch).toBeEnabled();
   await launch.click();

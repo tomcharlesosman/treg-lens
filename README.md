@@ -40,10 +40,11 @@ Need a different port, setup help, or a complete first audit? Follow [getting st
 ## What works today
 
 - **Guided brand setup:** reviewed buyer context, editable competitor websites, questions grouped by intent, explicit research/audit approvals and saved research receipts. Reopen it from **Settings → Rerun onboarding** with your existing key while keeping saved work. Measurement coverage is US/English.
-- **Prompt discovery:** Google keyword suggestions and actual People Also Ask questions from 2–3 seed phrases; select up to 8 prompts to track.
+- **Relevant prompt discovery:** editable seeds from your reviewed business context, Google keyword ideas and actual People Also Ask questions; the latest 20 original research receipts retain candidates, provenance, quote, call IDs and known/unknown billing. Reopen saved research without buying it again.
+- **Question library:** stable identities, neutral/branded classification, buyer intent, topics, wording history, pause and archive. Keep up to 512 saved records; an individual audit still selects at most 8 questions.
 - **Answer monitoring:** ChatGPT, Gemini, Google AI Mode, and Perplexity; up to 8 questions of 500 characters each across four engines.
-- **Competitive visibility:** brand mentions, inferred recommendation positions, source coverage, trends, and share of voice from saved answers.
-- **Cited-page research:** Moz authority metrics and Exa extraction with observed brand excerpts, authors, and contact routes.
+- **Comparable visibility:** separate mention and own-domain citation rates, visible collection coverage, matching question/collector/market scopes, and the latest run per UTC day. Comparisons require at least 90% coverage; legacy collection settings remain explicitly unknown.
+- **Citation exploration:** pages/domains, historical owned/competitor/other/unknown ownership, per-engine counts and exact saved-answer evidence. Research the selected page with Moz authority metrics and Exa extraction, including observed brand excerpts, authors and contact routes.
 - **Durable workspaces:** SQLite by default or hosted Neon Postgres, revision checks that protect concurrent changes, browser recovery, and JSON backup import/export.
 - **Scheduled monitoring:** opt-in daily or weekly audits at a UTC hour, per-audit and monthly spending limits, worker status, and retained evidence after partial failures.
 - **Action and history:** visibility gaps, writing-brief templates, completed moves, and JSON/CSV reports.
