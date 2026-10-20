@@ -98,7 +98,7 @@ For a supervised production worker, a once-per-minute cron invocation, a custom 
 npm run check
 ```
 
-This runs ESLint, fresh Next.js route type generation, TypeScript, library/setup tests, and local documentation-link checks. The project has **eight direct runtime packages**, including one driver for optional hosted Postgres; their roles are documented in [dependencies](docs/DEPENDENCIES.md). Local SQLite needs no service or database package of its own. Fonts are vendored locally, about **119 KB**, with licenses and provenance included. Builds and browsers do not download Google Fonts. See [font notices](src/app/fonts/README.md).
+This runs ESLint, fresh Next.js route type generation, TypeScript, library/setup tests, and local documentation-link checks. The project has **eight direct runtime packages**, including one driver for optional hosted Postgres; their roles are documented in [dependencies](docs/DEPENDENCIES.md). Local SQLite needs no service or database package of its own. Fonts are vendored locally, about **153 KB** (119 KB reach browsers), with licenses and provenance included. Builds and browsers do not download Google Fonts. See [font notices](src/app/fonts/README.md).
 
 For the complete browser and HTTP suite, install the Playwright engines once and make OpenSSL available for the temporary HTTPS test certificate:
 

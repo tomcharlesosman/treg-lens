@@ -58,6 +58,7 @@ Configure these values in the host's protected runtime environment:
 | `TREG_VERCEL_MONITORING` | Set to `1` on Vercel Pro/Enterprise to install minutely cron on redeploy |
 | `CRON_SECRET` | Independent private bearer credential for the hosted GET dispatcher |
 | `MONITOR_BASE_URL` | App origin used by the separate worker; defaults to `http://127.0.0.1:3000`; remote origins require HTTPS |
+| `SITE_URL` | Optional public HTTPS origin for absolute link-preview image URLs; set it before `npm run build`. Vercel needs nothing: Next uses the production domain, and branch URLs for previews |
 | `NODE_ENV` | Use `production` for the production app and worker |
 
 Use absolute paths for production data. Make the data directory writable only by the application service account. The app creates a 0700 directory and 0600 files where supported; configure equivalent Windows ACLs. The database filename is `treg-lens.sqlite`, with SQLite `-wal` and `-shm` files alongside it. Do not put this directory in a public/static folder or a source-control backup.
@@ -69,7 +70,7 @@ npm run doctor -- --production
 npm start -- --hostname 127.0.0.1 --port 3000
 ```
 
-Keep the app supervised by your host's service manager. The loopback bind assumes the proxy is on the same host. Build with development dependencies installed; if the build environment sets `NODE_ENV=production`, use `npm ci --include=dev`. No Treg key is needed to install, check, or build. Fonts are checked in and loaded locally.
+Keep the app supervised by your host's service manager. The loopback bind assumes the proxy is on the same host. Build with development dependencies installed; if the build environment sets `NODE_ENV=production`, use `npm ci --include=dev`. No Treg key is needed to install, check, or build. Fonts are checked in and loaded locally. Open Graph/X cards for `/`, `/login`, and `/demo` are rendered during the build from checked-in assets; without `SITE_URL`, a non-Vercel build points their URLs at `localhost`.
 
 Production cookies are Secure. Opening the raw HTTP production listener is not a supported sign-in setup: browsers may refuse its cookie. Use the public HTTPS origin. Local development uses `npm run dev`.
 

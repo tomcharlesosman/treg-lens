@@ -33,11 +33,20 @@ const mono = localFont({
   variable: "--font-mono",
   display: "swap",
 });
+// Link previews need absolute image URLs. On Vercel, Next uses the project's
+// production domain; other hosts set SITE_URL to their public HTTPS origin at
+// build time. An unparseable value is ignored rather than breaking pages.
+const siteUrl = process.env.SITE_URL;
 export const metadata: Metadata = {
+  metadataBase:
+    siteUrl && URL.canParse(siteUrl) ? new URL(siteUrl) : undefined,
   title: "Treg Lens — Be the brand AI recommends",
   description:
     "Your open-source workspace for AI visibility. Track answers, understand citations, and find your next opportunity with Treg.",
   icons: { icon: "/treg.svg" },
+  // Pages supply titles and descriptions; each route's opengraph-image file
+  // supplies the card, which Next also reuses for X/Twitter.
+  openGraph: { siteName: "Treg Lens", type: "website", locale: "en_US" },
 };
 export default function RootLayout({
   children,
