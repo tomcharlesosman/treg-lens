@@ -37,6 +37,8 @@ New and extended production HTTP/browser scenarios cover:
 
 Responsive plan/comparison/context and report/library/handoff views are checked at 320, 390 and 1440 pixels. Desktop, phone and expanded-print screenshots were inspected. The first full pass identified one WebKit overflow in a native audit selector; its label now stays within the control, with the original strict layout assertion retained. Focused checks passed in all three engines before the final 626-case full rerun passed. Earlier targeted checks also corrected report focus restoration and ambiguous test locators.
 
+The first hosted CI run for `e73dd8f` passed all four platform-check jobs and 625 of 626 browser/API cases. Linux WebKit exposed an additional 320-pixel native-select painting overflow that did not reproduce on macOS. The follow-up control now uses explicit sizing and a decorative arrow while preserving the native select, labels, options, focus and keyboard interaction. The layout assertion and zero-retry policy remain unchanged. After this correction, all three focused responsive cases, `npm run check`, and the complete 626-case production suite passed locally again. Commit-specific hosted results remain available in [GitHub Actions](https://github.com/tomcharlesosman/treg-lens/actions/workflows/test.yml).
+
 The suite uses a production build, isolated SQLite storage, synthetic keys and fail-closed upstream fixtures. It does not establish live provider availability or current upstream model quality. Hosted release verification remains separate from these automated results. Workflow instructions are in [WORKFLOWS.md](WORKFLOWS.md).
 
 ## Discovery, comparable trends and citation exploration — 20 October 2026

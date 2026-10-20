@@ -1,7 +1,7 @@
 "use client";
 
 import { useId } from "react";
-import { ArrowUpRight, CircleAlert, GitCompareArrows } from "lucide-react";
+import { ArrowUpRight, ChevronDown, CircleAlert, GitCompareArrows } from "lucide-react";
 import type { AnswerResult, Engine } from "@/lib/aeo";
 import { comparePagePlanRuns, type PagePlan } from "@/lib/page-plans";
 import { measureRun, type RunMeasurement } from "@/lib/measurement";
@@ -54,11 +54,11 @@ export default function FollowupComparison({ plan, runs, onSelectFollowup, disab
   const engines = [...new Set([...(baseline?.scope.collectors.map((item) => item.engine) ?? []), ...(followup?.scope.collectors.map((item) => item.engine) ?? [])])];
   return <section className="followup-comparison" aria-label="Follow-up comparison">
     <div className="fc-heading"><GitCompareArrows size={20} /><div><h3>Compare the saved evidence</h3><p>Read original answers for this buyer question. Selecting an audit makes no provider call.</p></div></div>
-    <label className="lens-dialog-field" htmlFor={`${id}-followup`}>Saved follow-up audit<select id={`${id}-followup`} value={plan.followupRunId ?? ""} onChange={(event) => onSelectFollowup(event.target.value || undefined)} disabled={disabled}>
+    <label className="lens-dialog-field" htmlFor={`${id}-followup`}>Saved follow-up audit<span className="fc-select"><select id={`${id}-followup`} value={plan.followupRunId ?? ""} onChange={(event) => onSelectFollowup(event.target.value || undefined)} disabled={disabled}>
       <option value="">Select a saved audit</option>
       {plan.followupRunId && !candidates.some((run) => run.id === plan.followupRunId) && <option value={plan.followupRunId}>Selected audit is no longer available</option>}
       {candidates.map((run) => { const point = measureRun(run); return <option key={run.id} value={run.id}>{date(run.completedAt)} UTC · {point.answered}/{point.requested} answers · {run.id.slice(0, 12)}</option>; })}
-    </select></label>
+    </select><ChevronDown size={15} aria-hidden="true" /></span></label>
     <div className="fc-measures" aria-label="Full audit coverage and rates">{[{ label: "Baseline", point: baseline }, { label: "Follow-up", point: followup }].map(({ label, point }) => <div key={label}><strong>{label}</strong><span>{point ? `${point.answered} / ${point.requested} answers · ${percent(point.coverage * 100)} coverage` : "Evidence unavailable"}</span><span>Mentions {percent(point?.mentionRate ?? null)} · Own citations {percent(point?.citationRate ?? null)}</span></div>)}</div>
     <p className="fc-note">Rates cover the entire frozen audit scope. The answer panels below show this plan’s question. Model labels ending in “unreported” do not identify a pinned underlying model.</p>
     {comparison.comparable && comparison.delta ? <div className="fc-compatible" role="status"><strong>Comparable saved audits</strong><span>Brand mentions {points(comparison.delta.mentions)} · Own-domain citations {points(comparison.delta.citations)}</span><p>Matching recorded scope and at least 90% coverage. This observed change does not prove the page edit caused it.</p></div> : <div className="fc-warning"><CircleAlert size={16} /><div><strong>No comparable change yet</strong><ul>{comparison.reasons.map((reason, index) => <li key={index}>{reason}</li>)}</ul><p>Original evidence remains available to inspect; no progress delta is inferred.</p></div></div>}
