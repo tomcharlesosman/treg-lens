@@ -123,7 +123,7 @@ Synthetic `treg-e2e-*` keys and test provider responses belong only to the isola
 
 There are eight direct runtime packages: Next.js, React, React DOM, iron-session, lucide-react, react-markdown, remark-gfm, and `@neondatabase/serverless`. The last is the single driver for optional hosted Postgres. Local forks still use built-in `node:sqlite` without a database service. Native `fetch`, SVG, and Node crypto/fs cover the remaining work. No Redis, Docker, ORM, managed identity provider, Treg SDK, scheduler package, or agent framework is required. The dynamic `vercel.ts` config adds no configuration SDK dependency. See [dependencies](DEPENDENCIES.md).
 
-Fonts are checked in, approximately 102 KB total, and loaded with `next/font/local`. They include licenses and provenance and require no Google Fonts download at build or runtime. Do not reintroduce a network font dependency as a setup shortcut.
+Fonts are checked in, approximately 119 KB total, and loaded with `next/font/local`. They include licenses and provenance and require no Google Fonts download at build or runtime. Do not reintroduce a network font dependency as a setup shortcut.
 
 ## Boundaries to preserve
 

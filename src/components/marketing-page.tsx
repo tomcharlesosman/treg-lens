@@ -4,147 +4,39 @@ import {
   ArrowRight,
   ArrowUpRight,
   Check,
-  CheckCheck,
-  Code2,
-  Compass,
-  Eye,
   GitFork,
-  Globe2,
   KeyRound,
-  Link2,
   LockKeyhole,
-  MessageSquareText,
   Plus,
-  ScanLine,
-  Sparkles,
-  Terminal,
-  TrendingUp,
 } from "lucide-react";
 import KeySignInForm from "./key-sign-in-form";
+import LensAnswer from "./lens-answer";
+import MarketingLogo from "./marketing-logo";
+import WorkspaceLoupe from "./workspace-loupe";
 import { DEPLOY_VERCEL_URL, GITHUB_FORK_URL, GITHUB_REPOSITORY } from "@/lib/site";
 import "./marketing.css";
+import "./landing.css";
 
-export function MarketingLogo({ light = false }: { light?: boolean }) {
-  return (
-    <Link
-      href="/"
-      className={`marketing-logo ${light ? "is-light" : ""}`}
-      aria-label="Treg Lens home"
-    >
-      <span className="marketing-brand-mark">
-        <i />
-        <i />
-      </span>
-      <span>
-        treg<span>lens</span>
-      </span>
-    </Link>
-  );
-}
-function EngineIcon({ name }: { name: string }) {
-  return <img src={`/engines/${name}.svg`} alt="" width={21} height={21} />;
-}
-function LensIllustration() {
-  return (
-    <div
-      className="marketing-lens"
-      aria-label="Illustration of a brand appearing across four answer engines"
-    >
-      <div className="ml-grid" />
-      <div className="ml-coordinates">
-        <span>THE ANSWER ENGINE ERA</span>
-        <span>04 ENGINES / 01 WORKSPACE</span>
-      </div>
-      <div className="ml-ring r1" />
-      <div className="ml-ring r2" />
-      <div className="ml-ring r3" />
-      <div className="ml-orbit o1" />
-      <div className="ml-orbit o2" />
-      <span className="ml-plus p1">+</span>
-      <span className="ml-plus p2">+</span>
-      <span className="ml-plus p3">+</span>
-      <div className="ml-center">
-        <span className="marketing-brand-mark">
-          <i />
-          <i />
-        </span>
-        <span>YOU, IN FOCUS.</span>
-      </div>
-      <span className="ml-engine me1">
-        <EngineIcon name="chatgpt" />
-        <span>ChatGPT</span>
-        <i />
-      </span>
-      <span className="ml-engine me2">
-        <EngineIcon name="perplexity" />
-        <span>Perplexity</span>
-        <i />
-      </span>
-      <span className="ml-engine me3">
-        <EngineIcon name="gemini" />
-        <span>Gemini</span>
-        <i />
-      </span>
-      <span className="ml-engine me4">
-        <EngineIcon name="google" />
-        <span>AI Mode</span>
-        <i />
-      </span>
-      <div className="ml-answer">
-        <span>
-          <Sparkles size={13} /> AN ANSWER WORTH UNDERSTANDING
-        </span>
-        <p>
-          “Here are the brands
-          <br />
-          I’d recommend…”
-        </p>
-        <div>
-          <i />
-          <i />
-          <i />
-        </div>
-        <small>See if yours makes the conversation.</small>
-      </div>
-      <span className="ml-caption">[ CHANGE YOUR PERSPECTIVE ]</span>
-      <span className="ml-example">CONCEPTUAL ILLUSTRATION</span>
-    </div>
-  );
-}
-const steps = [
-  {
-    number: "01",
-    label: "DISCOVER",
-    title: "Start with the right question.",
-    description:
-      "Find what buyers are already asking with live keyword ideas and Google’s People Also Ask.",
-    icon: Compass,
-  },
-  {
-    number: "02",
-    label: "MEASURE",
-    title: "See who gets recommended.",
-    description:
-      "Ask four answer engines. Track your mentions, your competitors, and your place in the conversation.",
-    icon: ScanLine,
-  },
-  {
-    number: "03",
-    label: "UNDERSTAND",
-    title: "Follow the trail of sources.",
-    description:
-      "Explore the pages AI cites, measure their authority, and read the evidence behind the answers.",
-    icon: Link2,
-  },
-  {
-    number: "04",
-    label: "ACT",
-    title: "Make your next move.",
-    description:
-      "Turn missing mentions into practical writing briefs. Keep a baseline and measure again as you grow.",
-    icon: TrendingUp,
-  },
+const engines = [
+  { id: "chatgpt", name: "ChatGPT" },
+  { id: "perplexity", name: "Perplexity" },
+  { id: "gemini", name: "Gemini" },
+  { id: "google", name: "Google AI Mode" },
 ];
+
+function EngineIcon({ id, size = 18 }: { id: string; size?: number }) {
+  return <img src={`/engines/${id}.svg`} alt="" width={size} height={size} />;
+}
+
+function Pixel() {
+  return (
+    <span className="ll-pixel" aria-hidden="true">
+      <i />
+      <i />
+    </span>
+  );
+}
+
 const questions = [
   {
     q: "How do I get started?",
@@ -170,22 +62,20 @@ const questions = [
 
 export default function MarketingPage() {
   return (
-    <div className="marketing-page">
-      <header className="marketing-nav">
+    <div className="lens-landing">
+      <header className="marketing-nav ll-nav">
         <MarketingLogo />
         <nav aria-label="Marketing navigation">
           <a href="#how-it-works">How it works</a>
           <a href="#the-workspace">The workspace</a>
-          <a href="#open-source">
-            Open source <ArrowUpRight size={12} />
-          </a>
+          <a href="#open-source">Open source</a>
         </nav>
-        <div className="marketing-nav-actions">
-          <Link href="/login" className="marketing-login">
-            Log in <ArrowUpRight size={13} />
+        <div className="ll-nav-actions">
+          <Link href="/login" className="ll-nav-login">
+            Log in
           </Link>
           <a
-            className="marketing-button small"
+            className="ll-pill"
             href={GITHUB_FORK_URL}
             target="_blank"
             rel="noreferrer"
@@ -195,323 +85,320 @@ export default function MarketingPage() {
           </a>
         </div>
       </header>
+
       <main>
-        <section className="marketing-hero marketing-wrap" id="connect">
-          <div className="marketing-hero-copy">
-            <div className="marketing-eyebrow">
-              <span className="marketing-status-dot" /> AN OPEN PERSPECTIVE ON
-              AI SEARCH
-            </div>
+        <section className="ll-hero" id="connect">
+          <div className="ll-hero-backdrop" aria-hidden="true" />
+          <div className="ll-wrap ll-hero-copy">
+            <a
+              className="ll-badge"
+              href={GITHUB_REPOSITORY}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <span>treg / lens</span>
+              <i aria-hidden="true" />
+              open-source AI visibility <ArrowUpRight size={12} />
+            </a>
             <h1>
-              Your brand <br />
-              belongs in
-              <br /> the{" "}
-              <span>
-                answer
-                <svg
-                  viewBox="0 0 330 18"
-                  preserveAspectRatio="none"
-                  aria-hidden="true"
-                >
-                  <path d="M3 13 Q120 -1 324 8 M30 17 Q194 5 306 12" />
-                </svg>
-              </span>
-              .
+              Your brand belongs <br className="ll-break" />
+              in the <span className="ll-mark">answer</span>.
             </h1>
-            <p className="marketing-hero-description">
-              See what AI says about you. <br />
-              Understand what shapes the answer. <br />
-              <strong>Find your next move.</strong>
+            <p className="ll-lede">
+              See what AI tells your buyers, which sources shape the answer, and
+              what to publish next. Open source, on your own treg key.
             </p>
-            <div className="marketing-hero-form">
+            <section
+              className="ll-engines"
+              aria-label="Supported answer engines"
+            >
+              <span className="ll-engines-label">Asks</span>
+              <ul>
+                {engines.map((engine) => (
+                  <li key={engine.id}>
+                    <EngineIcon id={engine.id} />
+                    <span>{engine.name}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+            <div className="ll-keybox">
               <KeySignInForm compact />
-              <div className="marketing-demo-link">
+              <div className="ll-keybox-foot">
                 <Link href="/demo">
                   Preview sample data <ArrowUpRight size={13} />
                 </Link>
-                <span>Illustrative data · no key needed.</span>
+                <span>No key needed · illustrative data</span>
               </div>
             </div>
-            <div className="marketing-hero-footnote">
+          </div>
+
+          <div className="ll-wrap ll-stage">
+            <div className="ll-stage-label">
               <span>
-                <Check size={12} /> Open source
+                <Pixel /> Illustrative answers · fictional brands
               </span>
-              <span>
-                <Check size={12} /> Pay as you go
-              </span>
-              <span>
-                <Check size={12} /> Yours to run
-              </span>
+              <span className="ll-stage-hint">Move your cursor over an answer</span>
+            </div>
+            <LensAnswer />
+          </div>
+        </section>
+
+        <section className="ll-section ll-wrap" id="how-it-works">
+          <div className="ll-head">
+            <div>
+              <span className="ll-kicker">How it works</span>
+              <h2>From a buyer’s question to your next brief.</h2>
+            </div>
+            <ul className="ll-ticks">
+              <li>discover the questions</li>
+              <li>measure the answers</li>
+              <li>follow the sources</li>
+              <li>act on the gaps</li>
+            </ul>
+          </div>
+
+          <div className="ll-steps">
+            <article className="ll-step">
+              <div className="ll-step-ui ll-ui-discover" aria-hidden="true">
+                <span className="ll-ui-label">› seed: crm for small teams</span>
+                <ul>
+                  <li className="is-on">
+                    <i /> best crm for small teams <b>2.4k</b>
+                  </li>
+                  <li className="is-on">
+                    <i /> crm with email tracking <b>880</b>
+                  </li>
+                  <li>
+                    <i /> is a crm worth it? <b>PAA</b>
+                  </li>
+                  <li className="is-on">
+                    <i /> northwind alternatives <b>390</b>
+                  </li>
+                </ul>
+              </div>
+              <span className="ll-step-index">01 · Discover</span>
+              <h3>Find the questions buyers ask.</h3>
+              <p>
+                Seed two or three phrases. Lens pulls Google keyword ideas and
+                real People Also Ask questions; track up to eight.
+              </p>
+            </article>
+
+            <article className="ll-step">
+              <div className="ll-step-ui ll-ui-measure" aria-hidden="true">
+                <span className="ll-ui-label">› asked 4 engines</span>
+                <ul>
+                  <li>
+                    <EngineIcon id="chatgpt" size={14} /> ChatGPT <b>#2</b>
+                  </li>
+                  <li>
+                    <EngineIcon id="perplexity" size={14} /> Perplexity{" "}
+                    <b>#1</b>
+                  </li>
+                  <li className="is-gap">
+                    <EngineIcon id="gemini" size={14} /> Gemini <b>gap</b>
+                  </li>
+                  <li>
+                    <EngineIcon id="google" size={14} /> AI Mode <b>#3</b>
+                  </li>
+                </ul>
+              </div>
+              <span className="ll-step-index">02 · Measure</span>
+              <h3>See who gets recommended.</h3>
+              <p>
+                Ask ChatGPT, Perplexity, Gemini and Google AI Mode. Track
+                mentions, inferred positions and share of voice against your
+                competitors.
+              </p>
+            </article>
+
+            <article className="ll-step">
+              <div className="ll-step-ui ll-ui-sources" aria-hidden="true">
+                <span className="ll-ui-label">› cited pages, by authority</span>
+                <ul>
+                  <li>
+                    g2.com <span style={{ ["--w" as string]: "92%" }} />
+                  </li>
+                  <li>
+                    reddit.com <span style={{ ["--w" as string]: "84%" }} />
+                  </li>
+                  <li>
+                    capterra.com <span style={{ ["--w" as string]: "71%" }} />
+                  </li>
+                  <li className="is-you">
+                    yourbrand.com <span style={{ ["--w" as string]: "38%" }} />
+                  </li>
+                </ul>
+              </div>
+              <span className="ll-step-index">03 · Understand</span>
+              <h3>Follow the trail of sources.</h3>
+              <p>
+                Open the pages AI cites, check their authority, and read the
+                excerpts, authors and contact routes behind each answer.
+              </p>
+            </article>
+
+            <article className="ll-step">
+              <div className="ll-step-ui ll-ui-act" aria-hidden="true">
+                <span className="ll-ui-label">› brief: email tracking</span>
+                <ul>
+                  <li className="is-done">Answer it up front</li>
+                  <li className="is-done">Link your pricing page</li>
+                  <li>Pitch capterra.com’s list</li>
+                </ul>
+              </div>
+              <span className="ll-step-index">04 · Act</span>
+              <h3>Make your next move.</h3>
+              <p>
+                Turn visibility gaps into editable writing-brief templates, log
+                what you shipped, and measure again against your baseline.
+              </p>
+            </article>
+          </div>
+
+          <div className="ll-monitor">
+            <div className="ll-monitor-copy">
+              <span className="ll-step-index">05 · Monitor</span>
+              <p>
+                <strong>Re-check on a schedule.</strong> Daily or weekly audits
+                at a UTC hour you choose, inside per-audit and monthly spending
+                limits. Opt in; nothing runs on its own.
+              </p>
+            </div>
+            <div className="ll-monitor-chart" aria-hidden="true">
+              {[22, 28, 26, 34, 41, 39, 47, 52, 50, 58, 63, 61, 68, 74].map(
+                (value, index) => (
+                  <i key={index} style={{ ["--h" as string]: `${value}%` }} />
+                ),
+              )}
             </div>
           </div>
-          <LensIllustration />
+          <p className="ll-footnote">Card previews use illustrative data.</p>
         </section>
-        <section
-          className="marketing-engines marketing-wrap"
-          aria-label="Supported answer engines"
-        >
-          <span>
-            ONE BRAND.
-            <br />
-            FOUR PERSPECTIVES.
-          </span>
-          <div>
-            <EngineIcon name="chatgpt" />
-            <strong>ChatGPT</strong>
+
+        <section className="ll-section ll-wrap" id="the-workspace">
+          <div className="ll-head">
+            <div>
+              <span className="ll-kicker">The workspace</span>
+              <h2>Every answer, every source, one workspace.</h2>
+            </div>
+            <div className="ll-head-actions">
+              <p>
+                Visibility score, share of voice, citations and opportunities.
+                Partial results and errors stay inspectable.
+              </p>
+              <Link href="/login" className="ll-pill">
+                Open your workspace <ArrowUpRight size={14} />
+              </Link>
+            </div>
           </div>
-          <div>
-            <EngineIcon name="perplexity" />
-            <strong>Perplexity</strong>
-            <small>Sonar API</small>
-          </div>
-          <div>
-            <EngineIcon name="gemini" />
-            <strong>Gemini</strong>
-          </div>
-          <div>
-            <EngineIcon name="google" />
-            <strong>Google AI Mode</strong>
-          </div>
-          <a href="https://treg.to/aeo" target="_blank" rel="noreferrer">
-            Powered by treg <ArrowUpRight size={13} />
-          </a>
-        </section>
-        <section className="marketing-intro marketing-wrap" id="how-it-works">
-          <div>
-            <span className="marketing-eyebrow">
-              <span className="marketing-section-index">
-                01 / THE OPPORTUNITY
+          <div className="ll-window">
+            <div className="ll-window-bar">
+              <span aria-hidden="true">
+                <i />
+                <i />
+                <i />
               </span>
-            </span>
-            <h2>
-              Search has changed.
-              <br />
-              Your perspective should too.
-            </h2>
+              <span>
+                <LockKeyhole size={11} /> lens / overview
+              </span>
+              <span className="ll-window-tag">sample data</span>
+            </div>
+            <WorkspaceLoupe />
           </div>
-          <p>
-            Customers are asking AI what to buy, who to trust, and which tools
-            to choose. Treg Lens helps you see where your brand shows up—and
-            what to do with what you find.
+          <p className="ll-footnote">
+            Preview uses illustrative data; your workspace measures real
+            answers.<span className="ll-hover-only"> Hover to magnify.</span>
           </p>
         </section>
-        <section className="marketing-feature-grid marketing-wrap">
-          <article className="marketing-feature feature-mint">
-            <span className="feature-icon">
-              <Eye size={20} />
-            </span>
-            <div className="marketing-mini-answer">
-              <span>
-                <EngineIcon name="chatgpt" /> YOUR CATEGORY, THROUGH AI’S EYES
-              </span>
-              <div>
-                <i>01</i>
-                <b>Your brand</b>
-                <CheckCheck size={13} />
-              </div>
-              <div>
-                <i>02</i>
-                <b>The alternatives</b>
-                <span />
-              </div>
-              <div>
-                <i>03</i>
-                <b>The bigger picture</b>
-                <span />
-              </div>
-              <small>ILLUSTRATIVE VIEW</small>
-            </div>
-            <h3>Get a clearer picture.</h3>
+
+        <section className="ll-section ll-wrap ll-split">
+          <div>
+            <span className="ll-kicker">Pricing</span>
+            <h2>
+              No subscription. <br className="ll-break" />A price before every
+              run.
+            </h2>
             <p>
-              Track brand mentions and inferred positions across engines. See
-              your visibility from every angle.
+              Lens is free software. Live research spends your own treg credits,
+              priced from the live treg catalog before you confirm. Verifying a
+              key costs nothing, even at a zero balance.
             </p>
-          </article>
-          <article className="marketing-feature feature-white">
-            <span className="feature-icon">
-              <Globe2 size={20} />
-            </span>
-            <div className="marketing-source-visual">
-              <span>
-                <Link2 size={13} /> FOLLOW THE CITATIONS
+            <ul className="ll-ticks">
+              <li>no seats, no lock-in</li>
+              <li>estimate before every paid call</li>
+              <li>unknown charges never shown as $0</li>
+            </ul>
+          </div>
+          <div className="ll-estimate" aria-label="How an audit estimate works">
+            <div className="ll-window-bar">
+              <span aria-hidden="true">
+                <i />
+                <i />
+                <i />
               </span>
-              <div>
-                <Code2 size={15} />
-                <b>Community & reference</b>
-                <ArrowUpRight size={12} />
-              </div>
-              <div>
-                <Globe2 size={15} />
-                <b>Pages AI points to</b>
-                <ArrowUpRight size={12} />
-              </div>
-              <div>
-                <MessageSquareText size={15} />
-                <b>The voices behind them</b>
-                <ArrowUpRight size={12} />
-              </div>
-              <small>ILLUSTRATIVE VIEW</small>
+              <span>audit estimate · before you run</span>
             </div>
-            <h3>Understand the why.</h3>
+            <dl>
+              <div>
+                <dt>Prompts</dt>
+                <dd>up to 8</dd>
+              </div>
+              <div>
+                <dt>Engines</dt>
+                <dd>4</dd>
+              </div>
+              <div>
+                <dt>Calls</dt>
+                <dd>prompts × engines</dd>
+              </div>
+              <div>
+                <dt>Priced</dt>
+                <dd>live, per call</dd>
+              </div>
+              <div>
+                <dt>Safety limit</dt>
+                <dd className="ll-pixel-num">$1.00</dd>
+              </div>
+            </dl>
             <p>
-              Follow cited pages, inspect their authority, and discover what’s
-              influencing the conversation.
+              <Check size={13} /> Nothing runs until you confirm.
             </p>
-          </article>
-          <article className="marketing-feature feature-neutral">
-            <span className="feature-icon">
-              <Sparkles size={20} />
-            </span>
-            <div className="marketing-action-visual">
-              <span>
-                <span /> FROM INSIGHT TO ACTION
-              </span>
-              <div>
-                <span>
-                  <Check size={12} />
-                </span>
-                <p>Find your visibility gaps</p>
-              </div>
-              <div>
-                <span>
-                  <Check size={12} />
-                </span>
-                <p>Build a useful writing brief</p>
-              </div>
-              <div>
-                <span>
-                  <Plus size={12} />
-                </span>
-                <p>Make your next move</p>
-              </div>
-              <small>YOUR NEXT CHAPTER</small>
-            </div>
-            <h3>Find a way forward.</h3>
-            <p>
-              Turn the questions you’re missing into a focused content brief,
-              and measure what changes.
-            </p>
-          </article>
+          </div>
         </section>
+
         <section
-          className="marketing-product marketing-wrap"
-          id="the-workspace"
+          className="ll-section ll-wrap ll-split is-flipped"
+          id="open-source"
         >
-          <div className="marketing-product-header">
-            <div>
-              <span className="marketing-eyebrow">
-                02 / A CLEARER PERSPECTIVE
-              </span>
-              <h2>
-                From “are we showing up?”
-                <br />
-                to “here’s our next move.”
-              </h2>
-            </div>
-            <Link href="/login" className="marketing-button">
-              Open your workspace <ArrowUpRight size={15} />
-            </Link>
-          </div>
-          <div className="marketing-browser-frame">
-            <div className="marketing-browser-bar">
-              <span>
-                <i />
-                <i />
-                <i />
-              </span>
-              <div>
-                <LockKeyhole size={10} /> Your AI visibility workspace
-              </div>
-              <span>
-                <ScanLine size={13} />
-              </span>
-            </div>
-            <Link
-              href="/demo"
-              className="marketing-screenshot"
-              aria-label="Preview sample data"
-            >
-              <img
-                src="/marketing/workspace.png"
-                alt="Treg Lens demo showing visibility trends, engine comparisons, share of voice, and content opportunities"
-                width={1440}
-                height={1421}
-                loading="lazy"
-              />
-              <span className="marketing-preview-cta">
-                View the sample preview <ArrowUpRight size={16} />
-              </span>
-            </Link>
-          </div>
-          <div className="marketing-product-caption">
-            <span>
-              <span className="marketing-status-dot" /> YOUR DATA, IN FOCUS
-            </span>
+          <div>
+            <span className="ll-kicker">Open source · MIT</span>
+            <h2>Fork it. Run it. Make it yours.</h2>
             <p>
-              Dashboard preview uses illustrative data. Your workspace measures
-              real answers.
+              Read every line, run it locally on SQLite, or deploy to Vercel
+              with Neon Postgres. Your key lives in an encrypted session and
+              never appears in exports.
             </p>
-            <span>[ TREG LENS / 001 ]</span>
-          </div>
-        </section>
-        <section className="marketing-workflow marketing-wrap">
-          <div className="marketing-workflow-heading">
-            <span className="marketing-eyebrow">03 / THE WAY FORWARD</span>
-            <h2>
-              A little curiosity.
-              <br />A lot more clarity.
-            </h2>
-            <p>
-              A practical workflow from the first buyer question to your next
-              content brief.
-            </p>
-            <a href="https://treg.to/aeo" target="_blank" rel="noreferrer">
-              Built on the Treg AEO toolkit <ArrowUpRight size={14} />
-            </a>
-          </div>
-          <div className="marketing-steps">
-            {steps.map((step) => (
-              <article key={step.number}>
-                <span className="marketing-step-number">{step.number}</span>
-                <div>
-                  <span className="marketing-eyebrow">{step.label}</span>
-                  <h3>{step.title}</h3>
-                  <p>{step.description}</p>
-                </div>
-                <step.icon size={23} />
-              </article>
-            ))}
-          </div>
-        </section>
-        <section className="marketing-open marketing-wrap" id="open-source">
-          <div className="marketing-open-copy">
-            <span className="marketing-eyebrow">
-              <Code2 size={13} /> OPEN BY DESIGN
-            </span>
-            <h2>
-              Big perspective.
-              <br />
-              Small bill.
-              <br />
-              <span>Your code.</span>
-            </h2>
-            <p>
-              Free, MIT-licensed software. Live data through your own Treg key,
-              with an estimate before every paid run.
-            </p>
-            <div className="marketing-open-actions">
+            <div className="ll-actions">
               <a
-                className="marketing-button light"
+                className="ll-pill"
                 href={GITHUB_FORK_URL}
                 target="_blank"
                 rel="noreferrer"
               >
-                <GitFork size={16} /> Fork on GitHub <ArrowUpRight size={14} />
+                <GitFork size={15} /> Fork on GitHub
               </a>
-              <a href={DEPLOY_VERCEL_URL} target="_blank" rel="noreferrer">
+              <a
+                className="ll-ghost"
+                href={DEPLOY_VERCEL_URL}
+                target="_blank"
+                rel="noreferrer"
+              >
                 Deploy your own <ArrowUpRight size={13} />
               </a>
               <a
+                className="ll-ghost"
                 href={`${GITHUB_REPOSITORY}#readme`}
                 target="_blank"
                 rel="noreferrer"
@@ -520,97 +407,137 @@ export default function MarketingPage() {
               </a>
             </div>
           </div>
-          <div className="marketing-code-card">
-            <div>
-              <span>
-                <Terminal size={14} /> YOUR NEXT SIDE PROJECT
+          <div className="ll-terminal">
+            <div className="ll-window-bar">
+              <span aria-hidden="true">
+                <i />
+                <i />
+                <i />
               </span>
-              <span>MIT</span>
+              <span>~/treg-lens</span>
+              <span className="ll-window-tag">MIT</span>
             </div>
             <pre>
               <code>
-                <span># Make it yours.</span>
-                {"\n"}git clone {GITHUB_REPOSITORY}.git{"\n"}cd treg-lens{"\n"}
-                npm ci{"\n"}npm run setup{"\n"}npm run doctor{"\n"}npm run dev
+                <span className="ll-dim"># make it yours</span>
+                {"\n"}
+                <b>$</b> git clone {GITHUB_REPOSITORY}.git{"\n"}
+                <b>$</b> cd treg-lens{"\n"}
+                <b>$</b> npm ci{"\n"}
+                <b>$</b> npm run setup{"\n"}
+                <b>$</b> npm run doctor{"\n"}
+                <b>$</b> npm run dev{"\n"}
+                <span className="ll-ok">✓ Ready on localhost:3000</span>
               </code>
             </pre>
-            <footer>
-              <span>
-                <span className="marketing-status-dot" /> Ready for your
-                perspective.
-              </span>
-              <Code2 size={15} />
-            </footer>
           </div>
-          <span className="marketing-open-index">
-            THE TOOLS ARE OPEN. THE POSSIBILITIES, TOO.
-          </span>
         </section>
-        <section className="marketing-faq marketing-wrap">
+
+        <section className="ll-section ll-wrap ll-faq">
           <div>
-            <span className="marketing-eyebrow">A FEW GOOD QUESTIONS</span>
-            <h2>
-              Clear answers.
-              <br />
-              Right from the start.
-            </h2>
+            <span className="ll-kicker">FAQ</span>
+            <h2>Good questions.</h2>
+            <p className="ll-faq-more">
+              Something else?{" "}
+              <a
+                href={`${GITHUB_REPOSITORY}/issues`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Ask in the repo <ArrowUpRight size={13} />
+              </a>
+            </p>
           </div>
           <div>
             {questions.map((question) => (
               <details key={question.q}>
                 <summary>
                   {question.q}
-                  <Plus size={17} />
+                  <Plus size={16} aria-hidden="true" />
                 </summary>
                 <p>{question.a}</p>
               </details>
             ))}
           </div>
         </section>
-        <section className="marketing-final marketing-wrap">
-          <span className="marketing-eyebrow">
-            <span className="marketing-status-dot" /> YOUR NEXT CHAPTER STARTS
-            HERE
-          </span>
-          <h2>
-            Make the conversation
-            <br />a little more <span>you.</span>
-          </h2>
-          <p>One Treg key. A whole new perspective.</p>
-          <div>
-            <Link className="marketing-button primary" href="/login">
-              <KeyRound size={16} /> Start with your Treg key{" "}
-              <ArrowRight size={16} />
-            </Link>
-            <Link href="/demo">
-              Or preview sample data <ArrowUpRight size={13} />
-            </Link>
+
+        <section className="ll-final">
+          <div className="ll-wrap">
+            <span className="ll-kicker">
+              <Pixel /> Your next move
+            </span>
+            <h2>
+              Bring your brand <br className="ll-break" />
+              into focus.
+            </h2>
+            <p>One treg key. Four answer engines. Every source on the record.</p>
+            <div className="ll-actions">
+              <Link className="ll-pill is-light" href="/login">
+                <KeyRound size={15} /> Start with your treg key{" "}
+                <ArrowRight size={15} />
+              </Link>
+              <Link className="ll-ghost is-dark" href="/demo">
+                Preview sample data <ArrowUpRight size={13} />
+              </Link>
+            </div>
           </div>
-          <span className="marketing-final-doodle" aria-hidden="true">
-            ✳
-          </span>
         </section>
       </main>
-      <footer className="marketing-footer marketing-wrap">
-        <div>
-          <MarketingLogo />
-          <span>A clearer perspective on AI search.</span>
+
+      <footer className="ll-footer">
+        <div className="ll-wrap ll-footer-grid">
+          <div className="ll-footer-brand">
+            <MarketingLogo light />
+            <p>An open-source lens on AI search, powered by treg.</p>
+          </div>
+          <nav aria-label="Footer">
+            <div>
+              <span>Product</span>
+              <a href="#how-it-works">How it works</a>
+              <Link href="/demo">Sample workspace</Link>
+              <Link href="/login">Log in</Link>
+            </div>
+            <div>
+              <span>Open source</span>
+              <a href={GITHUB_REPOSITORY} target="_blank" rel="noreferrer">
+                GitHub
+              </a>
+              <a
+                href={`${GITHUB_REPOSITORY}/blob/main/docs/GETTING-STARTED.md`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Getting started
+              </a>
+              <a
+                href={`${GITHUB_REPOSITORY}/blob/main/LICENSE`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                MIT license
+              </a>
+            </div>
+            <div>
+              <span>treg</span>
+              <a href="https://treg.to/aeo" target="_blank" rel="noreferrer">
+                The AEO toolkit
+              </a>
+              <a href="https://treg.to/app" target="_blank" rel="noreferrer">
+                Get a treg key
+              </a>
+              <a href="https://treg.to" target="_blank" rel="noreferrer">
+                treg.to
+              </a>
+            </div>
+          </nav>
         </div>
-        <div>
-          <a href={GITHUB_REPOSITORY} target="_blank" rel="noreferrer">
-            GitHub <ArrowUpRight size={11} />
-          </a>
-          <a href="https://treg.to/aeo" target="_blank" rel="noreferrer">
-            The AEO toolkit <ArrowUpRight size={11} />
-          </a>
-          <Link href="/login">
-            Log in <ArrowUpRight size={11} />
-          </Link>
-        </div>
-        <p>
-          Built in the open. Yours to explore.{" "}
+        <div className="ll-wrap ll-footer-base">
+          <span>Built in the open. Product names belong to their owners.</span>
           <span>Treg Lens · MIT licensed</span>
-        </p>
+        </div>
+        <div className="ll-wordmark" aria-hidden="true">
+          lens
+        </div>
       </footer>
     </div>
   );

@@ -17,7 +17,7 @@ Treg Lens has **eight direct runtime dependencies** and **eight development depe
 
 There is no Treg SDK, Axios, ORM, auth SaaS SDK, charting package, CSS framework or UI component framework. Local durable storage uses built-in `node:sqlite` with no external service; hosted Vercel deployments use the one Neon driver. Both use shared asynchronous domain logic and database-backed monitoring leases. Native `fetch`, SVG, and Node crypto/fs/environment primitives cover requests, charts, setup, encryption, backup safety, and the local worker. The optional minutely hosted cron uses Vercel's platform; `vercel.ts` needs no configuration SDK.
 
-The four local fonts total 102,008 bytes. They remove Google Fonts requests during builds and ship with complete OFL licenses, pinned provenance and hashes. See [third-party notices](../THIRD_PARTY_NOTICES.md) and [font provenance](../src/app/fonts/README.md).
+The five local font files total 118,888 bytes. They remove Google Fonts requests during builds and ship with complete OFL licenses, pinned provenance and hashes. See [third-party notices](../THIRD_PARTY_NOTICES.md) and [font provenance](../src/app/fonts/README.md).
 
 ## Development inventory
 

@@ -17,6 +17,14 @@ const display = localFont({
   style: "normal",
   display: "swap",
 });
+// Treg's pixel display face, used for marketing headlines and readouts.
+const pixel = localFont({
+  src: "./fonts/geist-pixel-latin-400.woff2",
+  variable: "--font-pixel",
+  weight: "400",
+  style: "normal",
+  display: "swap",
+});
 const mono = localFont({
   src: [
     { path: "./fonts/ibm-plex-mono-latin-400.woff2", weight: "400", style: "normal" },
@@ -37,7 +45,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${sans.variable} ${display.variable} ${mono.variable}`}
+      className={`${sans.variable} ${display.variable} ${pixel.variable} ${mono.variable}`}
     >
       <body>{children}</body>
     </html>
