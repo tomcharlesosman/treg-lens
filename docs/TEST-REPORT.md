@@ -1,6 +1,6 @@
 # Full feature verification — 20 October 2026
 
-The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This pass covers the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. A separate real-Neon smoke verified the remote storage path without paid Treg calls; the earlier dated live check below verified the Treg boundary.
+The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This pass covers the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Separate real-Neon and public Vercel checks verified storage and hosted transport without paid Treg calls; the earlier dated live check below verified the paid Treg boundary.
 
 ## Results
 
@@ -26,6 +26,34 @@ Hosted transport coverage exercises owner-bound uploads above the 3 MiB direct-s
 A separate check used the provisioned Neon database and synthetic owner namespaces to verify remote compare-and-swap, atomic audit append, runner leases, budget reservations/settlement, and retained-result recovery. All synthetic owner rows were removed afterward. It made **zero paid Treg calls**. This establishes that the remote storage adapter worked against that database at the time checked; it is separate from the fixture test count and does not claim a public Vercel deployment or live scheduled-provider run.
 
 Open-source onboarding includes 12 setup regressions for stable existing secrets, private file creation, Windows line endings, empty and duplicate overrides, test-mode handling, Node minimums, and environment precedence. `npm run check` also verifies local documentation links and heading anchors. The earlier onboarding verification used a source-only copy in a directory containing spaces for clean install, repeated setup with byte-for-byte secret preservation, doctor, checks, and a fresh production build with external network connections blocked. No environment file, dependency installation, or build cache was copied into that installation. Fonts remain vendored with licenses and provenance. Current commit-specific clean installs and platform results are recorded by GitHub Actions.
+
+## Fresh-clone onboarding — 20 October 2026
+
+Committed revision `f7e32f03295b2286f1f17aa332ce34a5571c0e2d` was cloned into a new temporary directory named **Treg Lens Fresh Fork**, whose path contains spaces. The host was macOS arm64, Node.js 22.22.3 and npm 10.9.8. No private configuration, data, `node_modules`, `.next`, or `.vercel` files were copied. npm used a new cache and empty user configuration. An allowlisted environment excluded inherited database, Vercel, Treg, session, cron, and Node-preload settings, with `TREG_STORAGE=sqlite` explicitly selected.
+
+| Command | Outcome | Duration |
+| --- | --- | ---: |
+| `npm ci` | Passed; locked dependencies installed | 18.78 s |
+| `npm run setup` | Passed; new private local secret | 0.13 s |
+| `npm run doctor` | Passed; SQLite selected, values hidden | 0.13 s |
+| `npm run check` | Passed; 121 tests and 176 local documentation links | 10.84 s |
+| `npm run build` | Passed; production routes generated | 6.24 s |
+
+The generated secret had 64 characters and mode 0600, and was absent from the captured command logs. The clone remained clean. Install/check/build created no application data directory and made no paid calls or deployment. The install reported the already documented development-linter advisory; no forced dependency changes were applied. This repeat installation check is separate from the primary 474-test count.
+
+## Public Vercel smoke — 20 October 2026
+
+The public app at [treg-lens-tom-osmans-projects.vercel.app](https://treg-lens-tom-osmans-projects.vercel.app) completed an 11-check hosted smoke, with **zero paid Treg calls**. Verified outcomes included:
+
+- Public storage health and anonymous denial on workspace, monitor, and cron routes.
+- Real free-key browser sign-in with a Secure session cookie and no credential in browser storage.
+- Durable workspace save/reload against the hosted database.
+- An exact 8 MiB incompressible synthetic snapshot saved through eight 1 MiB chunks, with streamed commit/GET/conflict responses, revision protection, and idempotent committed replay.
+- Logout and precise removal of the temporary synthetic records.
+
+A separate authenticated manual cron invocation successfully updated the worker heartbeat. This proves the authorized handler ran; **scheduled platform cron delivery has not yet been verified**. These hosted checks are separate from the fixture test count and do not claim a live scheduled paid audit. The earlier paid-provider check retains its original date and costs below.
+
+The post-smoke runtime log scan found **zero errors in the preceding 30-minute window**. This is a point-in-time observation, not an uptime guarantee.
 
 ## Issues found and fixed
 

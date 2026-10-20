@@ -48,7 +48,7 @@
   "bugs": {
     "url": "https://github.com/tomcharlesosman/treg-lens/issues"
   },
-  "homepage": "https://github.com/tomcharlesosman/treg-lens#readme",
+  "homepage": "https://treg-lens-tom-osmans-projects.vercel.app",
   "license": "MIT",
   "engines": {
     "node": ">=22.13"

@@ -77,4 +77,4 @@ The live product persists workspaces and schedules through shared SQLite/Postgre
 
 For operations, `npm run backup -- /private/path/new.sqlite` produces a consistent SQLite backup without a CLI/database package. Keep real databases and their credentials out of test artifacts. For SQLite, stop server/worker and use `npm run monitor -- --pause-all` before restarting from an old backup; remote mode is refused and uses the documented provider/private SQL recovery procedure; external billing is not rolled back by restore.
 
-The dated [verification report](TEST-REPORT.md) records the complete local verification pass. GitHub Actions records results for each commit; use that run when checking a particular checkout.
+The dated [verification report](TEST-REPORT.md) records the complete local pass, fresh-clone onboarding at `f7e32f0`, and separate real-Neon/public-Vercel smoke results. Hosted checks made no paid Treg calls. Manual authenticated cron heartbeat passed; scheduled platform delivery remains separately unverified. GitHub Actions records results for each commit; use that run when checking a particular checkout.

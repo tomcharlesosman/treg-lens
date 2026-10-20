@@ -7,24 +7,26 @@ const state = globalThis as typeof globalThis & {
 };
 
 function protect(path: string, directory = false): void {
-  const info = lstatSync(path);
+  const info = lstatSync(/* turbopackIgnore: true */ path);
   if (info.isSymbolicLink() || (directory ? !info.isDirectory() : !info.isFile()))
     throw new Error("The application data path must be a regular private directory or file.");
-  chmodSync(path, directory ? 0o700 : 0o600);
+  chmodSync(/* turbopackIgnore: true */ path, directory ? 0o700 : 0o600);
 }
 
 /** One SQLite connection per data path and Node process, including dev reloads. */
 export function getDatabase(): DatabaseSync {
-  const directory = resolve(process.env.TREG_DATA_DIR || join(process.cwd(), "data"));
-  const path = join(directory, "treg-lens.sqlite");
+  // These paths belong to the running user's private data, never build assets.
+  // Keep the bundler from resolving dynamic paths into whole-project traces.
+  const directory = resolve(/* turbopackIgnore: true */ process.env.TREG_DATA_DIR || join(/* turbopackIgnore: true */ process.cwd(), "data"));
+  const path = join(/* turbopackIgnore: true */ directory, "treg-lens.sqlite");
   const databases = state.__tregLensDatabases ??= new Map();
   const cached = databases.get(path);
   if (cached) return cached;
-  mkdirSync(directory, { recursive: true, mode: 0o700 });
+  mkdirSync(/* turbopackIgnore: true */ directory, { recursive: true, mode: 0o700 });
   protect(directory, true);
   for (const file of [path, `${path}-wal`, `${path}-shm`])
-    if (existsSync(file)) protect(file);
-  const database = new DatabaseSync(path);
+    if (existsSync(/* turbopackIgnore: true */ file)) protect(file);
+  const database = new DatabaseSync(/* turbopackIgnore: true */ path);
   try {
     protect(path);
     database.exec("PRAGMA busy_timeout=5000; PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON;");
@@ -35,7 +37,7 @@ export function getDatabase(): DatabaseSync {
       updated_at TEXT NOT NULL
     )`);
     for (const file of [`${path}-wal`, `${path}-shm`])
-      if (existsSync(file)) protect(file);
+      if (existsSync(/* turbopackIgnore: true */ file)) protect(file);
     databases.set(path, database);
     return database;
   } catch (error) {

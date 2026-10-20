@@ -91,7 +91,8 @@ async function postgres<T>(fn: (tx: StorageSession) => Promise<T>, options: Opti
 }
 
 async function sqlite<T>(fn: (tx: StorageSession) => Promise<T>, options: Options): Promise<T> {
-  const path = resolve(process.env.TREG_DATA_DIR || "data");
+  // A runtime queue key must not make the bundler trace the user's data folder.
+  const path = resolve(/* turbopackIgnore: true */ process.env.TREG_DATA_DIR || "data");
   const queues = state.__tregStorageQueues ??= new Map();
   const previous = queues.get(path) || Promise.resolve();
   const operation = previous.catch(() => {}).then(async () => {

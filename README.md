@@ -6,7 +6,7 @@
 
 A live, self-hosted AI visibility product powered by the [Treg AEO toolkit](https://treg.to/aeo). Connect your Treg key, discover buyer questions, collect answers, compare competitors, research citations, and track changes with budgeted daily or weekly audits. Private workspaces are saved on your server.
 
-[**Fork the repository**](https://github.com/tomcharlesosman/treg-lens/fork) · [Agent quickstart](docs/AGENT-QUICKSTART.md) · [Documentation](#documentation) · [MIT license](LICENSE)
+[**Open Treg Lens**](https://treg-lens-tom-osmans-projects.vercel.app) · [Fork the repository](https://github.com/tomcharlesosman/treg-lens/fork) · [Agent quickstart](docs/AGENT-QUICKSTART.md) · [Documentation](#documentation) · [MIT license](LICENSE)
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftomcharlesosman%2Ftreg-lens%2Ftree%2Fmain&repository-name=treg-lens&project-name=treg-lens&products=%5B%7B%22type%22%3A%22integration%22%2C%22integrationSlug%22%3A%22neon%22%2C%22productSlug%22%3A%22neon%22%2C%22protocol%22%3A%22storage%22%7D%5D&env=SESSION_SECRET&envDescription=Create+a+private+random+SESSION_SECRET+of+at+least+32+characters+for+encrypted+sessions.+This+is+not+your+Treg+API+key.+See+the+linked+setup+guide.&envLink=https%3A%2F%2Fgithub.com%2Ftomcharlesosman%2Ftreg-lens%2Fblob%2Fmain%2Fdocs%2FDEPLOYMENT.md%23configuration-and-secrets)
 

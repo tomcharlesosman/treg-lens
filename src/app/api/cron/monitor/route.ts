@@ -2,8 +2,8 @@ import { authorizedCron } from "@/lib/cron-auth";
 import { tickMonitor } from "@/lib/monitoring";
 import { validateSessionSecret } from "@/lib/treg-session";
 
-// Hobby-compatible default; an enabled Pro cron gets 360s in vercel.ts.
-export const maxDuration = 300;
+// Keep duration in vercel.ts so the optional Pro dispatcher can use 360s.
+// A route-level export would override that setting for every hosting plan.
 export async function GET(request: Request) {
   const headers = { "Cache-Control": "private, no-store" };
   if (!authorizedCron(request.headers.get("authorization"), process.env.CRON_SECRET))
