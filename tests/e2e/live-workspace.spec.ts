@@ -64,6 +64,24 @@ test("failed saves retain local edits and retry synchronizes without overwriting
   expect((await (await page.request.get("/api/workspace")).json()).snapshot.prompts).toContain(prompt);
 });
 
+test("unsynced local edits survive a reload and then save to the server", async ({ page }) => {
+  await seedWorkspace(page);
+  await page.route("**/api/workspace", async (route) => {
+    if (route.request().method() === "PUT") await route.fulfill({ status: 503, json: { error: "Fixture storage unavailable" } });
+    else await route.continue();
+  });
+  const prompt = "Which unsynced edits survive a reload?";
+  await addPrompt(page, prompt);
+  await expect(sync(page)).toContainText("Unsynced");
+  expect((await (await page.request.get("/api/workspace")).json()).snapshot.prompts).not.toContain(prompt);
+  await page.unroute("**/api/workspace");
+  await page.reload();
+  await nav(page, "Prompt tracking");
+  await expect(page.locator(".prompt-cell").filter({ hasText: prompt })).toHaveCount(1);
+  await waitForServerSave(page);
+  expect((await (await page.request.get("/api/workspace")).json()).snapshot.prompts).toContain(prompt);
+});
+
 test("a CAS conflict keeps both versions until the user explicitly loads the server version", async ({ page }) => {
   await seedWorkspace(page);
   const existing = await (await page.request.get("/api/workspace")).json();

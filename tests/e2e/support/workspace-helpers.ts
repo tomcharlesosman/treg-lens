@@ -18,6 +18,9 @@ export function contextKey(context: BrowserContext, token = primaryKey) {
   if (!keys) { keys = { primary: `${primaryKey}-${crypto.randomUUID()}`, secondary: `${secondaryKey}-${crypto.randomUUID()}` }; contextKeys.set(context, keys); }
   return token === primaryKey ? keys.primary : token === secondaryKey ? keys.secondary : token;
 }
+// Call before reloading or navigating after an edit. A pending 700ms autosave
+// that fires while a navigation is in progress makes WebKit report the blocked
+// fetch ("Fetch API cannot load … due to access control checks") as a page error.
 export async function waitForServerSave(page: Page) {
   await expect(page.getByRole("region", { name: "Workspace synchronization" })).toContainText("Saved to server");
 }

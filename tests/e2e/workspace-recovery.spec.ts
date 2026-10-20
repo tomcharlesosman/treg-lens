@@ -8,6 +8,7 @@ import {
   seedWorkspace,
   saveServerSnapshot,
   storagePrefix,
+  waitForServerSave,
 } from "./support/workspace-helpers";
 import type { SavedRun } from "../../src/lib/workspace-data";
 
@@ -83,6 +84,7 @@ test("a completed prompt recheck appends history and displays the latest saved a
   await expect(latestAudit.locator(".answer-card")).toHaveCount(2);
   await expect(latestAudit).toContainText("$0.004");
   await latestAudit.getByRole("button", { name: "Close dialog" }).click();
+  await waitForServerSave(page);
   await page.reload();
   await nav(page, "Audit history");
   await expect(page.getByText("3 RUNS", { exact: true })).toBeVisible();

@@ -1,13 +1,14 @@
 import { expect, test, type Page } from "@playwright/test";
 import { readFile } from "node:fs/promises";
 import { DEFAULT_PROMPTS } from "../../src/lib/workspace-data";
+import { isAbandonedWebKitPrefetch } from "./support/auth-helpers";
 import { contextKey, waitForServerSave, freshAddress, missingPrompt, nav, openAudit, primaryKey, secondaryKey, seedWorkspace, signIn, storagePrefix, trackedPrompt } from "./support/workspace-helpers";
 
 const clientErrors = new WeakMap<Page, string[]>();
-test.beforeEach(async ({ page }) => {
+test.beforeEach(async ({ page, browserName, baseURL }) => {
   const errors: string[] = [];
   clientErrors.set(page, errors);
-  page.on("pageerror", (error) => errors.push(error.message));
+  page.on("pageerror", (error) => { if (!isAbandonedWebKitPrefetch(error, browserName, baseURL)) errors.push(error.message); });
 });
 test.afterEach(async ({ page }) => {
   expect(clientErrors.get(page), "No uncaught browser errors").toEqual([]);
@@ -87,6 +88,7 @@ test("empty authenticated workspace, settings validation, persistence, and memor
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(settings.getByLabel(/API token/)).toHaveValue(secondaryKey);
   await settings.getByRole("button", { name: "Close settings" }).click();
+  await waitForServerSave(page);
   await page.reload();
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(settings.getByLabel("Brand name", { exact: true })).toHaveValue("Treg Research");
@@ -159,6 +161,7 @@ test("audit validation, live price breakdown, engine selection, four-engine run,
   await detail.getByText(/Read full answer/).first().click();
   await expect(detail.getByRole("heading", { name: "AI visibility toolkit comparison" })).toBeVisible();
   await detail.getByRole("button", { name: "Close dialog" }).click();
+  await waitForServerSave(page);
   await page.reload();
   const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), key);
   expect(stored.runs).toHaveLength(1);
@@ -219,6 +222,7 @@ test("discovery validates seeds, prices requests, supports question and keyword 
   await expect(discovery).toBeHidden();
   for (const prompt of selected) await expect(page.locator(".prompt-cell").filter({ hasText: prompt })).toHaveCount(1);
   await expect(page.locator(".prompt-cell")).toHaveCount(DEFAULT_PROMPTS.length + 6);
+  await waitForServerSave(page);
   await page.reload();
   await nav(page, "Prompt tracking");
   await expect(page.locator(".prompt-cell")).toHaveCount(DEFAULT_PROMPTS.length + 6);
@@ -305,6 +309,7 @@ test("source research runs through server routes, records authority and contacts
   await expect(source.getByRole("heading", { name: "AI toolkit research", exact: true })).toBeVisible();
   expect(paidLookups).toBe(2);
   await source.getByRole("button", { name: "Done", exact: true }).click();
+  await waitForServerSave(page);
   await page.reload();
   await nav(page, "Sources & citations");
   await researchButton.click();
@@ -330,6 +335,7 @@ test("opportunities create a grounded brief, copy with browser fallback, mark do
   await opportunity.getByRole("button", { name: "Mark done", exact: true }).click();
   await expect(page.getByText("0 OPEN MOVES", { exact: true })).toBeVisible();
   await expect(opportunity).toContainText("COMPLETED");
+  await waitForServerSave(page);
   await page.reload();
   await nav(page, "Opportunities");
   await expect(opportunity.getByRole("button", { name: "Reopen", exact: true })).toBeVisible();
