@@ -16,11 +16,9 @@ import {
   Bell,
   BookOpen,
   Check,
-  CheckCheck,
   ChevronDown,
   ChevronRight,
   CircleHelp,
-  Copy,
   ExternalLink,
   Eye,
   FileText,
@@ -36,7 +34,6 @@ import {
   Plus,
   Search,
   Settings2,
-  ShieldCheck,
   Sparkles,
   Target,
   Trash2,
@@ -60,6 +57,10 @@ import AuditFindings from "./audit-findings";
 import VisibilityTrends from "./visibility-trends";
 import PromptLibrary from "./prompt-library";
 import CitationExplorer from "./citation-explorer";
+import PagePlans from "./page-plans";
+import EvidenceReports from "./evidence-reports";
+import { buildPagePlanFollowup, pagePlanOpportunities, type PagePlan } from "@/lib/page-plans";
+import type { EvidenceReport } from "@/lib/evidence-reports";
 import { syncPromptRecords, activePromptTexts, type PromptRecord } from "@/lib/prompt-library";
 import type { SavedDiscovery } from "@/lib/discovery-research";
 import { isExampleProfile, needsBrandOnboarding, updateProjectProfile } from "@/lib/workspace-onboarding";
@@ -86,6 +87,7 @@ type View =
   | "citations"
   | "opportunities"
   | "history"
+  | "reports"
   | "guide";
 const NAV = [
   { id: "overview", label: "Overview", icon: LayoutDashboard },
@@ -94,6 +96,7 @@ const NAV = [
   { id: "citations", label: "Sources & citations", icon: Link2 },
   { id: "opportunities", label: "Opportunities", icon: Lightbulb },
   { id: "history", label: "Audit history", icon: History },
+  { id: "reports", label: "Reports", icon: FileText },
 ] as const;
 const TITLES: Record<View, { title: string; description: string }> = {
   overview: {
@@ -120,6 +123,10 @@ const TITLES: Record<View, { title: string; description: string }> = {
   history: {
     title: "Audit history",
     description: "Every answer, every source, every change. Yours to keep.",
+  },
+  reports: {
+    title: "Reports & agent handoff",
+    description: "Keep the evidence. Share a clear next step.",
   },
   guide: {
     title: "A little clarity goes a long way.",
@@ -272,7 +279,7 @@ export default function Workspace({
   const [loggingOut, setLoggingOut] = useState(false);
   const [view, setView] = useState<View>("overview");
   const workspace = useServerWorkspace(storageKey, demoMode);
-  const { snapshot: { project, prompts, runs, done, sourceResearch }, sync, loaded } = workspace;
+  const { snapshot: { project, prompts, runs, sourceResearch }, sync, loaded } = workspace;
   const setProject = (action: SetStateAction<Project>) => workspace.field("project", action);
   const setPrompts = (action: SetStateAction<string[]>) => workspace.change((current) => {
     const next = typeof action === "function" ? action(current.prompts) : action;
@@ -282,7 +289,6 @@ export default function Workspace({
   const promptRecords = useMemo(() => syncPromptRecords(workspace.snapshot.promptRecords, prompts, project), [workspace.snapshot.promptRecords, prompts, project]);
   const changePromptRecords = (records: PromptRecord[]) => workspace.change((current) => ({ ...current, promptRecords: records, prompts: activePromptTexts(records) }));
   const setRuns = (action: SetStateAction<SavedRun[]>) => workspace.field("runs", action);
-  const setDone = (action: SetStateAction<string[]>) => workspace.field("done", action);
   const setSourceResearch = (action: SetStateAction<Record<string, SourceResearch>>) => workspace.field("sourceResearch", action);
   const [backupOpen, setBackupOpen] = useState(false);
   const [monitorOpen, setMonitorOpen] = useState(false);
@@ -290,6 +296,7 @@ export default function Workspace({
   const auditProject = useRef<Project>(project);
   const [token, setToken] = useState("");
   const [auditOpen, setAuditOpen] = useState(false);
+  const [auditFollowup, setAuditFollowup] = useState<{ planId: string; updatedAt: string; input: ReturnType<typeof buildPagePlanFollowup>["input"] } | undefined>();
   const [auditPrompts, setAuditPrompts] = useState<string[] | undefined>(
     undefined,
   );
@@ -310,7 +317,6 @@ export default function Workspace({
   const [selectedRun, setSelectedRun] = useState<SavedRun | null>(null);
   const [findingAnswer, setFindingAnswer] = useState<AnswerResult | null>(null);
   const [researchHistoryOpen, setResearchHistoryOpen] = useState(false);
-  const [brief, setBrief] = useState<string | null>(null);
   const [toast, setToast] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -402,26 +408,37 @@ export default function Workspace({
     : 0;
   const brands = brandStats(results, [project.brand, ...project.competitors]);
   const sources = sourceStats(results);
-  const gaps = useMemo(
-    () =>
-      prompts
-        .map((prompt) => {
-          const rows = results.filter((r) => r.prompt === prompt);
-          return {
-            prompt,
-            rows,
-            score: visibility(rows, project.domain),
-            misses: rows.filter((r) => !r.brandMentioned).length,
-          };
-        })
-        .filter((r) => r.misses > 0)
-        .sort(
-          (a, b) =>
-            b.misses / Math.max(1, b.rows.length) -
-            a.misses / Math.max(1, a.rows.length),
-        ),
-    [results, prompts, project.domain],
-  );
+  const gaps = useMemo(() => pagePlanOpportunities(allRuns, project).filter((item) => item.absent > 0), [allRuns, project]);
+  const savePlans = async (plans: PagePlan[]) => {
+    if (demoMode) { router.push("/login"); throw new Error("Sign in to save a page plan."); }
+    workspace.field("pagePlans", plans);
+    if (!await workspace.save()) throw new Error("Your page-plan draft is retained locally. Resolve workspace synchronization before continuing.");
+  };
+  const saveStrategy = async (strategy: Project["strategy"]) => {
+    workspace.field("project", (previous) => ({ ...previous, strategy }));
+    if (!await workspace.save()) throw new Error("Your context is retained locally. Resolve workspace synchronization before continuing.");
+  };
+  const saveReport = async (report: EvidenceReport) => {
+    if (demoMode) return false;
+    workspace.field("reports", (previous) => [...(previous ?? []).filter((item) => item.id !== report.id), report]);
+    return workspace.save();
+  };
+  const deleteReport = async (reportId: string) => {
+    if (demoMode) return false;
+    workspace.field("reports", (previous) => (previous ?? []).filter((item) => item.id !== reportId));
+    return workspace.save();
+  };
+  const reviewFollowup = async (plan: PagePlan) => {
+    if (demoMode) { router.push("/login"); return; }
+    if (!await workspace.save()) { setToast("Save your changes and resolve synchronization before reviewing a follow-up."); return; }
+    try {
+      const original = buildPagePlanFollowup(plan, runs);
+      auditProject.current = project;
+      setAuditFollowup({ planId: plan.id, updatedAt: plan.updatedAt, input: original.input });
+      setAuditPrompts(original.input.prompts);
+      setAuditOpen(true);
+    } catch (error) { setToast(error instanceof Error ? error.message : "The original collection settings are unavailable."); }
+  };
   const nav = (id: View) => {
     setView(id);
     setMobileOpen(false);
@@ -439,11 +456,12 @@ export default function Workspace({
       return;
     }
     auditProject.current = project;
+    setAuditFollowup(undefined);
     setAuditPrompts(undefined);
     setAuditOpen(true);
   };
-  const finish = async (run: SavedRun, persistence?: AuditPersistence) => {
-    await workspace.acceptAudit(run, persistence, auditProject.current);
+  const finish = async (run: SavedRun, persistence?: AuditPersistence, followup = false) => {
+    await workspace.acceptAudit(run, persistence, auditProject.current, followup);
     setToast(run.results.length ? `Audit complete. ${run.results.length} real AI answers added.` : "Audit recorded. All engines returned errors.");
   };
   const saveProject = (next: Project, nextToken: string) => {
@@ -463,6 +481,7 @@ export default function Workspace({
     if (reviewOnboarding) router.replace("/app");
     if (openAudit) {
       auditProject.current = next;
+      setAuditFollowup(undefined);
       setAuditPrompts(profile.prompts);
       setAuditOpen(true);
     }
@@ -531,14 +550,6 @@ export default function Workspace({
       );
     setExportOpen(false);
     setToast(`${format.toUpperCase()} report exported.`);
-  };
-  const copy = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setToast("Copied to clipboard.");
-    } catch {
-      setToast("Clipboard unavailable. Select and copy the text manually.");
-    }
   };
   const metricCards = [
     {
@@ -1210,7 +1221,7 @@ export default function Workspace({
                     </h3>
                     <p>
                       {gaps.length
-                        ? `${gaps.length} tracked prompts have answers that don’t mention ${project.brand}. Turn those blind spots into a useful content brief.`
+                        ? `${gaps.length} questions have answered checks that don’t mention ${project.brand}. Inspect the evidence and save a page plan.`
                         : "Run an audit to find the questions where your brand can make its mark."}
                     </p>
                     <button
@@ -1375,7 +1386,7 @@ export default function Workspace({
               <PromptLibrary records={promptRecords} project={project}
                 monitoringNotice="These controls change your question library. Already approved monitoring keeps its saved questions until you deliberately edit its schedule."
                 onChange={changePromptRecords}
-                onAudit={(text) => { if (demoMode) router.push("/login"); else { auditProject.current = project; setAuditPrompts([text]); setAuditOpen(true); } }} />
+                onAudit={(text) => { if (demoMode) router.push("/login"); else { auditProject.current = project; setAuditFollowup(undefined); setAuditPrompts([text]); setAuditOpen(true); } }} />
             </>
           )}
           {view === "competitors" && (
@@ -1464,126 +1475,8 @@ export default function Workspace({
             onAnswer={setFindingAnswer}
             onResearch={(source) => demoMode ? router.push("/login") : setResearchSource(source)}
           />}
-          {view === "opportunities" && (
-            <>
-              <div className="opportunity-banner">
-                <span className="intro-icon">
-                  <Sparkles size={25} />
-                </span>
-                <div>
-                  <span className="eyebrow">FROM INSIGHT TO ACTION</span>
-                  <h2>A clearer path to being discovered.</h2>
-                  <p>
-                    Start with questions where AI mentions your competitors and
-                    leaves you out.
-                  </p>
-                </div>
-                <span className="outline-tag">
-                  {gaps.filter((g) => !done.includes(g.prompt)).length} OPEN
-                  MOVES
-                </span>
-              </div>
-              <div className="opportunity-list">
-                {gaps.map((g, i) => {
-                  const complete = done.includes(g.prompt);
-                  return (
-                    <article
-                      className={`panel opportunity-row ${complete ? "completed" : ""}`}
-                      key={g.prompt}
-                    >
-                      <span className="opportunity-index">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
-                      <div>
-                        <div className="opportunity-labels">
-                          <span
-                            className={`status-tag ${i < 3 ? "green" : "neutral"}`}
-                          >
-                            {complete
-                              ? "COMPLETED"
-                              : i < 3
-                                ? "HIGH POTENTIAL"
-                                : "CONTENT GAP"}
-                          </span>
-                          <span>
-                            {n((g.misses / g.rows.length) * 100)}% of answers
-                            miss your brand
-                          </span>
-                        </div>
-                        <h3>{g.prompt}</h3>
-                        <p>
-                          {g.misses} of {g.rows.length} answers don’t mention{" "}
-                          {project.brand}. Build a focused comparison or answer
-                          page around this buyer question.
-                        </p>
-                        <div className="opportunity-engines">
-                          <EngineStack
-                            engines={[
-                              ...new Set(
-                                g.rows
-                                  .filter((r) => !r.brandMentioned)
-                                  .map((r) => r.engine),
-                              ),
-                            ]}
-                          />
-                          <span>Visibility score {n(g.score, 1)}/100</span>
-                        </div>
-                      </div>
-                      <div className="opportunity-actions">
-                        <button
-                          className="button"
-                          onClick={() => setBrief(g.prompt)}
-                        >
-                          <FileText size={14} /> Create brief{" "}
-                          <ArrowUpRight size={13} />
-                        </button>
-                        <button
-                          className="text-button muted"
-                          onClick={() =>
-                            setDone((old) =>
-                              complete
-                                ? old.filter((v) => v !== g.prompt)
-                                : [...old, g.prompt],
-                            )
-                          }
-                        >
-                          {complete ? (
-                            <CheckCheck size={14} />
-                          ) : (
-                            <Check size={14} />
-                          )}{" "}
-                          {complete ? "Reopen" : "Mark done"}
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
-              </div>
-              {!gaps.length && (
-                <Empty
-                  title={
-                    results.length
-                      ? "You’re in every tracked conversation."
-                      : "Your next opportunity is waiting."
-                  }
-                  description={
-                    results.length
-                      ? "Add more buyer questions to discover new opportunities."
-                      : "Run an audit to find where your brand could be showing up."
-                  }
-                  onRun={onRun}
-                />
-              )}
-              <div className="method-note">
-                <Lightbulb size={15} />
-                <p>
-                  Opportunities are ranked by the proportion of answers missing
-                  your brand. Briefs are editable writing templates, based on
-                  your audit. Nothing is published or sent automatically.
-                </p>
-              </div>
-            </>
-          )}
+          {view === "opportunities" && <PagePlans project={project} runs={allRuns} plans={workspace.snapshot.pagePlans ?? []} onSave={savePlans} onSaveStrategy={saveStrategy} onFollowup={reviewFollowup} legacyDone={workspace.snapshot.done} disabled={demoMode} />}
+          {view === "reports" && <EvidenceReports project={project} runs={allRuns} plans={workspace.snapshot.pagePlans ?? []} reports={workspace.snapshot.reports ?? []} onSave={saveReport} onDelete={deleteReport} synced={sync.phase === "saved"} demo={demoMode} />}
           {view === "history" && (
             <>
               <div className="section-toolbar">
@@ -1785,7 +1678,8 @@ export default function Workspace({
       <AuditDialog
         open={auditOpen}
         onClose={() => setAuditOpen(false)}
-        onComplete={finish}
+        onComplete={(run, persistence) => { void finish(run, persistence, Boolean(auditFollowup)); }}
+        followup={auditFollowup}
         project={project}
         initialPrompts={auditPrompts || prompts.slice(0, 8)}
         token={token}
@@ -1905,6 +1799,7 @@ export default function Workspace({
                   return;
                 }
                 auditProject.current = project;
+                setAuditFollowup(undefined);
                 setAuditPrompts([selectedPrompt]);
                 setSelectedPrompt(null);
                 setAuditOpen(true);
@@ -1966,71 +1861,6 @@ export default function Workspace({
       )}
       {findingAnswer && <Modal title="Answer evidence" onClose={() => setFindingAnswer(null)} wide><p className="modal-description">Buyer question: {findingAnswer.prompt}</p>{answerContent([findingAnswer])}</Modal>}
       {researchHistoryOpen && <Modal title="Brand research and sources" onClose={() => setResearchHistoryOpen(false)} wide><p className="modal-description">Original research is kept with its website and charge. Suggestions may belong to an earlier version of your profile; edits do not rewrite this evidence.</p><div className="profile-research-list">{[...(project.researchReceipts ?? [])].reverse().map((receipt, i) => <div key={receipt.completedAt + "-" + i}><p className="profile-context-note">Researched {new Date(receipt.completedAt).toLocaleString()} · {receipt.url}</p><ResearchReceipt receipt={receipt} currentDomain={project.domain} /></div>)}</div></Modal>}
-      {brief && (
-        <Modal
-          title="Give your next page a head start."
-          onClose={() => setBrief(null)}
-          wide
-        >
-          <span className="status-tag green">WRITING BRIEF · TEMPLATE</span>
-          <div className="writing-brief">
-            <span className="eyebrow">THE BUYER QUESTION</span>
-            <h3>{brief}</h3>
-            <h4>Your opening</h4>
-            <p>
-              Answer the question directly in the first two sentences. Explain
-              who {project.brand} is for and when it fits. Use only verified
-              product details.
-            </p>
-            <h4>What to cover</h4>
-            <ul>
-              <li>
-                Compare {project.brand} with {project.competitors.join(", ")}{" "}
-                using clear, verifiable criteria.
-              </li>
-              <li>
-                Include a concise comparison table covering features, pricing,
-                and ideal use cases.
-              </li>
-              <li>
-                Link to original sources and support every claim with evidence.
-              </li>
-              <li>
-                Add specific answers to the follow-up questions a buyer would
-                ask.
-              </li>
-            </ul>
-            <h4>Before you publish</h4>
-            <p>
-              Verify facts, include the date of your review, and disclose your
-              relationship to {project.brand}. Check that search engines can
-              access the page. Run the same prompts again in 3–4 weeks.
-            </p>
-            <div className="brief-evidence">
-              <ShieldCheck size={16} />
-              <span>
-                Based on a measured visibility gap. This is a writing template,
-                not an AI-generated factual article.
-              </span>
-            </div>
-          </div>
-          <div className="modal-actions">
-            <button className="button" onClick={() => setBrief(null)}>
-              Close
-            </button>
-            <button
-              className="button primary"
-              onClick={() =>
-                copy(
-                  `Writing brief: ${brief}\n\nBrand: ${project.brand}\nCompare with: ${project.competitors.join(", ")}\n\nAnswer the buyer question in the first two sentences. Include a fact-checked comparison table, cite original sources, and add buyer FAQs. Verify pricing and features. Disclose your relationship to the brand. Recheck these prompts in 3–4 weeks.`,
-                )
-              }
-            >
-              <Copy size={14} /> Copy brief
-            </button>
-          </div>
-        </Modal>
-      )}
       {sourceOpen && (
         <Modal title="Built in the open." onClose={() => setSourceOpen(false)}>
           <div className="source-modal">

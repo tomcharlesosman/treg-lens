@@ -32,6 +32,9 @@ export interface AuditInput {
   /** Optional caller-approved ceiling for the fresh catalog reservation estimate. */
   maxCostUsd?: number;
   market?: { country: "US"; language: "en" };
+  /** Resolve an owned page plan on the server; never accept client-supplied historical scope. */
+  followupPlanId?: string;
+  followupPlanUpdatedAt?: string;
 }
 
 export interface AuditError {
@@ -224,6 +227,11 @@ export function validateAuditInput(value: unknown): AuditInput {
     if (market.country !== "US" || market.language !== "en" || Object.keys(market).some((key) => key !== "country" && key !== "language"))
       throw new AeoError("Audit measurement currently supports United States / English only.");
   }
+  if (data.followupPlanId !== undefined || data.followupPlanUpdatedAt !== undefined) {
+    if (typeof data.followupPlanId !== "string" || !data.followupPlanId.trim() || data.followupPlanId.length > 200 ||
+      typeof data.followupPlanUpdatedAt !== "string" || data.followupPlanUpdatedAt.length > 40 || !Number.isFinite(Date.parse(data.followupPlanUpdatedAt)))
+      throw new AeoError("A follow-up requires a saved page plan and its current version.");
+  }
   return {
     brand,
     domain,
@@ -233,6 +241,7 @@ export function validateAuditInput(value: unknown): AuditInput {
     ...(token ? { token } : {}),
     ...(typeof data.maxCostUsd === "number" ? { maxCostUsd: data.maxCostUsd } : {}),
     ...(data.market !== undefined ? { market: { country: "US", language: "en" } as const } : {}),
+    ...(typeof data.followupPlanId === "string" ? { followupPlanId: data.followupPlanId, followupPlanUpdatedAt: data.followupPlanUpdatedAt as string } : {}),
   };
 }
 

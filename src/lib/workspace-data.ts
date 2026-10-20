@@ -39,6 +39,13 @@ export interface OnboardingResearch {
   callIds: string[];
   completedAt: string;
 }
+export type ProjectStrategy = {
+  goal?: string;
+  timeframe?: string;
+  differentiators?: string;
+  keyPages?: string[];
+  writingPreferences?: string;
+};
 export type Project = {
   brand: string;
   domain: string;
@@ -51,6 +58,8 @@ export type Project = {
   buyerQuestions?: BuyerQuestion[];
   researchReceipts?: OnboardingResearch[];
   onboardingCompletedAt?: string;
+  /** Optional reviewed context; never inferred approval for additional research. */
+  strategy?: ProjectStrategy;
 };
 export type SavedRun = {
   id: string;

@@ -40,6 +40,8 @@ export function updateProjectProfile(previous: Project, next: Project): Project 
       ? { description: previous.description } : {}),
     ...(sameBrand && next.audience === undefined && previous.audience !== undefined
       ? { audience: previous.audience } : {}),
+    ...(sameBrand && next.strategy === undefined && previous.strategy !== undefined
+      ? { strategy: previous.strategy } : {}),
     ...(sameBrand && next.market === undefined && previous.market !== undefined
       ? { market: previous.market } : {}),
     ...(sameBrand && next.competitorDetails === undefined && previous.competitorDetails !== undefined

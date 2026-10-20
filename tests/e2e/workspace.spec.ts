@@ -318,31 +318,30 @@ test("source research runs through server routes, records authority and contacts
   expect(paidLookups).toBe(2);
 });
 
-test("opportunities create a grounded brief, copy with browser fallback, mark done, persist and reopen", async ({ page }) => {
-  const storageKey = await seedWorkspace(page);
+test("legacy observations can become durable page plans without inventing comparable collection settings", async ({ page }) => {
+  await seedWorkspace(page);
   await nav(page, "Opportunities");
-  await expect(page.getByText("1 OPEN MOVES", { exact: true })).toBeVisible();
-  const opportunity = page.locator(".opportunity-row");
+  const opportunity = page.locator(".pp-opportunity");
   await expect(opportunity).toHaveCount(1);
   await expect(opportunity).toContainText(missingPrompt);
-  await opportunity.getByRole("button", { name: "Create brief" }).click();
-  const brief = page.getByRole("dialog", { name: "Give your next page a head start." });
-  await expect(brief).toContainText("WRITING BRIEF · TEMPLATE");
-  await expect(brief).toContainText("Use only verified product details.");
-  await expect(brief).toContainText(missingPrompt);
-  await brief.getByRole("button", { name: "Copy brief", exact: true }).click();
-  await expect(page.getByRole("status")).toHaveText(/Copied to clipboard\.|Clipboard unavailable\. Select and copy the text manually\./);
-  await brief.getByRole("button", { name: "Close", exact: true }).click();
-  await opportunity.getByRole("button", { name: "Mark done", exact: true }).click();
-  await expect(page.getByText("0 OPEN MOVES", { exact: true })).toBeVisible();
-  await expect(opportunity).toContainText("COMPLETED");
+  await opportunity.getByRole("button", { name: "Create page plan" }).click();
+  const plan = page.getByRole("dialog", { name: "Make the next page count." });
+  await expect(plan.getByLabel("Writing brief")).toHaveValue(/Buyer question:/);
+  await expect(plan).toContainText("No comparable change yet");
+  await expect(plan.getByRole("button", { name: "Review follow-up audit" })).toBeDisabled();
+  await plan.getByLabel("Writing brief").fill("Investigate the cited competitor and confirm this buyer question fits our audience.");
+  await plan.getByRole("button", { name: "Save page plan", exact: true }).click();
+  await expect(plan).toBeHidden();
   await waitForServerSave(page);
   await page.reload();
   await nav(page, "Opportunities");
-  await expect(opportunity.getByRole("button", { name: "Reopen", exact: true })).toBeVisible();
-  expect(await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!).done, storageKey)).toEqual([missingPrompt]);
-  await opportunity.getByRole("button", { name: "Reopen", exact: true }).click();
-  await expect(page.getByText("1 OPEN MOVES", { exact: true })).toBeVisible();
+  await page.locator(".pp-plan-card").getByRole("button", { name: "Open page plan" }).click();
+  await expect(plan.getByLabel("Writing brief")).toHaveValue("Investigate the cited competitor and confirm this buyer question fits our audience.");
+  const saved = await (await page.request.get("/api/workspace")).json();
+  expect(saved.snapshot.runs).toHaveLength(2);
+  expect(saved.snapshot.pagePlans).toHaveLength(1);
+  expect(saved.snapshot.pagePlans[0].baselineMeasurement).toBeUndefined();
+  expect(saved.snapshot.done).toEqual([]);
 });
 
 test("saved answers render complete safe markdown and all CSV, JSON, and single-audit exports exclude credentials", async ({ page }) => {
@@ -411,7 +410,11 @@ test("workspace data is isolated per signed-in key and restored when returning t
   };
   const originalKey = await seedWorkspace(page);
   await nav(page, "Opportunities");
-  await page.getByRole("button", { name: "Mark done", exact: true }).click();
+  await page.getByRole("button", { name: "Create page plan", exact: true }).first().click();
+  const plan = page.getByRole("dialog", { name: "Make the next page count." });
+  await plan.getByLabel("Why this page?").fill("A private page decision for the original workspace.");
+  await plan.getByRole("button", { name: "Save page plan", exact: true }).click();
+  await expect(plan).toBeHidden();
   await waitForServerSave(page);
   const secondKey = await switchThroughLogin(secondaryKey, true);
   expect(secondKey).not.toBe(originalKey);
@@ -421,7 +424,9 @@ test("workspace data is isolated per signed-in key and restored when returning t
   await nav(page, "Audit history");
   await expect(page.getByText("2 RUNS", { exact: true })).toBeVisible();
   await nav(page, "Opportunities");
-  await expect(page.getByRole("button", { name: "Reopen", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Open page plan", exact: true }).click();
+  await expect(plan.getByLabel("Why this page?")).toHaveValue("A private page decision for the original workspace.");
+  await plan.getByRole("button", { name: "Close page plan", exact: true }).click();
   const storage = await browserData(page);
   expect(storage).not.toContain(primaryKey);
   expect(storage).not.toContain(secondaryKey);

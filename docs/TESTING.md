@@ -32,7 +32,7 @@ npm run test:e2e:report
 
 ## Coverage
 
-The complete local pass on **20 October 2026** passed **764 test executions**: 192 library/setup/operations tests and 572 production E2E tests (164 HTTP API plus 136 scenarios in each of Chromium, Firefox and WebKit), with zero failures, retries or skips. This verifies the standalone repository's saved discovery, question inventory, comparable trends and citation exploration changes on top of `e3adaef` using fixtures, with no paid live calls. See [the dated report](TEST-REPORT.md) for scope and separate earlier real-Neon/public-Vercel checks; automated results alone are not hosted verification.
+The complete local pass on **20 October 2026** passed **839 test executions**: 213 library/setup/operations tests and 626 production E2E tests (170 HTTP API plus 152 scenarios in each of Chromium, Firefox and WebKit), with zero failures, retries or skips. This verifies the standalone repository's page plans, comparable follow-ups and immutable report/agent handoff workflows on top of `dcc25c1`, alongside saved discovery, question inventory, trends and citations using fixtures, with no paid live calls. See [the dated report](TEST-REPORT.md) for scope and separate earlier real-Neon/public-Vercel checks; automated results alone are not hosted verification.
 
 | Area | Coverage |
 | --- | --- |
@@ -51,9 +51,10 @@ The complete local pass on **20 October 2026** passed **764 test executions**: 1
 | Discovery | Reviewed business seeds or empty guidance, accepted estimate ceilings, original server-saved research and call IDs, keyword/PAA provenance, unknown volumes/charges, saved-history reopening/downloads/imports, combined eight-selection limit, background continuation, blocked browser recovery, lost responses and interrupted markers that historical viewing/import cannot clear |
 | Analytics | Date/engine filters, separate mention/citation rates, requested/answered coverage, matching question/collector/market/brand scopes, latest UTC daily sample, neutral/branded filters, low-coverage and legacy states, changed competitor identity gaps, chart legends and inspectable observations |
 | Sources | Page/domain exploration, historical ownership, exact answer and page drilldowns, deduplicated coverage and per-engine counts, independent competitor mentions/citations, plus approved Moz/Exa research, metadata, excerpts, observed contacts, missing fields, cache, refresh and costs |
-| Opportunities | Gap selection, content brief, clipboard success/fallback, mark complete/reopen and persistence |
+| Page plans | Honest latest-question opportunities, owned/proposed/later target validation, saved editable briefs, strategy context, lifecycle, legacy completion preservation, conflicting edits, failed saves and recovery |
+| Follow-ups | Frozen scope and identity preservation, reviewed estimates/ceilings, rejected stale/cross-key/unsupported requests, original answers side by side, coverage/scope/publication-date guards and atomic linking without profile or monitoring changes |
 | First audit findings | Saved-answer evidence for competitor gaps and cited pages, distinct answered/requested counts, missing-answer and unknown-charge warnings, safe source links, exact answer inspection, and a phone layout without horizontal overflow |
-| Reports | Workspace JSON and CSV, individual audit downloads, data integrity, multiline/Unicode/formula escaping and absence of credentials |
+| Reports | Immutable bounded evidence snapshots, source-deletion/profile-change stability, known/unknown billing, safe Markdown/JSON/print, agent handoff, acknowledged save/delete and limits, alongside existing CSV/audit/full-backup exports |
 | Interaction | Mobile navigation, activity/help links, dialog naming, delayed opening focus, focus containment/restoration, Escape and layout at 320, 390, 768 and 1440 pixels |
 | HTTP boundaries | Every route's supported methods, JSON/body limits, origin checks, anonymous denial, explicit-key validation, no operator-key fallback, revoked/tampered sessions, duplicate throttling and private-URL/DNS rejection |
 | Untrusted content | Safe Markdown, no executed HTML/scripts, blocked unsafe links and no remote tracking images |
@@ -74,7 +75,7 @@ Reports, screenshots and failure traces are written under the ignored `output/pl
 
 ## CI
 
-`.github/workflows/test.yml` runs on pushes to `main` and pull requests. Fast checks exercise clean install, repeated setup, doctor, lint, type generation, library/setup tests and docs on Linux with Node.js 22.13/24, Windows with Node.js 24, and macOS with Node.js 24. A separate Ubuntu 24.04 job installs all three browsers, audits production dependencies, builds and runs the API/browser suite, and uploads reports and failure artifacts for 14 days. No Treg or deployment secrets are required. Action revisions are pinned; Dependabot proposes updates. A newer push cancels an older run of the same branch.
+`.github/workflows/test.yml` runs on pushes to `main` and pull requests. Fast checks exercise clean install, repeated setup, doctor, lint, type generation, library/setup tests and docs on Linux with Node.js 22.13/24, Windows with Node.js 24, and macOS with Node.js 24. A separate Ubuntu 24.04 job installs all three browsers, audits production dependencies, builds and runs the API/browser suite, and uploads reports and failure artifacts for 14 days. Its 30-minute job budget allows installation and the expanded suite; individual test timeouts remain 45 seconds with no automatic retries. No Treg or deployment secrets are required. Action revisions are pinned; Dependabot proposes updates. A newer push cancels an older run of the same branch.
 
 ## Durable storage and worker verification
 

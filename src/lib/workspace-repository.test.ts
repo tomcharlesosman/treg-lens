@@ -11,6 +11,8 @@ import {
 } from "./workspace-repository";
 import type { Project, SavedRun } from "./workspace-data";
 import type { SavedDiscovery } from "./discovery-research";
+import { createPagePlan, pagePlanOpportunities } from "./page-plans";
+import { createEvidenceReport } from "./evidence-reports";
 
 const directory = mkdtempSync(join(tmpdir(), "treg-workspace-unit-"));
 const previous = process.env.TREG_DATA_DIR;
@@ -160,6 +162,32 @@ test("simultaneous audit appends preserve every distinct run and deduplicate rep
   const saved = await getWorkspace(owner("3"));
   assert.equal(saved.revision, 3);
   assert.deepEqual(saved.snapshot?.runs.map((item) => item.id).sort(), ["a", "b", "c"]);
+});
+
+test("follow-up append links its exact plan without replacing a concurrently edited plan", async () => {
+  const baseline = run("plan-baseline");
+  const plan = createPagePlan({ id: "plan-one", opportunity: pagePlanOpportunities([baseline], snapshot().project)[0], now: "2026-10-19T13:00:00Z" });
+  const first = await saveWorkspace(owner("5"), { ...snapshot(), runs: [baseline], pagePlans: [plan] }, 0);
+  const edited = { ...plan, rationale: "A concurrent decision", updatedAt: "2099-10-19T14:00:00Z" };
+  await saveWorkspace(owner("5"), { ...first.snapshot, pagePlans: [edited] }, first.revision);
+  const appended = await appendWorkspaceRun(owner("5"), run("followup-one"), { planId: plan.id, updatedAt: plan.updatedAt });
+  assert.deepEqual(appended.snapshot?.pagePlans, [edited]);
+  assert.equal(appended.snapshot?.runs.length, 2);
+  const linked = await appendWorkspaceRun(owner("5"), run("followup-two"), { planId: edited.id, updatedAt: edited.updatedAt });
+  assert.equal(linked.snapshot?.pagePlans?.[0].followupRunId, "followup-two");
+  assert.equal(linked.snapshot?.pagePlans?.[0].status, "planned");
+  assert.equal(linked.snapshot?.pagePlans?.[0].rationale, edited.rationale);
+  assert.ok(Date.parse(linked.snapshot!.pagePlans![0].updatedAt) > Date.parse(edited.updatedAt), "linking remains monotonic for imported future timestamps");
+  assert.deepEqual(await appendWorkspaceRun(owner("5"), run("followup-two"), { planId: edited.id, updatedAt: edited.updatedAt }), linked);
+});
+
+test("saved report contents cannot be overwritten by a later ordinary snapshot save", async () => {
+  const report = createEvidenceReport({ id: "immutable-report", project: snapshot().project, runs: [run("report-baseline")] });
+  const first = await saveWorkspace(owner("6"), { ...snapshot(), reports: [report] }, 0);
+  await assert.rejects(() => saveWorkspace(owner("6"), { ...first.snapshot, reports: [{ ...report, notes: "Silent replacement" }] }, first.revision), /immutable/);
+  assert.deepEqual(await getWorkspace(owner("6")), first);
+  const removed = await saveWorkspace(owner("6"), { ...first.snapshot, reports: [] }, first.revision);
+  assert.deepEqual(removed.snapshot?.reports, []);
 });
 
 test("onboarding evidence and unselected ideas remain durable through audit append and stale profile saves", async () => {

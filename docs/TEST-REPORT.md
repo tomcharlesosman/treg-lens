@@ -1,25 +1,43 @@
 # Full feature verification — 20 October 2026
 
-The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This local pass covers saved discovery research, stable question identities, comparable trends and citation exploration, alongside URL-led setup, rerunning onboarding, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Earlier real-Neon, public Vercel and paid-provider checks are recorded separately below; they are separate evidence and do not establish current live-provider behavior.
+The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This local pass covers saved page plans, comparable follow-up measurements, immutable reports/agent handoff, saved discovery research, stable question identities, trends and citation exploration, alongside URL-led setup, rerunning onboarding, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Earlier real-Neon, public Vercel and paid-provider checks are recorded separately below; they are separate evidence and do not establish current live-provider behavior.
 
 ## Results
 
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
-| HTTP API | 164 | 0 / 0 |
-| Chromium browser workflows | 136 | 0 / 0 |
-| Firefox browser workflows | 136 | 0 / 0 |
-| WebKit browser workflows | 136 | 0 / 0 |
-| Library, setup and operations tests | 192 | 0 / 0 |
-| **Total** | **764** | **0 / 0** |
+| HTTP API | 170 | 0 / 0 |
+| Chromium browser workflows | 152 | 0 / 0 |
+| Firefox browser workflows | 152 | 0 / 0 |
+| WebKit browser workflows | 152 | 0 / 0 |
+| Library, setup and operations tests | 213 | 0 / 0 |
+| **Total** | **839** | **0 / 0** |
 
-The complete 572-case production API/browser run passed with zero failures, retries or skips: 164 HTTP tests plus 136 browser scenarios in each of Chromium, Firefox and WebKit. The 192 library/setup/operations tests also passed. Lint, fresh route type generation, TypeScript, local documentation links and the production build passed. After the final code changes, `npm run check` and `npm run test:e2e` passed; the latter builds first and runs all four projects against the isolated production test server. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
+The final complete 626-case production API/browser run passed with zero failures, retries or skips: 170 HTTP tests plus 152 browser scenarios in each of Chromium, Firefox and WebKit. The 213 library/setup/operations tests also passed. Lint, fresh route type generation, TypeScript, local documentation links and the production build passed. After the final code changes, `npm run check` and `npm run test:e2e` passed; the latter builds first and runs all four projects against the isolated production test server. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
 
 New coverage includes server durability after clearing the browser cache, scoped legacy migration, failed-save recovery, revision conflicts, complete backup restoration, confirmed audit deletion, idempotent monitoring recovery merges, and an exact-8 MiB backup round trip with answer hashes checked. Worker HTTP tests make isolated schedules due and execute the actual auth, pricing, provider adapters, ledger and workspace routes. They cover success, UTC cadence, revocation, per-run/monthly budgets, partial failures, missing charges, pending reservations, and retained paid results when the workspace is full.
 
 Library/operations regressions exercise cross-process SQLite reads, atomic rollback, encrypted credential ownership, concurrent runner leases, crashes before and after journaling, exact quote execution, UTC slot alignment, online WAL-consistent backups, and the real worker CLI against an isolated HTTP server. Existing coverage also includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and backup exports when browser storage rejects writes.
 
 Hosted transport coverage exercises owner-bound uploads above the 3 MiB direct-save threshold, 1 MiB chunk limits, UTF-8 character boundaries, exact 8 MiB round trips, checksum/schema failures, immutable chunk replay, concurrent revision conflicts, expiry/abort, encrypted staging, bounded retention, and replay of the original committed snapshot after later edits. Client tests cover lost commit acknowledgments without duplicate writes; streamed JSON tests round-trip Unicode above the platform response limit. Hosted cron tests reject absent/incorrect bearer values and spoofed Vercel headers. The local POST runner and hosted GET dispatcher share the tested monitor domain logic. Remote-mode operations tests confirm local backup and pause commands refuse without touching an unrelated SQLite database or exposing credentials.
+
+## Saved page plans, follow-up measurements and agent reports — 20 October 2026
+
+This release extends standalone revision `dcc25c1`. It retains the eight runtime dependencies and the existing database schema. Plans, report snapshots and strategy context are optional validated workspace fields, so older workspaces and backups remain readable. No real workspace was reset and no paid live provider calls were made.
+
+New and extended production HTTP/browser scenarios cover:
+
+- Owned/proposed/later page decisions, deterministic editable briefs, status/change dates, optional strategy context, confirmed deletion and separate legacy completed moves.
+- Reload durability, failed-save draft recovery, stale editor and active-brand guards, full backup/restore, per-key isolation and onboarding reruns retaining plans/reports and same-brand strategy.
+- A separately approved follow-up through real application routes using fixture upstreams: the saved baseline determines the questions, collector/market scope and historical competitor identities; current profile, question library and monitoring remain unchanged.
+- Refusal of unowned, stale, legacy, deleted or unsupported baseline requests and missing ceilings before provider submissions. Concurrent plan edits win over automatic follow-up linking while the purchased evidence remains saved.
+- Original answer/citation comparison, explicit missing evidence, matching scope/competitors, later collection, publication chronology and the 90% coverage threshold. Partial or incompatible samples do not acquire a change delta.
+- Immutable reports that survive source-audit deletion and profile changes; rejected same-ID edits, bounded imports, cross-brand exclusion, unknown billing, exact JSON evidence, safe Markdown, explicit deletion and the report limit.
+- Report save failures retaining the exact unacknowledged snapshot; private Markdown/JSON downloads and agent handoffs without paid calls or credential fields; keyboard focus restoration and expanded printable evidence.
+
+Responsive plan/comparison/context and report/library/handoff views are checked at 320, 390 and 1440 pixels. Desktop, phone and expanded-print screenshots were inspected. The first full pass identified one WebKit overflow in a native audit selector; its label now stays within the control, with the original strict layout assertion retained. Focused checks passed in all three engines before the final 626-case full rerun passed. Earlier targeted checks also corrected report focus restoration and ambiguous test locators.
+
+The suite uses a production build, isolated SQLite storage, synthetic keys and fail-closed upstream fixtures. It does not establish live provider availability or current upstream model quality. Hosted release verification remains separate from these automated results. Workflow instructions are in [WORKFLOWS.md](WORKFLOWS.md).
 
 ## Discovery, comparable trends and citation exploration — 20 October 2026
 

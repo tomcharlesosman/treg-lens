@@ -8,7 +8,7 @@ import { authorizePaidInput, authErrorResponse, getTregSession } from "@/lib/tre
 import { TregAuthError, workspaceIdForToken } from "@/lib/treg-session";
 import { appendWorkspaceRun, getWorkspace } from "@/lib/workspace-repository";
 import { streamJson } from "@/lib/stream-json";
-import { auditContext } from "@/lib/audit-context";
+import { auditContext, followupAuditContext } from "@/lib/audit-context";
 
 export const maxDuration = 300;
 
@@ -47,7 +47,9 @@ export async function POST(request: Request) {
     acquired = true;
     const auditId = crypto.randomUUID();
     const original = await getWorkspace(savedWorkspaceId).catch(() => null);
-    const context = auditContext(input, original?.snapshot);
+    const context = followupAuditContext(input, original?.snapshot) ?? auditContext(input, original?.snapshot);
+    if (input.followupPlanId && input.maxCostUsd === undefined)
+      throw new AeoError("Review and accept a fresh estimate ceiling before starting this follow-up.", 409);
     const audit = await runAudit(input);
     let persistence: { saved: boolean; workspaceRevision?: number; workspaceUpdatedAt?: string | null; storageError?: string };
     try {
@@ -56,7 +58,7 @@ export async function POST(request: Request) {
         prompts: input.prompts, competitors: input.competitors, engines: input.engines,
         ...context,
         ...audit,
-      });
+      }, input.followupPlanId ? { planId: input.followupPlanId, updatedAt: input.followupPlanUpdatedAt! } : undefined);
       persistence = { saved: true, workspaceRevision: workspace.revision, workspaceUpdatedAt: workspace.updatedAt };
     } catch {
       persistence = { saved: false, storageError: "The audit completed, but server storage is unavailable. Export these results before leaving this page; do not rerun the paid audit to save it." };

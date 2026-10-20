@@ -1,7 +1,7 @@
 import {
   BUYER_QUESTION_INTENTS, normalizeDomain,
   type BuyerQuestion, type CompetitorDetail, type MeasurementMarket,
-  type OnboardingResearch, type Project,
+  type OnboardingResearch, type Project, type ProjectStrategy,
 } from "./workspace-data";
 
 /** Browser-safe bounds shared by drafts, storage and the server sanitizer. */
@@ -88,7 +88,27 @@ export function validateProjectMetadata(value: Record<string, unknown>): boolean
     optional(value.market, isSupportedMarket) &&
     optional(value.competitorDetails, (v) => Array.isArray(v) && v.length <= 8 && v.every(detail)) &&
     optional(value.buyerQuestions, (v) => Array.isArray(v) && v.length <= MAX_BUYER_QUESTIONS && v.every(isBuyerQuestion)) &&
-    optional(value.researchReceipts, (v) => Array.isArray(v) && v.length <= MAX_RESEARCH_RECEIPTS && v.every(isResearchReceipt));
+    optional(value.researchReceipts, (v) => Array.isArray(v) && v.length <= MAX_RESEARCH_RECEIPTS && v.every(isResearchReceipt)) &&
+    optional(value.strategy, (v) => validateProjectStrategy(v, typeof value.domain === "string" ? value.domain : undefined));
+}
+
+export function validateProjectStrategy(value: unknown, domain?: string): value is ProjectStrategy {
+  return record(value) && optional(value.goal, (v) => bounded(v, 600)) &&
+    optional(value.timeframe, (v) => bounded(v, 120)) &&
+    optional(value.differentiators, (v) => bounded(v, 1200)) &&
+    optional(value.writingPreferences, (v) => bounded(v, 1200)) &&
+    optional(value.keyPages, (v) => Array.isArray(v) && v.length <= 12 &&
+      v.every((url) => Boolean(safeEvidenceUrl(url)) && (!domain || evidenceMatchesDomain(url, domain))));
+}
+
+export function cleanProjectStrategy(value: ProjectStrategy): ProjectStrategy {
+  return {
+    ...(value.goal !== undefined ? { goal: value.goal } : {}),
+    ...(value.timeframe !== undefined ? { timeframe: value.timeframe } : {}),
+    ...(value.differentiators !== undefined ? { differentiators: value.differentiators } : {}),
+    ...(value.keyPages !== undefined ? { keyPages: [...value.keyPages] } : {}),
+    ...(value.writingPreferences !== undefined ? { writingPreferences: value.writingPreferences } : {}),
+  };
 }
 
 function cleanQuestion(value: BuyerQuestion): BuyerQuestion {
@@ -150,5 +170,6 @@ export function normalizeProjectMetadata(project: Project, prompts?: string[]): 
     ...(details ? { competitorDetails: details } : {}),
     ...(questions ? { buyerQuestions: questions.slice(0, MAX_BUYER_QUESTIONS) } : {}),
     ...(receipts ? { researchReceipts: receipts } : {}),
+    ...(project.strategy ? { strategy: cleanProjectStrategy(project.strategy) } : {}),
   };
 }

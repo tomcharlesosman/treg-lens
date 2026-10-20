@@ -25,7 +25,7 @@ import {
   Sparkles,
   X,
 } from "lucide-react";
-import type { AnswerResult } from "@/lib/aeo";
+import type { AnswerResult, AuditInput } from "@/lib/aeo";
 import { normalizeDomain, type Project, type SavedRun } from "@/lib/workspace-data";
 import type { AuditPersistence } from "./use-server-workspace";
 import "./dialog.css";
@@ -67,6 +67,7 @@ type AuditDialogProps = {
   project: ProjectSettings;
   initialPrompts?: string[];
   token?: string;
+  followup?: { planId: string; updatedAt: string; input: AuditInput };
 };
 const engineOptions: {
   id: Engine;
@@ -241,6 +242,7 @@ export function AuditDialog({
   onComplete,
   project,
   initialPrompts,
+  followup,
   token = "",
 }: AuditDialogProps) {
   const id = useId();
@@ -255,7 +257,8 @@ export function AuditDialog({
       : defaultPrompts(project.brand)
     ).join("\n"),
   );
-  const [engines, setEngines] = useState<Engine[]>(["chatgpt", "perplexity"]);
+  const [selectedEngines, setEngines] = useState<Engine[]>(["chatgpt", "perplexity"]);
+  const engines = followup?.input.engines ?? selectedEngines;
   const [apiToken, setApiToken] = useState(token);
   const [serverConfigured, setServerConfigured] = useState<boolean | null>(
     null,
@@ -272,13 +275,13 @@ export function AuditDialog({
   const runningRef = useRef(false);
   const prompts = useMemo(
     () =>
-      promptsText
+      followup?.input.prompts ?? promptsText
         .split("\n")
         .map((prompt) => prompt.trim())
         .filter(Boolean),
-    [promptsText],
+    [promptsText, followup],
   );
-  const competitorsList = useMemo(() => splitItems(competitors), [competitors]);
+  const competitorsList = useMemo(() => followup?.input.competitors ?? splitItems(competitors), [competitors, followup]);
   const validPrompts =
     prompts.length > 0 &&
     prompts.length <= 8 &&
@@ -299,8 +302,9 @@ export function AuditDialog({
         prompts,
         engines,
         market: { country: "US", language: "en" },
+        ...(followup ? { followupPlanId: followup.planId, followupPlanUpdatedAt: followup.updatedAt } : {}),
       }),
-    [brand, domain, competitorsList, prompts, engines],
+    [brand, domain, competitorsList, prompts, engines, followup],
   );
   const estimate =
     estimateState?.request === estimateRequest ? estimateState.quote : null;
@@ -315,11 +319,11 @@ export function AuditDialog({
 
   useEffect(() => {
     if (open && !wasOpen.current && !runningRef.current) {
-      setBrand(project.brand);
-      setDomain(project.domain);
-      setCompetitors(project.competitors.join(", "));
+      setBrand(followup?.input.brand ?? project.brand);
+      setDomain(followup?.input.domain ?? project.domain);
+      setCompetitors((followup?.input.competitors ?? project.competitors).join(", "));
       setPromptsText(
-        (initialPrompts?.length
+        (followup ? followup.input.prompts : initialPrompts?.length
           ? initialPrompts
           : defaultPrompts(project.brand)
         ).join("\n"),
@@ -329,7 +333,7 @@ export function AuditDialog({
       setRunError("");
     }
     wasOpen.current = open;
-  }, [open, project, initialPrompts, token]);
+  }, [open, project, initialPrompts, token, followup]);
 
   useEffect(() => {
     if (!open) return;
@@ -400,6 +404,7 @@ export function AuditDialog({
           engines,
           market: { country: "US", language: "en" },
           maxCostUsd: estimate.totalCostUsd,
+          ...(followup ? { followupPlanId: followup.planId, followupPlanUpdatedAt: followup.updatedAt } : {}),
           ...(apiToken.trim() ? { token: apiToken.trim() } : {}),
         }),
       });
@@ -526,7 +531,8 @@ export function AuditDialog({
           >
             <div className="lens-dialog-body">
               <div className="lens-audit-scope" aria-label="Audit scope"><strong>United States / English</strong><span>{prompts.length} {prompts.length === 1 ? "question" : "questions"} × {engines.length} {engines.length === 1 ? "engine" : "engines"} = {prompts.length * engines.length} requested answers</span><p>Choose a small first check, then expand when it answers a useful question. This action does not enable monitoring.</p>{project.audience && brand.trim().toLowerCase() === project.brand.trim().toLowerCase() && normalizeDomain(domain) === normalizeDomain(project.domain) && <p><b>Saved buyer context:</b> {project.audience}</p>}</div>
-              <fieldset className="lens-dialog-fieldset" disabled={running}>
+              {followup && <div className="lens-dialog-notice" role="note"><strong>Follow-up to your saved baseline</strong><p>Questions, engines and brand are fixed to the original scope. Review this fresh estimate before approving. Collector model versions remain provider defaults, not guaranteed pinned versions. This does not change your profile or enable monitoring.</p></div>}
+              <fieldset className="lens-dialog-fieldset" disabled={running || Boolean(followup)}>
                 <div className="lens-field-section-label">
                   <span>01</span> THE BRAND
                 </div>

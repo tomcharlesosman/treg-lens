@@ -5,6 +5,8 @@ import { normalizeProjectMetadata, validateProjectMetadata } from "./workspace-p
 import { validatePromptRecords, cleanPromptRecords, type PromptRecord } from "./prompt-library";
 import { validateMeasurementScope } from "./measurement";
 import { parseDiscoveryResearch, type SavedDiscovery } from "./discovery-research";
+import { parsePagePlans, type PagePlan } from "./page-plans";
+import { parseEvidenceReports, type EvidenceReport } from "./evidence-reports";
 
 export type WorkspaceSnapshot = {
   project: Project;
@@ -14,6 +16,8 @@ export type WorkspaceSnapshot = {
   sourceResearch: Record<string, SourceResearch>;
   promptRecords?: PromptRecord[];
   discoveryResearch?: SavedDiscovery[];
+  pagePlans?: PagePlan[];
+  reports?: EvidenceReport[];
 };
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -159,6 +163,8 @@ export function parseWorkspaceSnapshot(
       !strings(saved.prompts) ||
       !optional(saved.promptRecords, validatePromptRecords) ||
       !optional(saved.discoveryResearch, (v) => parseDiscoveryResearch(v) !== null) ||
+      !optional(saved.pagePlans, (v) => parsePagePlans(v) !== null) ||
+      !optional(saved.reports, (v) => parseEvidenceReports(v) !== null) ||
       !Array.isArray(saved.runs) ||
       !saved.runs.every(run)
     )
@@ -168,6 +174,8 @@ export function parseWorkspaceSnapshot(
       prompts: saved.prompts,
       ...(saved.promptRecords !== undefined ? { promptRecords: cleanPromptRecords(saved.promptRecords as PromptRecord[]) } : {}),
       ...(saved.discoveryResearch !== undefined ? { discoveryResearch: parseDiscoveryResearch(saved.discoveryResearch)! } : {}),
+      ...(saved.pagePlans !== undefined ? { pagePlans: parsePagePlans(saved.pagePlans)! } : {}),
+      ...(saved.reports !== undefined ? { reports: parseEvidenceReports(saved.reports)! } : {}),
       runs: saved.runs,
       done: strings(saved.done) ? saved.done : [],
       sourceResearch: record(saved.sourceResearch)

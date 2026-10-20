@@ -4,6 +4,8 @@ import { normalizeProjectMetadata } from "./workspace-profile";
 import { cleanPromptRecords } from "./prompt-library";
 import { cleanMeasurementScope } from "./measurement";
 import { parseDiscoveryResearch } from "./discovery-research";
+import { parsePagePlans } from "./page-plans";
+import { parseEvidenceReports } from "./evidence-reports";
 
 export const MAX_WORKSPACE_BYTES = 8 * 1024 * 1024;
 export class WorkspaceValidationError extends Error {
@@ -59,6 +61,8 @@ export function sanitizeWorkspaceSnapshot(value: unknown): WorkspaceSnapshot {
     prompts: [...snapshot.prompts], runs: snapshot.runs.map(cleanRun), done: [...snapshot.done],
     ...(snapshot.promptRecords !== undefined ? { promptRecords: cleanPromptRecords(snapshot.promptRecords) } : {}),
     ...(snapshot.discoveryResearch !== undefined ? { discoveryResearch: parseDiscoveryResearch(snapshot.discoveryResearch)! } : {}),
+    ...(snapshot.pagePlans !== undefined ? { pagePlans: parsePagePlans(snapshot.pagePlans)! } : {}),
+    ...(snapshot.reports !== undefined ? { reports: parseEvidenceReports(snapshot.reports)! } : {}),
     sourceResearch: Object.fromEntries(Object.entries(snapshot.sourceResearch).map(([key, source]) => [key, {
       kind: source.kind, url: source.url, domain: source.domain, brand: source.brand,
       title: source.title, excerpt: source.excerpt, contentCharacters: source.contentCharacters,

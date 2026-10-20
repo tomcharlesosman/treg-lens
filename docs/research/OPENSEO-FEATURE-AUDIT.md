@@ -2,6 +2,8 @@
 
 Reviewed 20 October 2026. This audit records the baseline revisions below. The first three priorities were subsequently implemented in Lens; see the [release verification](../TEST-REPORT.md#discovery-comparable-trends-and-citation-exploration--20-october-2026) and [current product behavior](../PRODUCT-STATUS.md).
 
+For the remaining work and the native Treg parity/migration gates, see the [pre-integration roadmap](PRE-INTEGRATION-ROADMAP.md). The tables below preserve the original audit baseline.
+
 **Recommendation:** strengthen discovery continuity, measurement quality and evidence-to-action workflows first. Add optional first-party search data after those foundations. OpenSEO provides useful domain algorithms and workflow patterns; importing its whole application would expand Lens into a different product.
 
 ## Scope and confidence

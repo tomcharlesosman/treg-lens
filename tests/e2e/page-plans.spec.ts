@@ -1,0 +1,310 @@
+import type { Page } from "@playwright/test";
+import { expect, test } from "./support/auth-helpers";
+import { readFile } from "node:fs/promises";
+import { buildMeasurementScope } from "../../src/lib/measurement";
+import { createPagePlan, pagePlanOpportunities } from "../../src/lib/page-plans";
+import type { PromptRecord } from "../../src/lib/prompt-library";
+import { DEFAULT_PROJECT, type SavedRun } from "../../src/lib/workspace-data";
+import { nav, saveServerSnapshot, signIn, trackedPrompt, waitForServerSave } from "./support/workspace-helpers";
+
+const question = trackedPrompt;
+const record: PromptRecord = { id: "page-plan-question", text: question, kind: "neutral", intent: "category", provenance: "manual", paused: false, archived: false };
+function run(id = "plan-baseline", day = "01", present = false): SavedRun {
+  const input = { ...DEFAULT_PROJECT, prompts: [question], engines: ["chatgpt", "google"] as ("chatgpt" | "google")[] };
+  const completedAt = `2026-10-${day}T12:00:00.000Z`;
+  return { ...input, id, measurement: buildMeasurementScope(input, [record]), competitorDetails: [{ name: "Composio", domain: "composio.dev" }], completedAt, totalCostUsd: .004, totalCostKnown: true, errors: [], results: input.engines.map((engine) => ({ id: `${id}-${engine}`, prompt: question, engine, answer: present ? "# A later answer\n\nTreg supports research with a documented toolkit." : "# An observed alternative\n\nComposio offers integrations. Review original sources before choosing a toolkit.", citations: [{ title: present ? "Treg docs" : "Competitor documentation", url: present ? "https://treg.to/docs" : "https://composio.dev/docs", domain: present ? "treg.to" : "composio.dev" }], brandMentioned: present, mentionedBrands: [present ? "Treg" : "Composio"], position: present ? 1 : null, completedAt, costUsd: .002, costKnown: true, provider: "cloro", sourceKind: "web-interface" })) };
+}
+async function seeded(page: Page, runs: SavedRun[] = [run()], withPlan = false) {
+  await signIn(page);
+  const baseline = runs[0];
+  const plan = createPagePlan({ id: "saved-page-plan", opportunity: pagePlanOpportunities([baseline], DEFAULT_PROJECT)[0], now: "2026-10-02T12:00:00.000Z" });
+  await saveServerSnapshot(page, { project: { ...DEFAULT_PROJECT, onboardingCompletedAt: "2026-10-01T10:00:00.000Z" }, prompts: [question], promptRecords: [record], runs, done: [], sourceResearch: {}, pagePlans: withPlan ? [plan] : [] });
+  await page.reload();
+  await nav(page, "Opportunities");
+  return plan;
+}
+const editor = (page: Page) => page.getByRole("dialog", { name: "Make the next page count." });
+async function snapshot(page: Page) { return (await (await page.request.get("/api/workspace")).json()).snapshot; }
+async function reopen(page: Page) {
+  await page.reload();
+  await nav(page, "Opportunities");
+  await page.getByRole("button", { name: "Open page plan", exact: true }).first().click();
+}
+
+test("page decisions, evidence-specific briefs, statuses and strategy persist without paid calls", async ({ page }) => {
+  await seeded(page);
+  let paid = 0;
+  page.on("request", (request) => { if (request.url().endsWith("/api/aeo/run") && request.method() === "POST") paid++; });
+  await expect(page.locator(".pp-opportunity")).toContainText("Observed competitor gap");
+  await page.getByRole("button", { name: "Strategy context", exact: true }).click();
+  const strategy = page.getByRole("dialog", { name: "Keep the work pointed somewhere." });
+  await strategy.getByRole("textbox", { name: "Goal", exact: true }).fill("Help technical buyers understand the verified fit.");
+  await strategy.getByLabel("Timeframe", { exact: true }).fill("This quarter");
+  await strategy.getByLabel("Verified differentiators").fill("Pay only for data calls you use.");
+  await strategy.getByLabel("Important owned pages").fill("https://treg.to/docs\nhttps://example.com/not-ours");
+  await strategy.getByRole("button", { name: "Save strategy context" }).click();
+  await expect(strategy.getByRole("alert")).toContainText("on treg.to");
+  await strategy.getByLabel("Important owned pages").fill("https://treg.to/docs");
+  await strategy.getByLabel("Writing preferences").fill("Concise, verifiable examples.");
+  await strategy.getByRole("button", { name: "Save strategy context" }).click();
+  await expect(strategy).toBeHidden();
+  await page.getByRole("button", { name: "Create page plan", exact: true }).click();
+  const dialog = editor(page);
+  await expect(dialog.getByLabel("Writing brief")).toHaveValue(/https:\/\/composio\.dev\/docs/);
+  await dialog.getByLabel("Page decision").selectOption("existing");
+  await dialog.getByLabel("Existing page URL").fill("https://example.com/not-ours");
+  await dialog.getByRole("button", { name: "Save page plan", exact: true }).click();
+  await expect(dialog.getByRole("alert")).toContainText("on treg.to");
+  await dialog.getByLabel("Existing page URL").fill("https://treg.to/docs/agents");
+  await dialog.getByLabel("Why this page?").fill("Answer the observed integration question with an evidence-backed example.");
+  await dialog.getByLabel("Writing brief").fill("Explain the documented integration steps. Cite product documentation and check every claim.");
+  await dialog.getByLabel("Plan status").selectOption("in-progress");
+  await dialog.getByRole("button", { name: "Save page plan", exact: true }).click();
+  await expect(dialog).toBeHidden();
+  await waitForServerSave(page);
+  await reopen(page);
+  await expect(editor(page).getByLabel("Existing page URL")).toHaveValue("https://treg.to/docs/agents");
+  await expect(editor(page).getByLabel("Writing brief")).toHaveValue("Explain the documented integration steps. Cite product documentation and check every claim.");
+  await editor(page).getByLabel("Plan status").selectOption("published");
+  await editor(page).getByLabel("Page change date").fill("2026-10-02");
+  await editor(page).getByRole("button", { name: "Save page plan", exact: true }).click();
+  await expect(page.locator(".pp-next")).toContainText("1 published plan is ready");
+  const saved = await snapshot(page);
+  expect(saved.pagePlans[0]).toMatchObject({ status: "published", publishedAt: "2026-10-02", baselineRunId: "plan-baseline", question: { id: record.id }, target: { kind: "existing", url: "https://treg.to/docs/agents" } });
+  expect(saved.project.strategy).toMatchObject({ goal: "Help technical buyers understand the verified fit.", keyPages: ["https://treg.to/docs"] });
+  expect(paid).toBe(0);
+});
+
+test("saved comparisons show original answers, coverage and incompatibility without invented deltas", async ({ page }) => {
+  const compatible = run("compatible-followup", "03", true);
+  const different = run("different-collector", "04", true);
+  different.measurement!.collectors[0].model = "a-different-model";
+  const partial = run("partial-followup", "05", true);
+  partial.results = partial.results.slice(0, 1);
+  partial.errors = [{ prompt: question, engine: "google", error: "Original provider timeout" }];
+  const legacy = run("legacy-followup", "06", true);
+  delete legacy.measurement;
+  await seeded(page, [run(), compatible, different, partial, legacy], true);
+  let requests = 0;
+  page.on("request", (request) => { if (request.url().includes("/api/aeo/")) requests++; });
+  await page.getByRole("button", { name: "Open page plan", exact: true }).click();
+  const dialog = editor(page);
+  await dialog.getByLabel("Saved follow-up audit").selectOption(compatible.id);
+  await expect(dialog.locator(".fc-compatible")).toContainText("Brand mentions +100 pp");
+  await expect(dialog.locator(".fc-compatible")).toContainText("Own-domain citations +100 pp");
+  await expect(dialog.getByRole("region", { name: "Baseline ChatGPT answer" })).toContainText("An observed alternative");
+  await expect(dialog.getByRole("region", { name: "Follow-up ChatGPT answer" })).toContainText("A later answer");
+  await expect(dialog.getByRole("region", { name: "Baseline ChatGPT answer" }).getByRole("link", { name: /Competitor documentation/ })).toHaveAttribute("href", "https://composio.dev/docs");
+  await dialog.getByLabel("Saved follow-up audit").selectOption(different.id);
+  await expect(dialog.locator(".fc-warning")).toContainText("collector settings differ");
+  await expect(dialog.locator(".fc-compatible")).toHaveCount(0);
+  await dialog.getByLabel("Saved follow-up audit").selectOption(partial.id);
+  await expect(dialog.locator(".fc-warning")).toContainText("at least 90%");
+  await expect(dialog.getByRole("region", { name: "Follow-up Google AI Mode answer" })).toContainText("Original provider timeout");
+  await dialog.getByLabel("Saved follow-up audit").selectOption(legacy.id);
+  await expect(dialog.locator(".fc-warning")).toContainText("legacy audit");
+  await dialog.getByLabel("Saved follow-up audit").selectOption(compatible.id);
+  await dialog.getByLabel("Plan status").selectOption("measured");
+  await dialog.getByLabel("Page change date").fill("2026-10-02");
+  await dialog.getByRole("button", { name: "Save page plan", exact: true }).click();
+  await page.getByLabel("Filter page plans").selectOption("measured");
+  await expect(page.locator(".pp-plan-card")).toContainText("Measured");
+  await waitForServerSave(page);
+  expect((await snapshot(page)).pagePlans[0].followupRunId).toBe(compatible.id);
+  expect(requests).toBe(0);
+});
+
+test("follow-up review restores the frozen scope and a separately approved run links without marking measured", async ({ page }) => {
+  await seeded(page, [run()], true);
+  const saved = await snapshot(page);
+  saved.project.competitors = ["Current competitor"];
+  saved.project.competitorDetails = [{ name: "Current competitor", domain: "current-competitor.com" }];
+  saved.promptRecords[0].kind = "branded";
+  await saveServerSnapshot(page, saved);
+  await reopen(page);
+  const submitted: Record<string, unknown>[] = [];
+  page.on("request", (request) => { if (request.url().endsWith("/api/aeo/run") && request.method() === "POST") submitted.push(request.postDataJSON()); });
+  await editor(page).getByRole("button", { name: "Review follow-up audit" }).click();
+  const audit = page.getByRole("dialog", { name: "See where you stand." });
+  await expect(audit).toBeVisible();
+  await expect(audit.getByLabel("Prompts to track")).toHaveValue(question);
+  await expect(audit.getByLabel("Prompts to track")).toBeDisabled();
+  await expect(audit.getByLabel(/^Competitors/)).toHaveValue(DEFAULT_PROJECT.competitors.join(", "));
+  await expect(audit.getByRole("button", { name: "Run visibility audit" })).toBeEnabled();
+  expect(submitted).toHaveLength(0);
+  await audit.getByRole("button", { name: "Run visibility audit" }).click();
+  await expect(audit.getByRole("heading", { name: "Your next move starts here." })).toBeVisible();
+  expect(submitted).toHaveLength(1);
+  await expect.poll(async () => (await snapshot(page)).pagePlans[0].followupRunId).toBeTruthy();
+  const after = await snapshot(page);
+  const followup = after.runs.find((item: SavedRun) => item.id === after.pagePlans[0].followupRunId);
+  expect(followup.measurement).toEqual(run().measurement);
+  expect(followup.competitorDetails).toEqual(run().competitorDetails);
+  expect(after.project.competitors).toEqual(["Current competitor"]);
+  expect(after.promptRecords[0].kind).toBe("branded");
+  expect(after.pagePlans[0].status).toBe("planned");
+});
+
+test("failed plan saves retain the draft and can be deliberately retried", async ({ page }) => {
+  await seeded(page, [run()], true);
+  await page.getByRole("button", { name: "Open page plan", exact: true }).click();
+  await editor(page).getByLabel("Why this page?").fill("This draft must survive a failed acknowledgment.");
+  await page.route("**/api/workspace", async (route) => {
+    if (route.request().method() === "PUT") await route.fulfill({ status: 503, contentType: "application/json", body: JSON.stringify({ error: "Fixture storage temporarily unavailable" }) });
+    else await route.continue();
+  });
+  await editor(page).getByRole("button", { name: "Save page plan", exact: true }).click();
+  await expect(editor(page).getByRole("alert")).toBeVisible();
+  await expect(editor(page).getByLabel("Why this page?")).toHaveValue("This draft must survive a failed acknowledgment.");
+  await page.unroute("**/api/workspace");
+  await editor(page).getByRole("button", { name: "Save page plan", exact: true }).click();
+  await expect(editor(page)).toBeHidden();
+  await waitForServerSave(page);
+  expect((await snapshot(page)).pagePlans[0].rationale).toBe("This draft must survive a failed acknowledgment.");
+});
+
+test("an editor never rebases its old draft onto an externally refreshed plan", async ({ page }) => {
+  await seeded(page, [run()], true);
+  await page.getByRole("button", { name: "Open page plan", exact: true }).click();
+  await editor(page).getByLabel("Why this page?").fill("Unsaved local draft.");
+  const external = await snapshot(page);
+  external.pagePlans[0].rationale = "Another editor saved this newer decision.";
+  external.pagePlans[0].updatedAt = "2026-10-03T12:00:00.000Z";
+  await saveServerSnapshot(page, external);
+  const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/workspace") && response.request().method() === "GET");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await refreshed;
+  await expect(page.locator(".pp-plan-card")).toContainText("Another editor saved this newer decision.");
+  await editor(page).getByRole("button", { name: "Save page plan", exact: true }).click();
+  await expect(editor(page).getByRole("alert")).toContainText("changed while you were editing");
+  await expect(editor(page).getByLabel("Why this page?")).toHaveValue("Unsaved local draft.");
+  expect((await snapshot(page)).pagePlans[0].rationale).toBe("Another editor saved this newer decision.");
+  await editor(page).getByRole("button", { name: "Close page plan" }).click();
+  await editor(page).getByRole("button", { name: "Discard changes" }).click();
+  await page.getByRole("button", { name: "Strategy context", exact: true }).click();
+  const strategy = page.getByRole("dialog", { name: "Keep the work pointed somewhere." });
+  await strategy.getByRole("textbox", { name: "Goal", exact: true }).fill("An unsaved goal for the original brand.");
+  const switched = await snapshot(page);
+  switched.project = { brand: "Another brand", domain: "anotherbrand.com", competitors: [], onboardingCompletedAt: "2026-10-01T10:00:00.000Z" };
+  await saveServerSnapshot(page, switched);
+  const switchedResponse = page.waitForResponse((response) => response.url().endsWith("/api/workspace") && response.request().method() === "GET");
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await switchedResponse;
+  await expect(page.locator(".pp-section-heading").first()).toContainText("Private work for Another brand");
+  await strategy.getByRole("button", { name: "Save strategy context" }).click();
+  await expect(strategy.getByRole("alert")).toContainText("active brand changed");
+  await expect(strategy.getByRole("textbox", { name: "Goal", exact: true })).toHaveValue("An unsaved goal for the original brand.");
+  expect((await snapshot(page)).project.strategy).toBeUndefined();
+});
+
+test("legacy baselines stay inspectable and another brand cannot inherit their page plans", async ({ page }) => {
+  const legacy = run();
+  delete legacy.measurement;
+  await seeded(page, [legacy], true);
+  await page.getByRole("button", { name: "Open page plan", exact: true }).click();
+  await expect(editor(page).getByRole("button", { name: "Review follow-up audit" })).toBeDisabled();
+  await expect(editor(page)).toContainText("no matching recorded collection settings");
+  await expect(editor(page).getByRole("region", { name: "Baseline ChatGPT answer" })).toContainText("An observed alternative");
+  await editor(page).getByRole("button", { name: "Close page plan" }).click();
+  const other = await snapshot(page);
+  other.project = { brand: "Another brand", domain: "anotherbrand.com", competitors: [], onboardingCompletedAt: "2026-10-01T10:00:00.000Z" };
+  await saveServerSnapshot(page, other);
+  await page.reload();
+  await nav(page, "Opportunities");
+  await expect(page.locator(".pp-plan-card")).toHaveCount(0);
+  expect((await snapshot(page)).pagePlans).toHaveLength(1);
+});
+
+test("keyboard dismissal preserves editing, proposed pages can wait for a URL, and deletion is explicit", async ({ page }) => {
+  await seeded(page);
+  await page.getByRole("button", { name: "Create page plan", exact: true }).click();
+  await expect(editor(page).getByLabel("Page decision")).toBeFocused();
+  await editor(page).getByLabel("Page decision").selectOption("proposed");
+  await page.keyboard.press("Escape");
+  await expect(editor(page).getByRole("button", { name: "Keep editing" })).toBeFocused();
+  await editor(page).getByRole("button", { name: "Keep editing" }).click();
+  await editor(page).getByLabel("Plan status").selectOption("dismissed");
+  await editor(page).getByLabel("Why this page?").fill("Revisit when the buyer segment is relevant.");
+  await editor(page).getByRole("button", { name: "Save page plan", exact: true }).click();
+  await page.getByLabel("Filter page plans").selectOption("dismissed");
+  await expect(page.locator(".pp-plan-card")).toContainText("Create a new page");
+  expect((await snapshot(page)).pagePlans[0].target).toEqual({ kind: "proposed" });
+  await page.getByRole("button", { name: "Open page plan", exact: true }).click();
+  await editor(page).getByLabel("Plan status").selectOption("planned");
+  await editor(page).getByRole("button", { name: "Save page plan", exact: true }).click();
+  await page.getByLabel("Filter page plans").selectOption("open");
+  await page.getByRole("button", { name: "Open page plan", exact: true }).click();
+  await editor(page).getByRole("button", { name: "Delete page plan", exact: true }).click();
+  expect((await snapshot(page)).pagePlans).toHaveLength(1);
+  await expect(editor(page).getByRole("button", { name: "Keep plan", exact: true })).toBeFocused();
+  await editor(page).getByRole("button", { name: "Confirm delete plan", exact: true }).click();
+  await expect(editor(page)).toBeHidden();
+  expect((await snapshot(page)).pagePlans).toHaveLength(0);
+  expect((await snapshot(page)).runs).toHaveLength(1);
+});
+
+test("full workspace backup restores plans, their scope, strategy and legacy completed wording", async ({ page }) => {
+  await seeded(page, [run(), run("saved-followup", "03", true)], true);
+  const original = await snapshot(page);
+  original.pagePlans[0].followupRunId = "saved-followup";
+  original.project.strategy = { goal: "Clarify our fit", keyPages: ["https://treg.to/docs"] };
+  original.done = ["An earlier completed question"];
+  await saveServerSnapshot(page, original);
+  await page.reload();
+  await page.getByRole("button", { name: "Backup and restore", exact: true }).click();
+  let backup = page.getByRole("dialog", { name: "Backup and restore." });
+  const downloadPromise = page.waitForEvent("download");
+  await backup.getByRole("button", { name: "Download full workspace backup" }).click();
+  const contents = await readFile((await (await downloadPromise).path())!, "utf8");
+  expect(JSON.parse(contents).snapshot.pagePlans[0].baselineMeasurement).toEqual(run().measurement);
+  await backup.getByRole("button", { name: "Close backup and restore" }).click();
+  await saveServerSnapshot(page, { ...original, project: { ...original.project, strategy: undefined }, pagePlans: [], done: [], runs: [] });
+  await page.reload();
+  await page.getByRole("button", { name: "Backup and restore", exact: true }).click();
+  backup = page.getByRole("dialog", { name: "Backup and restore." });
+  await backup.getByLabel("Import a full workspace backup").setInputFiles({ name: "page-plans-backup.json", mimeType: "application/json", buffer: Buffer.from(contents) });
+  await backup.getByRole("button", { name: "Confirm replace workspace", exact: true }).click();
+  await waitForServerSave(page);
+  await page.reload();
+  expect(await snapshot(page)).toEqual(original);
+  await nav(page, "Opportunities");
+  await expect(page.locator(".pp-plan-card")).toHaveCount(1);
+  await page.locator(".pp-legacy summary").click();
+  await expect(page.locator(".pp-legacy")).toContainText("An earlier completed question");
+  await expect(page.locator(".pp-legacy")).toContainText("no frozen brand");
+});
+
+test("page plans, expanded comparisons and optional strategy fit small and large screens", async ({ page, browserName }, testInfo) => {
+  await seeded(page, [run(), run("responsive-followup", "03", true)], true);
+  const saved = await snapshot(page);
+  saved.pagePlans[0].followupRunId = "responsive-followup";
+  await saveServerSnapshot(page, saved);
+  await page.reload();
+  await nav(page, "Opportunities");
+  for (const width of [320, 390, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    await expect(page.getByRole("heading", { name: "Give the next move a home." })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (browserName === "chromium") await page.screenshot({ path: testInfo.outputPath(`page-plans-${width}.png`), fullPage: true });
+    await page.getByRole("button", { name: "Open page plan", exact: true }).click();
+    const dialog = editor(page);
+    await expect(dialog).toBeVisible();
+    for (const answer of await dialog.locator(".answer-body summary").all()) await answer.click();
+    await dialog.locator(".fc-engine").first().scrollIntoViewIfNeeded();
+    const layout = await dialog.evaluate((element) => {
+      const panel = element.getBoundingClientRect();
+      return { scrollWidth: element.scrollWidth, clientWidth: element.clientWidth, overflow: [...element.querySelectorAll<HTMLElement>("*")].filter((child) => { const rect = child.getBoundingClientRect(); return rect.width && (rect.right > panel.right || rect.left < panel.left || child.scrollWidth > child.clientWidth + 1); }).map((child) => ({ tag: child.tagName, class: child.className, id: child.id, width: child.getBoundingClientRect().width, minWidth: getComputedStyle(child).minWidth, scroll: child.scrollWidth, client: child.clientWidth, overflowX: getComputedStyle(child).overflowX, text: child.textContent?.slice(0, 70) })) };
+    });
+    expect(layout.scrollWidth, JSON.stringify({ width, ...layout })).toBeLessThanOrEqual(layout.clientWidth);
+    const box = await dialog.boundingBox();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.x + box!.width).toBeLessThanOrEqual(width);
+    if (browserName === "chromium") await page.screenshot({ path: testInfo.outputPath(`page-comparison-${width}.png`) });
+    await dialog.getByRole("button", { name: "Close page plan" }).click();
+    await page.getByRole("button", { name: "Strategy context", exact: true }).click();
+    const strategy = page.getByRole("dialog", { name: "Keep the work pointed somewhere." });
+    expect(await strategy.evaluate((element) => element.scrollWidth <= element.clientWidth)).toBe(true);
+    if (browserName === "chromium") await page.screenshot({ path: testInfo.outputPath(`page-strategy-${width}.png`) });
+    await strategy.getByRole("button", { name: "Close strategy context" }).click();
+  }
+});

@@ -22,7 +22,7 @@ Start with the [README](../README.md) for setup, [architecture](./ARCHITECTURE.m
 | `POST` | `/api/auth/session` | `token` in JSON | Free key metadata validation; creates session |
 | `DELETE` | `/api/auth/session` | None | Clears browser session cookie |
 | `GET` | `/api/aeo/status` | Optional session cookie | Free key metadata validation when a session exists |
-| `POST` | `/api/aeo/estimate` | None | Public catalog reads only |
+| `POST` | `/api/aeo/estimate` | None for ordinary estimates; verified owner for saved-plan follow-ups | Free catalog reads only |
 | `POST` | `/api/aeo/run` | Session or explicit `token` | Paid answer-engine calls |
 | `POST` | `/api/aeo/onboard` | None for `estimateOnly: true`; otherwise session or `token` | Catalog estimate or one paid website-research request |
 | `POST` | `/api/aeo/discover` | None for `estimateOnly: true`; otherwise session or `token` | Catalog reads or paid keyword/PAA calls |
@@ -129,6 +129,8 @@ type WorkspaceSnapshot = {
   prompts: string[];
   promptRecords?: PromptRecord[];
   discoveryResearch?: SavedDiscovery[];
+  pagePlans?: PagePlan[];
+  reports?: EvidenceReport[];
   runs: SavedRun[];
   done: string[];
   sourceResearch: Record<string, SourceResearch>;
@@ -182,7 +184,17 @@ Optional `researchReceipts` retains the last five original onboarding outcomes i
 
 All new fields are optional, so older snapshots remain valid without migration. Unsupported markets or malformed/oversized metadata are rejected. Nested unknown fields are excluded from saved data. A competitor `sourceUrl` is retained only when it matches a safe citation in the retained research receipt and the competitor's domain; without it, the suggestion is unverified. Backups are user-supplied evidence, not independently authenticated provider records.
 
-The Settings rerun flow is an authenticated UI mode at `/app?setup=review`; it introduces no reset endpoint or authentication bypass. It uses the same research and workspace routes. Its browser draft holds the starting revision separately from the active snapshot. Saving refuses a changed revision and retains existing prompts, audits, completed moves and source research while applying the reviewed profile and adding selected questions. It does not write monitoring state. `PUT /api/workspace` itself retains its existing full-snapshot/CAS contract; third-party API clients remain responsible for retaining the fields they want to keep.
+The Settings rerun flow is an authenticated UI mode at `/app?setup=review`; it introduces no reset endpoint or authentication bypass. It uses the same research and workspace routes. Its browser draft holds the starting revision separately from the active snapshot. Saving refuses a changed revision and retains existing prompts, audits, page plans, reports, completed moves and research while applying the reviewed profile (including strategy context for the same brand) and adding selected questions. It does not write monitoring state. `PUT /api/workspace` itself retains its existing full-snapshot/CAS contract; third-party API clients remain responsible for retaining the fields they want to keep.
+
+### Page plans and report snapshots
+
+Optional `project.strategy` contains `goal` (600 characters), `timeframe` (120), `differentiators` (1,200), `writingPreferences` (1,200), and up to 12 `keyPages` (safe owned-domain/subdomain HTTP(S) URLs, 2,048 characters each). Unknown properties are removed. Context is optional and never expands the mandatory onboarding flow.
+
+`pagePlans` contains at most 128 records with the [PagePlan contract](../src/lib/page-plans.ts): `version:1`, unique `id` (200 characters), frozen `brand` and `question` identity/wording, `target` (`existing`, `proposed`, `later`), `rationale` (2,000), `brief` (12,000), `status` (`planned`, `in-progress`, `published`, `measured`, `dismissed`), optional `publishedAt`, `baselineRunId`, optional `baselineMeasurement` and `followupRunId`, and creation/update timestamps. Existing targets require a safe URL owned by the plan's brand; proposed targets may omit it; later decisions have no URL. A measured plan requires a selected follow-up. Unknown metadata is excluded. Legacy plans can lack recorded scope and remain inspectable; the API refuses to invent a comparable recheck.
+
+`reports` contains at most 10 [EvidenceReport records](../src/lib/evidence-reports.ts), each at most 512 KiB of JSON: `version:1`, unique `id`, `title` (160), `createdAt`, cleaned `project`, ordered `runIds` and exact cleaned `runs` (1–5), selected `plans` (0–8), `notes` (4,000), and boolean `demo`. All included runs/plans must match the report's brand. Original answers, errors, scope, citations and billing uncertainty are preserved; unknown fields and unrelated research receipts are excluded. Exact evidence that exceeds the bound is rejected, not silently shortened.
+
+An existing report ID is immutable across normal workspace saves and chunked commits: changed contents return `400`. Append a new ID to save another version. Explicit removal is allowed and does not delete source audits. Snapshot immutability is an application rule, not proof that a user-imported backup came from an authenticated provider. Full backups retain both optional arrays; filtered reports and agent exports cannot replace a full workspace.
 
 ### PUT `/api/workspace`
 
@@ -296,13 +308,14 @@ Both audit endpoints accept this body; `competitors` defaults to `[]`, and `toke
 | `engines` | Required array of 1–4 IDs: `chatgpt`, `perplexity`, `gemini`, `google` |
 | `token` | Optional direct credential; see authentication above |
 | `maxCostUsd` | Optional positive finite caller-approved estimate ceiling, at most $1 |
+| `followupPlanId` / `followupPlanUpdatedAt` | Optional pair: owned saved plan ID (1–200 characters) and its current parseable timestamp (at most 40 characters); both required together |
 | `market` | Optional exact `{ "country": "US", "language": "en" }`; unsupported values are rejected |
 
 The domain becomes a lowercase hostname without `www.`, port, path, or scheme. Prompts, engines, and competitor names are deduplicated; the user's own brand is removed from competitors case-insensitively. Input array limits apply before deduplication. The domain is used for citation matching, not fetched by this endpoint.
 
 ### POST `/api/aeo/estimate`
 
-No authentication or paid provider calls. Returns `200` with:
+Ordinary estimates need no authentication and make no paid provider calls. A request with `followupPlanId` requires a validated session or explicit key to read that owner’s saved plan; a signed-in session owns the plan even when an alternate paying key is supplied. Returns `200` with:
 
 ```ts
 type CostEstimate = {
@@ -331,9 +344,15 @@ curl http://localhost:3000/api/aeo/estimate \
   --data '{"brand":"Example","domain":"example.com","prompts":["Which tools fit this category?"],"engines":["chatgpt"]}'
 ```
 
+### Frozen page-plan follow-ups
+
+Send the ordinary audit fields plus `followupPlanId` and `followupPlanUpdatedAt`, first to estimate and then, with its accepted `maxCostUsd`, to run. The server resolves only the validated owner’s saved plan and baseline. Missing plans return `404`; changed plan versions, mismatched questions/engines/competitors/brand, unavailable baselines or unsupported historical collector settings return `409` before spending. It uses the original saved question IDs/types and competitor domains, not the current editable profile.
+
+A completed run is atomically appended. If the reviewed plan is unchanged, `followupRunId` is linked and its update timestamp advances; otherwise concurrent plan edits remain and the user can select the saved run manually. The active profile, question library, plan status and monitoring schedule are not changed by this link. Reading saved comparisons does not call providers. Deleted/legacy scope is never silently replaced with today's settings.
+
 ### POST `/api/aeo/run`
 
-Requires a verified caller key or session. It refreshes the catalog estimate immediately before spending; the earlier UI estimate is not a price lock. The browser sends its reviewed estimate as `maxCostUsd`; a higher fresh total returns `409` before any paid answer calls. Legacy API clients may omit this field, retaining the global $1 reservation limit. This ceiling compares catalog reservation estimates; settled provider charges can still differ, and the response preserves actual known/unknown billing. Optional `market` makes the fixed US/English scope explicit without expanding provider locale support. Returns `200` with:
+Requires a verified caller key or session. It refreshes the catalog estimate immediately before spending; the earlier UI estimate is not a price lock. The browser sends its reviewed estimate as `maxCostUsd`; a higher fresh total returns `409` before any paid answer calls. Ordinary legacy API clients may omit this field, retaining the global $1 reservation limit. Follow-up requests must include an accepted ceiling. This ceiling compares catalog reservation estimates; settled provider charges can still differ, and the response preserves actual known/unknown billing. Optional `market` makes the fixed US/English scope explicit without expanding provider locale support. Returns `200` with:
 
 ```ts
 type AuditResponse = {

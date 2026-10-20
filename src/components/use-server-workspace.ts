@@ -204,7 +204,7 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
       return false;
     }
     const version = current.version;
-    const submitted = { ...current.snapshot, ...profile,
+    const submitted = { ...current.snapshot, ...profile, project: updateProjectProfile(current.snapshot.project, profile.project),
       prompts: options?.preservePrompts ? [...new Set([...current.snapshot.prompts, ...profile.prompts])] : profile.prompts };
     // Preserve the established inventory when review adds questions; legacy
     // workspaces get identities when users next edit their tracked inventory.
@@ -241,10 +241,10 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
       current.saving = false;
     }
   }, [adopt, demoMode, publish]);
-  const acceptAudit = useCallback(async (run: SavedRun, persistence?: AuditPersistence, originalProject?: Project) => {
+  const acceptAudit = useCallback(async (run: SavedRun, persistence?: AuditPersistence, originalProject?: Project, preserveProfile = false) => {
     const append = (value: WorkspaceSnapshot, selectProject: boolean): WorkspaceSnapshot => {
       const next = { ...value, runs: [...value.runs.filter((old) => old.id !== run.id), run] };
-      if (!selectProject) return next;
+      if (!selectProject || preserveProfile) return next;
       const project = updateProjectProfile(value.project, { brand: run.brand, domain: run.domain, competitors: run.competitors ?? value.project.competitors });
       const additions = (run.prompts ?? []).filter((text) => !value.promptRecords?.some((record) => record.text === text && (record.paused || record.archived)));
       const prompts = [...new Set([...value.prompts, ...additions])];

@@ -47,12 +47,14 @@ Need a different port, setup help, or a complete first audit? Follow [getting st
 - **Citation exploration:** pages/domains, historical owned/competitor/other/unknown ownership, per-engine counts and exact saved-answer evidence. Research the selected page with Moz authority metrics and Exa extraction, including observed brand excerpts, authors and contact routes.
 - **Durable workspaces:** SQLite by default or hosted Neon Postgres, revision checks that protect concurrent changes, browser recovery, and JSON backup import/export.
 - **Scheduled monitoring:** opt-in daily or weekly audits at a UTC hour, per-audit and monthly spending limits, worker status, and retained evidence after partial failures.
-- **Action and history:** visibility gaps, writing-brief templates, completed moves, and JSON/CSV reports.
+- **Saved page plans:** distinguish observed competitor gaps from brand absence, choose an owned or proposed page, edit an evidence-specific brief, record progress and publication dates, and retain optional strategy context.
+- **Deliberate follow-ups:** compare original saved answers side by side or approve a fresh audit of the frozen baseline. Changed scope, insufficient coverage and unavailable historical settings cannot manufacture progress.
+- **Private reports and agent handoff:** save immutable evidence snapshots, print them, download Markdown/JSON, and hand a bounded, credential-free task and evidence pack to your agent.
 - **Your instance:** Treg-branded marketing, API-key login, a private workspace, and a separate labeled demo.
 
 Perplexity uses the Sonar model API; the other engines return web-interface answers. Research uses United States / English parameters. Partial failures retain successful evidence, and missing fields stay unknown. The [architecture guide](docs/ARCHITECTURE.md#analytics-and-evidence) explains scoring and its limits.
 
-Treg Lens is an independent implementation inspired by [Profound](https://www.tryprofound.com/). It does not promise complete Profound parity or provide shared team accounts, automatic outreach, or publishing. Content briefs currently provide editable writing templates; they are labeled as templates and do not make an additional model call.
+Treg Lens is an independent implementation inspired by [Profound](https://www.tryprofound.com/). It does not promise complete Profound parity or provide shared team accounts, automatic outreach, or publishing. Page-plan briefs start from saved evidence and remain editable. They do not make an additional model call or publish content. Follow the [page-plan, comparison and report guide](docs/WORKFLOWS.md).
 
 ## Documentation
 
@@ -62,6 +64,7 @@ Treg Lens is an independent implementation inspired by [Profound](https://www.tr
 | Give setup or a fork to a coding agent | [Agent quickstart](docs/AGENT-QUICKSTART.md) and [AGENTS.md](AGENTS.md) |
 | Deploy on Vercel + Neon or my own Node.js host | [Deployment](docs/DEPLOYMENT.md) |
 | Understand the small dependency footprint | [Dependencies](docs/DEPENDENCIES.md) |
+| Turn evidence into a page plan, follow-up and report | [Workflow guide](docs/WORKFLOWS.md) |
 | Integrate with the HTTP API | [API contracts](docs/API.md) |
 | Understand state, costs, and extension points | [Architecture](docs/ARCHITECTURE.md) and [product behavior](docs/PRODUCT-STATUS.md) |
 | Run tests and inspect coverage | [Testing](docs/TESTING.md) and [verification report](docs/TEST-REPORT.md) |
@@ -74,11 +77,11 @@ Setup, the demo, and automated tests make no paid provider calls. Sign-in uses f
 
 Login sends your key to the application server and seals it into an encrypted HttpOnly cookie with a 12-hour lifetime. Production requires HTTPS and a stable private `SESSION_SECRET`. Protected access revalidates the key with Treg. Keys are excluded from `localStorage`, `sessionStorage`, and exports; optional per-request overrides stay in memory until reload. Public paid routes never inherit an operator's credential.
 
-Project settings, prompts, audit history, completed moves, and source research are saved in the configured server database, separated by the verified key and stable deployment secret. Signing in with the same key on another browser reaches that instance's workspace. This is per-key access, not a team account or invitation system. Workspace content is ordinary database data; scheduled credentials receive separate authenticated encryption.
+Project settings, prompts, audit history, page plans, report snapshots, legacy completed moves, and source research are saved in the configured server database, separated by the verified key and stable deployment secret. Signing in with the same key on another browser reaches that instance's workspace. This is per-key access, not a team account or invitation system. Workspace content is ordinary database data; scheduled credentials receive separate authenticated encryption.
 
 The local default is `data/treg-lens.sqlite`; no service is required. `DATABASE_URL` selects optional Postgres storage; Vercel requires it and fails closed without a durable database. Keep hosted configuration separate from your local `.env.local`. Back up the selected database safely and retain `SESSION_SECRET` separately. Secret rotation invalidates sessions, changes workspace namespaces, and prevents old scheduled credentials from being decrypted. See [deployment](docs/DEPLOYMENT.md) before changing it.
 
-CSV and JSON reports contain the selected project and filters. Use **Backup and restore → Download full workspace backup** for an importable copy of every brand, date, engine, completed move, and source-research record. Filtered reports and demo exports cannot be restored as full workspaces. Export a full backup before replacing a workspace, resolving a concurrent-change conflict, changing keys, or performing a deployment migration. Browser recovery copies are useful safeguards, not a replacement for server backups. See [architecture](docs/ARCHITECTURE.md#browser-data-and-exports).
+CSV and JSON reports contain the selected project and filters. Use **Backup and restore → Download full workspace backup** for an importable copy of every brand, date, engine, page plan, report snapshot, legacy completed move, and source-research record. Filtered reports and demo exports cannot be restored as full workspaces. Export a full backup before replacing a workspace, resolving a concurrent-change conflict, changing keys, or performing a deployment migration. Browser recovery copies are useful safeguards, not a replacement for server backups. See [architecture](docs/ARCHITECTURE.md#browser-data-and-exports).
 
 ## Run scheduled monitoring
 

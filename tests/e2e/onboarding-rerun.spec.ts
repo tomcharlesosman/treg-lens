@@ -2,6 +2,8 @@ import type { Page } from "@playwright/test";
 import { test, expect, expectNoHorizontalOverflow } from "./support/auth-helpers";
 import { contextKey, nav, openAudit, saveServerSnapshot, signIn, storedFixture, waitForServerSave } from "./support/workspace-helpers";
 import type { OnboardingResearch } from "../../src/lib/workspace-data";
+import { createPagePlan, pagePlanOpportunities } from "../../src/lib/page-plans";
+import { createEvidenceReport } from "../../src/lib/evidence-reports";
 import type { SourceResearch } from "../../src/lib/source-research";
 
 const oldReceipt: OnboardingResearch = {
@@ -24,7 +26,9 @@ async function saved(page: Page) {
 async function seed(page: Page) {
   const key = await signIn(page);
   const original = storedFixture();
-  const snapshot = { ...original, project: { ...original.project, description: "Preserve this business context. ".repeat(40).slice(0, 1200), audience: "Builders of useful AI products", researchReceipts: [oldReceipt], onboardingCompletedAt: oldReceipt.completedAt },
+  const plan = createPagePlan({ id: "retained-page-plan", opportunity: pagePlanOpportunities(original.runs, original.project)[0] });
+  const report = createEvidenceReport({ id: "retained-report", project: original.project, runs: original.runs, plans: [plan] });
+  const snapshot = { ...original, pagePlans: [plan], reports: [report], project: { ...original.project, strategy: { goal: "Make documented capabilities clearer.", keyPages: ["https://treg.to/aeo"] }, description: "Preserve this business context. ".repeat(40).slice(0, 1200), audience: "Builders of useful AI products", researchReceipts: [oldReceipt], onboardingCompletedAt: oldReceipt.completedAt },
     prompts: [...original.prompts, ...Array.from({ length: 9 }, (_, i) => `Previously tracked buyer question ${i + 1}?`)],
     done: [original.prompts[1]], sourceResearch: { "treg:https://example.com/research": source } };
   const envelope = await saveServerSnapshot(page, snapshot);
@@ -65,6 +69,8 @@ async function reloadProfile(page: Page) {
 function retained(before: Awaited<ReturnType<typeof saved>>, after: Awaited<ReturnType<typeof saved>>) {
   expect(after.snapshot.runs).toEqual(before.snapshot.runs);
   expect(after.snapshot.done).toEqual(before.snapshot.done);
+  expect(after.snapshot.pagePlans).toEqual(before.snapshot.pagePlans);
+  expect(after.snapshot.reports).toEqual(before.snapshot.reports);
   expect(after.snapshot.sourceResearch).toEqual(before.snapshot.sourceResearch);
   for (const prompt of before.snapshot.prompts) expect(after.snapshot.prompts).toContain(prompt);
   expect(after.snapshot.project.researchReceipts).toEqual(expect.arrayContaining(before.snapshot.project.researchReceipts));
@@ -118,6 +124,21 @@ test("saving a manual rereview preserves history, existing questions, sources, r
   expect(calls.research).toEqual([]); expect(calls.audits).toEqual([]); expect(calls.schedules).toEqual([]);
   await page.reload();
   retained(envelope, await saved(page));
+});
+
+test("same-brand onboarding rereview preserves strategy, page plans and immutable reports", async ({ page }) => {
+  const { envelope } = await seed(page);
+  const calls = track(page);
+  await openReview(page);
+  await toQuestions(page);
+  await page.getByLabel("Buyer question 1", { exact: true }).fill("Which documented data sources fit our buyers?");
+  await page.getByRole("button", { name: "Save and open workspace", exact: true }).click();
+  await expect(page).toHaveURL(/\/app$/);
+  await waitForServerSave(page);
+  const after = await saved(page);
+  retained(envelope, after);
+  expect(after.snapshot.project.strategy).toEqual(envelope.snapshot.project.strategy);
+  expect(calls.research).toEqual([]); expect(calls.audits).toEqual([]); expect(calls.schedules).toEqual([]);
 });
 
 test("new research uses the existing session once, resumes its receipt, and only opens an unpaid audit review after saving", async ({ page }) => {

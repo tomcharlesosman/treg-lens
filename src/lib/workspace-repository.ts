@@ -3,6 +3,7 @@ import { parseWorkspaceSnapshot, type WorkspaceSnapshot } from "./workspace-stor
 import type { SavedRun } from "./workspace-data";
 import { MAX_WORKSPACE_BYTES, WorkspaceValidationError, sanitizeWorkspaceSnapshot } from "./workspace-validation";
 import { MAX_DISCOVERY_RESEARCH, parseSavedDiscovery, type SavedDiscovery } from "./discovery-research";
+import { assertImmutableEvidenceReports } from "./evidence-reports";
 export { MAX_WORKSPACE_BYTES, WorkspaceValidationError, sanitizeWorkspaceSnapshot } from "./workspace-validation";
 
 export type WorkspaceEnvelope = {
@@ -49,6 +50,8 @@ export async function saveWorkspaceInSession(tx: StorageSession, workspaceId: st
   const snapshot = sanitizeWorkspaceSnapshot(value);
   const current = await getWorkspaceInSession(tx, workspaceId);
   if (current.revision !== expectedRevision) throw new WorkspaceConflictError(current);
+  try { assertImmutableEvidenceReports(current.snapshot?.reports, snapshot.reports); }
+  catch (error) { throw new WorkspaceValidationError(error instanceof Error ? error.message : "Saved reports cannot be overwritten."); }
   return writeWorkspace(tx, workspaceId, snapshot, current.revision + 1);
 }
 export function saveWorkspace(workspaceId: string, value: unknown, expectedRevision: number): Promise<WorkspaceEnvelope> {
@@ -56,7 +59,7 @@ export function saveWorkspace(workspaceId: string, value: unknown, expectedRevis
 }
 
 /** Schedulers and manual audits share an atomic, idempotent append operation. */
-export async function appendWorkspaceRun(workspaceId: string, run: SavedRun): Promise<WorkspaceEnvelope> {
+export async function appendWorkspaceRun(workspaceId: string, run: SavedRun, followup?: { planId: string; updatedAt: string }): Promise<WorkspaceEnvelope> {
   assertWorkspaceId(workspaceId);
   const initial = sanitizeWorkspaceSnapshot({
     project: { brand: run.brand, domain: run.domain, competitors: run.competitors ?? [] },
@@ -71,6 +74,12 @@ export async function appendWorkspaceRun(workspaceId: string, run: SavedRun): Pr
     const snapshot = current.snapshot
       ? { ...current.snapshot, runs: [...current.snapshot.runs, initial.runs[0]] }
       : initial;
+    // Link only the exact reviewed plan. Concurrent plan edits win; the paid
+    // evidence is still appended and can be selected deliberately afterward.
+    if (followup && snapshot.pagePlans) snapshot.pagePlans = snapshot.pagePlans.map((plan) =>
+      plan.id === followup.planId && plan.updatedAt === followup.updatedAt
+        ? { ...plan, followupRunId: run.id, updatedAt: new Date(Math.min(8.64e15, Math.max(Date.now(), Date.parse(plan.updatedAt) + 1))).toISOString() }
+        : plan);
     return writeWorkspace(tx, workspaceId, snapshot, current.revision + 1);
   }, { write: true, lock: `workspace:${workspaceId}` });
 }
