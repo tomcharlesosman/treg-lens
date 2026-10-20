@@ -51,7 +51,9 @@ The public app at [treg-lens-tom-osmans-projects.vercel.app](https://treg-lens-t
 - An exact 8 MiB incompressible synthetic snapshot saved through eight 1 MiB chunks, with streamed commit/GET/conflict responses, revision protection, and idempotent committed replay.
 - Logout and precise removal of the temporary synthetic records.
 
-A separate authenticated manual cron invocation successfully updated the worker heartbeat. This proves the authorized handler ran; **scheduled platform cron delivery has not yet been verified**. These hosted checks are separate from the fixture test count and do not claim a live scheduled paid audit. The earlier paid-provider check retains its original date and costs below.
+A separate authenticated manual cron invocation successfully updated the worker heartbeat. After production promotion, Vercel's scheduler independently delivered `GET /api/cron/monitor` at **08:03:35 UTC**, with HTTP 200 and the `vercel-cron/1.0` user agent. The database heartbeat advanced to match it. The deployed schedule is once per minute, and the deployed function reports the intended 360-second timeout. There were no enabled user schedules and no paid calls. These hosted checks are separate from the fixture test count and do not claim a live scheduled paid audit. The earlier paid-provider check retains its original date and costs below.
+
+The final code at `b5e7f40` passed the complete 474-test suite again and the 11-check public smoke after promotion. Runtime-only SQLite paths are excluded from build tracing: all 24 emitted trace manifests exclude private data, environment files, outputs and SQLite databases. The Vercel production build completed without the earlier whole-project tracing warnings.
 
 The post-smoke runtime log scan found **zero errors in the preceding 30-minute window**. This is a point-in-time observation, not an uptime guarantee.
 
