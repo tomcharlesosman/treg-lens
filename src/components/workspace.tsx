@@ -56,7 +56,8 @@ import WorkspaceBackup, { downloadWorkspaceBackup } from "./workspace-backup";
 import MonitorSettings from "./monitor-settings";
 import "./workspace-live.css";
 import SettingsDialog from "./settings-dialog";
-import BrandOnboarding from "./brand-onboarding";
+import BrandOnboarding, { ResearchReceipt } from "./brand-onboarding";
+import AuditFindings from "./audit-findings";
 import { isExampleProfile, needsBrandOnboarding, updateProjectProfile } from "@/lib/workspace-onboarding";
 import type { WorkspaceSnapshot } from "@/lib/workspace-storage";
 import type { AnswerResult } from "@/lib/aeo";
@@ -554,6 +555,8 @@ export default function Workspace({
   const [newPrompt, setNewPrompt] = useState<string | null>(null);
   const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<SavedRun | null>(null);
+  const [findingAnswer, setFindingAnswer] = useState<AnswerResult | null>(null);
+  const [researchHistoryOpen, setResearchHistoryOpen] = useState(false);
   const [brief, setBrief] = useState<string | null>(null);
   const [toast, setToast] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
@@ -684,7 +687,10 @@ export default function Workspace({
       router.push("/login");
       return;
     }
-    await workspace.save();
+    if (!await workspace.save()) {
+      setToast("Your latest changes are not saved yet. Resolve synchronization before reviewing an audit.");
+      return;
+    }
     auditProject.current = project;
     setAuditPrompts(undefined);
     setAuditOpen(true);
@@ -1159,7 +1165,8 @@ export default function Workspace({
             <div className="sync-actions"><button className="button" onClick={() => { void workspace.refresh(); }} disabled={sync.phase === "saving"}><RefreshCw size={12} /> Refresh</button><button className="button" onClick={() => setBackupOpen(true)}>Backup and restore</button><button className="button" onClick={() => setMonitorOpen(true)}><Clock size={12} /> Monitoring</button>{(sync.phase === "offline" || sync.phase === "conflict") && <button className="button" onClick={() => { void workspace.retry(); }}>Retry sync</button>}{sync.phase === "conflict" && <button className="button" onClick={() => setConfirmServer(true)}>Load server version</button>}</div>
             {sync.error && <p>{sync.error}</p>}{sync.cacheError && <p>{sync.cacheError}</p>}
           </section>}
-          {!demo && view === "overview" && !projectRuns.length && <section className="workspace-onboarding" aria-label="Set up your workspace"><div><h2>Your brand is ready for its first answers.</h2><p>Review your buyer questions, choose your engines, and run a real audit. Monitoring can repeat it on a schedule.</p></div><button className="button primary" onClick={openSettings}>Edit brand profile</button><button className="button" onClick={() => nav("prompts")}>Manage buyer questions</button></section>}
+          {!demo && project.researchReceipts?.length ? <div className="profile-research-entry"><button className="button" onClick={() => setResearchHistoryOpen(true)}><BookOpen size={14} /> Brand research and sources</button><span>Your original research, sources and billing receipts stay with this workspace.</span></div> : null}
+          {!demo && view === "overview" && !projectRuns.length && <section className="workspace-onboarding" aria-label="Set up your workspace"><div><h2>Your brand is ready for its first answers.</h2><p>{prompts.length} buyer questions saved. Choose your engines and review the cost before collecting answers. Measurement: United States / English. Monitoring is a separate opt-in.</p></div><button className="button primary" onClick={onRun}>Review first audit <ArrowRight size={14} /></button><button className="button" onClick={openSettings}>Edit brand profile</button><button className="button" onClick={() => nav("prompts")}>Manage buyer questions</button></section>}
           {demo && (
             <div className="demo-strip">
               <span>
@@ -1173,6 +1180,7 @@ export default function Workspace({
           )}
           {view === "overview" && (
             <>
+              {!demo && projectRuns.at(-1) && <AuditFindings run={projectRuns.at(-1)!} onAnswer={setFindingAnswer} onRun={() => setSelectedRun(projectRuns.at(-1)!)} />}
               <section className="hero-banner">
                 <div className="hero-copy">
                   <span className="hero-eyebrow">
@@ -2299,6 +2307,8 @@ export default function Workspace({
           {answerContent(selectedRun.results)}
         </Modal>
       )}
+      {findingAnswer && <Modal title="Answer evidence" onClose={() => setFindingAnswer(null)} wide><p className="modal-description">Buyer question: {findingAnswer.prompt}</p>{answerContent([findingAnswer])}</Modal>}
+      {researchHistoryOpen && <Modal title="Brand research and sources" onClose={() => setResearchHistoryOpen(false)} wide><p className="modal-description">Original research is kept with its website and charge. Suggestions may belong to an earlier version of your profile; edits do not rewrite this evidence.</p><div className="profile-research-list">{[...(project.researchReceipts ?? [])].reverse().map((receipt, i) => <div key={receipt.completedAt + "-" + i}><p className="profile-context-note">Researched {new Date(receipt.completedAt).toLocaleString()} · {receipt.url}</p><ResearchReceipt receipt={receipt} currentDomain={project.domain} /></div>)}</div></Modal>}
       {brief && (
         <Modal
           title="Give your next page a head start."

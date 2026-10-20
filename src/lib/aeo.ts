@@ -29,6 +29,9 @@ export interface AuditInput {
   prompts: string[];
   engines: Engine[];
   token?: string;
+  /** Optional caller-approved ceiling for the fresh catalog reservation estimate. */
+  maxCostUsd?: number;
+  market?: { country: "US"; language: "en" };
 }
 
 export interface AuditError {
@@ -213,6 +216,14 @@ export function validateAuditInput(value: unknown): AuditInput {
     throw new AeoError("The Treg token is not valid.");
   }
   const token = string(data.token).trim();
+  if (data.maxCostUsd !== undefined && (typeof data.maxCostUsd !== "number" ||
+    !Number.isFinite(data.maxCostUsd) || data.maxCostUsd <= 0 || data.maxCostUsd > MAX_RUN_COST_USD))
+    throw new AeoError("The audit estimate ceiling must be greater than $0 and at most $1.");
+  if (data.market !== undefined) {
+    const market = record(data.market);
+    if (market.country !== "US" || market.language !== "en" || Object.keys(market).some((key) => key !== "country" && key !== "language"))
+      throw new AeoError("Audit measurement currently supports United States / English only.");
+  }
   return {
     brand,
     domain,
@@ -220,6 +231,8 @@ export function validateAuditInput(value: unknown): AuditInput {
     prompts,
     engines,
     ...(token ? { token } : {}),
+    ...(typeof data.maxCostUsd === "number" ? { maxCostUsd: data.maxCostUsd } : {}),
+    ...(data.market !== undefined ? { market: { country: "US", language: "en" } as const } : {}),
   };
 }
 
@@ -524,6 +537,8 @@ export async function runAudit(
   // Internal workers pass the exact catalog quote they reserved, so pricing
   // cannot change between reserving a budget and setting each provider cap.
   const estimate = execution?.estimate ?? await estimateAudit(input, fetcher);
+  if (input.maxCostUsd !== undefined && estimate.totalCostUsd > input.maxCostUsd)
+    throw new AeoError("The audit estimate increased beyond your approval. No paid calls were made. Review a fresh estimate before starting.", 409);
   const tasks = input.prompts.flatMap((prompt) =>
     input.engines.map((engine) => ({ prompt, engine })),
   );

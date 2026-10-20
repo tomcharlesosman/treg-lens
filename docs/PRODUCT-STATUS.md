@@ -10,9 +10,10 @@ This document maps the implemented product and its operational boundaries. Test 
 | --- | --- | --- |
 | Login | Free Treg team-key validation, sealed session, upstream revalidation | Possession of the same key shares its workspace; no team roles/invitations |
 | Workspace | SQLite or hosted Postgres snapshot and atomic audit append, per-key namespace, revision-checked saves | SQLite needs persistent local disk; hosted mode needs configured Neon; content is not encrypted at rest by the application |
+| Brand onboarding | URL-led research or free manual setup, reviewed buyers/competitors, intent-based questions, saved original research receipts | Generated ideas are not measured demand; coverage is US/English; paid research requires a writable recovery marker and explicit approval |
 | Prompt discovery | Bounded keyword ideas and actual People Also Ask questions, selectable imports | Provider results/volumes may be missing; no invented questions |
 | Audits | Up to eight prompts across four engines, live prices, retained partial answers and billing flags | Manual requests are not an indefinitely resumable job queue |
-| Analytics | Mention rates, source coverage, position heuristics, share of voice and saved-date trends | Measures observed answers, not causation, factuality or guaranteed recommendations |
+| Analytics | Mention rates, source coverage, position heuristics, share of voice, saved-date trends and evidence-linked latest-audit findings | Measures observed answers, not causation, factuality or guaranteed recommendations |
 | Sources | Moz link metrics and Exa page extraction with observed authors/contact routes | Extraction may be incomplete/cached; no guessed contacts or outreach |
 | Content briefs | Editable templates grounded in measured visibility gaps | No paid model-generated article/draft, automatic publishing or factual verification |
 | Backups | Full versioned JSON replacement, confirmed retained-monitor-audit merge, and audit deletion; filtered reports separately available | Restores content, not credentials, monitor consent or billing ledger |

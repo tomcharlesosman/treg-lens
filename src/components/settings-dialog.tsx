@@ -12,6 +12,8 @@ import {
   X,
 } from "lucide-react";
 import { DialogFrame, type ProjectSettings } from "./audit-dialog";
+import { safeEvidenceUrl } from "@/lib/workspace-profile";
+import { QUESTION_INTENT_LABELS } from "@/lib/onboarding-review";
 import "./dialog.css";
 
 type SettingsDialogProps = {
@@ -33,6 +35,7 @@ export function SettingsDialog({
   const [brand, setBrand] = useState(project.brand);
   const [domain, setDomain] = useState(project.domain);
   const [description, setDescription] = useState(project.description ?? "");
+  const [audience, setAudience] = useState(project.audience ?? "");
   const [competitors, setCompetitors] = useState(
     project.competitors.join(", "),
   );
@@ -51,6 +54,7 @@ export function SettingsDialog({
       setBrand(project.brand);
       setDomain(project.domain);
       setDescription(project.description ?? "");
+      setAudience(project.audience ?? "");
       setCompetitors(project.competitors.join(", "));
       setApiToken(token);
     }
@@ -109,6 +113,8 @@ export function SettingsDialog({
                 domain: domain.trim(),
                 competitors: competitorList,
                 ...(project.description !== undefined || description.trim() ? { description: description.trim() } : {}),
+                ...(project.audience !== undefined || audience.trim() ? { audience: audience.trim() } : {}),
+                market: { country: "US", language: "en" },
               },
               apiToken.trim(),
             );
@@ -159,6 +165,11 @@ export function SettingsDialog({
               placeholder="What you offer and who you help."
             />
           </label>
+          <label className="lens-dialog-field" htmlFor={id + "-audience"}>
+            Who are your buyers?
+            <textarea id={id + "-audience"} aria-label="Who are your buyers?" value={audience} onChange={(event) => setAudience(event.target.value)} maxLength={600} rows={2} placeholder="The people, businesses and markets you serve." />
+          </label>
+          <div className="lens-audit-scope" aria-label="Measurement coverage"><strong>United States / English</strong><p>This is the market currently measured by the answer engines. Your buyer description can describe a different audience, but does not change collection coverage.</p></div>
           <label className="lens-dialog-field" htmlFor={`${id}-competitors`}>
             Competitors
             <textarea
@@ -179,6 +190,8 @@ export function SettingsDialog({
               Keep your comparison focused on up to 8 competitors.
             </p>
           )}
+          {!!project.competitorDetails?.length && <details className="lens-profile-details"><summary>Competitor websites and research evidence</summary><ul>{project.competitorDetails.map((item) => <li key={item.name}><strong>{item.name}</strong>{item.domain && <span>{item.domain}</span>}{item.reason && <p>{item.reason}</p>}{item.sourceUrl && safeEvidenceUrl(item.sourceUrl) ? <a href={safeEvidenceUrl(item.sourceUrl)!} target="_blank" rel="noopener noreferrer">Cited competitor source <ArrowUpRight size={12} /></a> : <small>Suggested competitor · verify relevance</small>}</li>)}</ul></details>}
+          {!!project.buyerQuestions?.length && <details className="lens-profile-details"><summary>Saved buyer-question ideas</summary><p>Reviewed ideas remain here, including ones you left out of the first check. Manage the questions you track in Prompt tracking.</p><ul>{project.buyerQuestions.map((question) => <li key={question.text}><strong>{question.text}</strong><span>{QUESTION_INTENT_LABELS[question.intent]} · {question.provenance === "generated" ? "AI suggestion" : question.provenance === "discovered" ? "Observed discovery" : "Added or edited by you"}</span>{question.reason && <p>{question.reason}</p>}</li>)}</ul></details>}
 
           <div className="lens-field-section-label">
             <span>02</span> CONNECTED INTELLIGENCE
@@ -247,7 +260,7 @@ export function SettingsDialog({
         </div>
         <div className="lens-dialog-footer lens-settings-footer">
           <span className="lens-settings-save-note">
-            Brand settings are saved in this browser.
+            Changes synchronize to your private server workspace.
           </span>
           <button
             className="lens-dialog-primary"

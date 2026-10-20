@@ -24,6 +24,7 @@ Start with the [README](../README.md) for setup, [architecture](./ARCHITECTURE.m
 | `GET` | `/api/aeo/status` | Optional session cookie | Free key metadata validation when a session exists |
 | `POST` | `/api/aeo/estimate` | None | Public catalog reads only |
 | `POST` | `/api/aeo/run` | Session or explicit `token` | Paid answer-engine calls |
+| `POST` | `/api/aeo/onboard` | None for `estimateOnly: true`; otherwise session or `token` | Catalog estimate or one paid website-research request |
 | `POST` | `/api/aeo/discover` | None for `estimateOnly: true`; otherwise session or `token` | Catalog reads or paid keyword/PAA calls |
 | `POST` | `/api/aeo/source` | None for `estimateOnly: true`; otherwise session or `token` | Catalog reads or paid Moz/Exa calls |
 
@@ -110,7 +111,21 @@ type WorkspaceEnvelope = {
   updatedAt: string | null;
 };
 type WorkspaceSnapshot = {
-  project: { brand: string; domain: string; competitors: string[] };
+  project: {
+    brand: string; domain: string; competitors: string[];
+    description?: string; // up to 1,200 characters
+    audience?: string; // up to 600 characters
+    market?: { country: "US"; language: "en" }; // only supported measurement market
+    competitorDetails?: Array<{ name: string; domain?: string; reason?: string; sourceUrl?: string }>;
+    buyerQuestions?: Array<{
+      text: string;
+      intent: "category" | "comparison" | "use-case" | "purchase" | "branded" | "other";
+      provenance: "generated" | "manual" | "discovered";
+      reason?: string;
+    }>;
+    researchReceipts?: OnboardingResearch[];
+    onboardingCompletedAt?: string;
+  };
   prompts: string[];
   runs: SavedRun[];
   done: string[];
@@ -119,6 +134,12 @@ type WorkspaceSnapshot = {
 ```
 
 The verified key and stable deployment secret determine the namespace. The same key reaches the same instance's saved workspace across browsers. An unrelated key cannot select or read it by changing request fields.
+
+`competitors` and `prompts` remain the canonical tracked values for existing clients and backups. Optional `competitorDetails` has at most eight entries, matched by competitor name; removed names lose their metadata. Names are at most 100 characters, domains 253, and reasons 240. `buyerQuestions` holds up to sixteen reviewed ideas, including unselected questions; text is at most 500 characters and reasons 240. Only the selected `prompts` determine audit scope. Missing metadata for a newly selected prompt is labeled manual with `other` intent.
+
+Optional `researchReceipts` retains the last five original onboarding outcomes independently of current profile edits or question selections. Each retains original URL, sources, questions, call IDs, completion time and known/unknown billing. New receipts also retain `input` with the normalized submitted URL, optional reviewed audience and fixed market, separate from any inferred audience suggestion. Older receipts may omit it. Applying the same receipt twice does not duplicate it. Profile identity changes retain these receipts as workspace evidence, while brand-specific audience, competitor and question context is inherited only for the same brand/domain. Explicit workspace replacement or backup import still replaces the supplied snapshot; this history is not an immutable billing ledger.
+
+All new fields are optional, so older snapshots remain valid without migration. Unsupported markets or malformed/oversized metadata are rejected. Nested unknown fields are excluded from saved data. A competitor `sourceUrl` is retained only when it matches a safe citation in the retained research receipt and the competitor's domain; without it, the suggestion is unverified. Backups are user-supplied evidence, not independently authenticated provider records.
 
 ### PUT `/api/workspace`
 
@@ -231,6 +252,8 @@ Both audit endpoints accept this body; `competitors` defaults to `[]`, and `toke
 | `prompts` | Required array of 1–8 strings, each 1–500 trimmed characters |
 | `engines` | Required array of 1–4 IDs: `chatgpt`, `perplexity`, `gemini`, `google` |
 | `token` | Optional direct credential; see authentication above |
+| `maxCostUsd` | Optional positive finite caller-approved estimate ceiling, at most $1 |
+| `market` | Optional exact `{ "country": "US", "language": "en" }`; unsupported values are rejected |
 
 The domain becomes a lowercase hostname without `www.`, port, path, or scheme. Prompts, engines, and competitor names are deduplicated; the user's own brand is removed from competitors case-insensitively. Input array limits apply before deduplication. The domain is used for citation matching, not fetched by this endpoint.
 
@@ -267,7 +290,7 @@ curl http://localhost:3000/api/aeo/estimate \
 
 ### POST `/api/aeo/run`
 
-Requires a verified caller key or session. It refreshes the catalog estimate immediately before spending; the earlier UI estimate is not a price lock. Returns `200` with:
+Requires a verified caller key or session. It refreshes the catalog estimate immediately before spending; the earlier UI estimate is not a price lock. The browser sends its reviewed estimate as `maxCostUsd`; a higher fresh total returns `409` before any paid answer calls. Legacy API clients may omit this field, retaining the global $1 reservation limit. This ceiling compares catalog reservation estimates; settled provider charges can still differ, and the response preserves actual known/unknown billing. Optional `market` makes the fixed US/English scope explicit without expanding provider locale support. Returns `200` with:
 
 ```ts
 type AuditResponse = {
@@ -320,11 +343,13 @@ One task is issued per unique prompt/engine pair, with at most 12 worker calls i
 ```json
 {
   "url": "example.com",
+  "audience": "Small SaaS teams choosing their first analytics tool",
+  "market": { "country": "US", "language": "en" },
   "estimateOnly": true
 }
 ```
 
-`url` accepts a public HTTP(S) URL or bare domain; credentials, unsafe/private hosts and nonstandard ports are refused using the source-research URL rules. Query parameters and fragments are removed; a public path is preserved. `estimateOnly` must be boolean when supplied. An estimate requires no key, public DNS lookup, or paid request and returns:
+`url` accepts a public HTTP(S) URL or bare domain; credentials, unsafe/private hosts and nonstandard ports are refused using the source-research URL rules. Query parameters and fragments are removed; a public path is preserved. Optional `audience` is a string of at most 600 characters; the reviewed audience informs the research query and takes precedence over an inferred audience. Optional `market` must be exactly `{ "country": "US", "language": "en" }`; unsupported values return `400` before catalog or paid calls. This describes the currently supported measurement market; it does not add unsupported provider parameters or enable other locales. `estimateOnly` must be boolean when supplied. An estimate requires no key, public DNS lookup, or paid request and returns:
 
 ```ts
 type OnboardingEstimate = {
@@ -341,12 +366,21 @@ To research, send `{ "url": "example.com", "maxCostUsd": 0.005 }` with a verifie
 ```ts
 type OnboardingResearch = {
   kind: "research";
+  input?: { url: string; audience?: string; market: { country: "US"; language: "en" } };
   url: string;
   domain: string;
   brand: string;
   description: string;
-  competitors: Array<{ name: string; domain?: string; reason?: string }>;
+  audience?: string;
+  market?: { country: "US"; language: "en" };
+  competitors: Array<{ name: string; domain?: string; reason?: string; sourceUrl?: string }>;
   questions: string[];
+  buyerQuestions?: Array<{
+    text: string;
+    intent: "category" | "comparison" | "use-case" | "purchase" | "branded" | "other";
+    provenance: "generated";
+    reason?: string;
+  }>;
   sources: Array<{ title: string; url: string }>;
   totalCostUsd: number | null;
   knownCostUsd: number;
@@ -357,9 +391,9 @@ type OnboardingResearch = {
 };
 ```
 
-At most five competitors, eight questions, and twelve safe source links are returned. Questions are AI-generated suggestions for review, not observed queries or measured demand. Malformed or incomplete provider fields stay empty and produce inspectable errors; missing fields are never filled with example brands. Responses are bounded to 512 KiB, text fields are capped, and unsafe links/embedded HTML are filtered.
+At most five competitors, eight questions, and twelve safe source links are returned. Questions are AI-generated suggestions for review, not observed queries or measured demand. Optional intent/reason metadata is matched to those exact question strings; older provider output containing only strings receives generated/other metadata. A competitor's `sourceUrl` must actually occur among returned safe citations and belong to that competitor's domain or subdomain. Missing, unsafe, unrelated or uncited source URLs are omitted; a name-only competitor remains a suggestion with no verified evidence. Citation presence establishes observed provenance, not proof of every claim or competitive relevance. Malformed or incomplete provider fields stay empty and produce inspectable errors; missing fields are never filled with example brands. Responses are bounded to 512 KiB, text fields are capped, and unsafe links/embedded HTML are filtered.
 
-After a paid submission, upstream errors return a `200` research receipt with errors and known or unknown costs. HTTP `202` is unsettled work; its reservation is not a settled charge and `totalCostUsd` remains `null`. The route does not poll, retry, save a project, start an audit, or enable monitoring. Check Treg activity before deliberately repeating ambiguous work. The client reviews suggestions and saves the chosen profile/questions through the ordinary revision-checked workspace API. An onboarding description (up to 1,200 characters) and a valid `onboardingCompletedAt` timestamp are optional project fields.
+After a paid submission, upstream errors return a `200` research receipt with errors and known or unknown costs. HTTP `202` is unsettled work; its reservation is not a settled charge and `totalCostUsd` remains `null`. The route does not poll, retry, save a project, start an audit, or enable monitoring. Check Treg activity before deliberately repeating ambiguous work. The client retains the receipt in its recoverable draft, reviews suggestions, and saves the chosen profile/questions plus original receipt through the ordinary revision-checked workspace API. An onboarding description (up to 1,200 characters) and a valid `onboardingCompletedAt` timestamp are optional project fields. A returned receipt is durable server-side only after that workspace save is acknowledged.
 
 ## Prompt discovery
 
@@ -523,7 +557,7 @@ Application errors use `{ "error": "human-readable message" }` and `Cache-Contro
 | `400` | Invalid fields/JSON, unsafe or unresolved source URL, team selection problem, or a workflow safety limit |
 | `401` | Missing caller credential or invalid/revoked explicit key |
 | `403` | Rejected `Origin` header |
-| `409` | Stale workspace revision, onboarding price above the accepted estimate, or an attempt to edit a running monitoring schedule |
+| `409` | Stale workspace revision, research/audit price above the accepted estimate, or an attempt to edit a running monitoring schedule |
 | `405` | Unsupported HTTP method; framework response |
 | `413` | Request body exceeds its route limit: 16 KiB normally, 8 MiB plus 4 KiB envelope for workspace PUT, 4 KiB upload manifests, or 1 MiB chunks |
 | `415` | Request is not JSON |

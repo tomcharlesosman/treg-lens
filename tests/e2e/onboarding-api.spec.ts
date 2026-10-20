@@ -91,6 +91,79 @@ test.describe("URL onboarding research API", () => {
     const body = await json(await post(request, { url: "example.com/onboarding#section", token, maxCostUsd: quoteCeiling }));
     expect(body.url).toBe(website);
     expect(body.domain).toBe("example.com");
+    expect(body.input).toEqual({ url: website, market: { country: "US", language: "en" } });
+  });
+
+  test("buyer context and the supported market produce editable metadata without claiming observed demand", async ({ request }) => {
+    const input = {
+      url: "https://example.com/rich-context",
+      audience: "Independent SaaS founders choosing their first analytics tool.",
+      market: { country: "US", language: "en" },
+    };
+    await json(await post(request, { ...input, estimateOnly: true }));
+    const body = await json(await post(request, { ...input, token, maxCostUsd: quoteCeiling }));
+    expect(body).toMatchObject({ audience: input.audience, market: input.market });
+    expect(body.input).toEqual(input);
+    expect(body.buyerQuestions).toHaveLength(6);
+    expect(body.buyerQuestions[0]).toMatchObject({
+      text: body.questions[0], intent: "category", provenance: "generated",
+      reason: "Identify alternatives before a purchase decision.",
+    });
+    expect(body.buyerQuestions[1]).toMatchObject({ intent: "comparison", provenance: "generated" });
+    expect(body.buyerQuestions.map((question: { text: string }) => question.text)).toEqual(body.questions);
+    expect(body.buyerQuestions.every((question: { provenance: string }) => question.provenance === "generated")).toBe(true);
+    expect(body.competitors[0]).toMatchObject({
+      name: "Northstar", sourceUrl: "https://northstar.example.com/product",
+    });
+  });
+
+  for (const [name, extension] of [
+    ["unsupported country", { market: { country: "GB", language: "en" } }],
+    ["unsupported language", { market: { country: "US", language: "fr" } }],
+    ["incomplete market", { market: { country: "US" } }],
+    ["malformed market", { market: "US English" }],
+    ["non-text buyer context", { audience: { role: "founder" } }],
+    ["oversized buyer context", { audience: "x".repeat(601) }],
+  ] as const) {
+    test(`rejects ${name} for both an estimate and paid research`, async ({ request }) => {
+      await error(await post(request, { url: website, ...extension, estimateOnly: true }), 400);
+      await error(await post(request, { url: website, ...extension, token, maxCostUsd: quoteCeiling }), 400);
+    });
+  }
+
+  test("a name-only suggestion remains available for correction without an invented website or verification", async ({ request }) => {
+    const body = await json(await post(request, { url: "https://example.com/name-only", token, maxCostUsd: quoteCeiling }));
+    expect(body.competitors[0]).toMatchObject({ name: "Northstar", reason: expect.stringMatching(/needs review/) });
+    expect(body.competitors[0]).not.toHaveProperty("domain");
+    expect(body.competitors[0]).not.toHaveProperty("sourceUrl");
+    expect(body.competitors).toHaveLength(3);
+  });
+
+  test("competitor evidence must be a safe returned citation on that competitor's website", async ({ request }) => {
+    const body = await json(await post(request, { url: "https://example.com/unsafe-evidence", token, maxCostUsd: quoteCeiling }));
+    expect(body.competitors[0].sourceUrl).toBe("https://northstar.example.com/product");
+    expect(body.competitors[1]).not.toHaveProperty("sourceUrl");
+    expect(body.competitors[2]).not.toHaveProperty("sourceUrl");
+    expect(body.sources).toHaveLength(3);
+    expect(JSON.stringify(body)).not.toMatch(/javascript:|127\.0\.0\.1|user:password/);
+  });
+
+  test("partial research retains its paid receipt and known profile without inventing missing suggestions", async ({ request }) => {
+    const body = await json(await post(request, { url: "https://example.com/partial", token, maxCostUsd: quoteCeiling }));
+    expect(body).toMatchObject({
+      brand: "Acme Analytics", competitors: [], questions: [], buyerQuestions: [],
+      knownCostUsd: quoteCeiling, totalCostUsd: quoteCeiling, costKnown: true,
+    });
+    expect(body.errors).toEqual(expect.arrayContaining([expect.objectContaining({ error: expect.stringMatching(/suggestions are missing/i) })]));
+    expect(body.callIds).toHaveLength(1);
+  });
+
+  test("suggestions without citations carry an explicit unverified warning", async ({ request }) => {
+    const body = await json(await post(request, { url: "https://example.com/unverified", token, maxCostUsd: quoteCeiling }));
+    expect(body.sources).toEqual([]);
+    expect(body.competitors).toHaveLength(3);
+    expect(body.errors).toEqual(expect.arrayContaining([expect.objectContaining({ error: expect.stringMatching(/unverified/i) })]));
+    expect(body.competitors.every((competitor: { sourceUrl?: string }) => !competitor.sourceUrl)).toBe(true);
   });
 
   test("missing and insufficient accepted price ceilings fail before submission", async ({ request }) => {

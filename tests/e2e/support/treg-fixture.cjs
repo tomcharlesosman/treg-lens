@@ -144,17 +144,54 @@ globalThis.fetch = async function fixtureFetch(input, init) {
         "Which product analytics software is easiest to implement?",
       ],
     };
+    const evidence = [
+      { url: "https://example.com/onboarding", title: "Acme Analytics" },
+      { url: "https://example.com/analytics-comparison", title: "Product analytics comparison" },
+    ];
+    if (marker.includes("/rich-context")) {
+      profile.audience = "SaaS founders and product managers.";
+      profile.buyerQuestions = profile.questions.map((text, index) => ({
+        text,
+        intent: ["category", "comparison", "purchase", "use-case", "use-case", "purchase"][index],
+        // The app, not the model, assigns provenance to generated suggestions.
+        provenance: index === 0 ? "discovered" : "manual",
+        reason: index === 0 ? "Identify alternatives before a purchase decision." : "Review a buyer need for this category.",
+      }));
+      profile.competitors[0].sourceUrl = "https://northstar.example.com/product";
+      evidence.push({ url: "https://northstar.example.com/product", title: "Northstar product overview" });
+    }
+    if (marker.includes("/name-only")) {
+      delete profile.competitors[0].domain;
+      profile.competitors[0].reason = "Suggested alternative; its public website still needs review.";
+    }
+    if (marker.includes("/unsafe-evidence")) {
+      profile.competitors[0].sourceUrl = "https://northstar.example.com/product";
+      // A citation about another host cannot verify this competitor.
+      profile.competitors[1].sourceUrl = "https://example.com/analytics-comparison";
+      profile.competitors[2].sourceUrl = "javascript:alert('fixture-source')";
+      evidence.push(
+        { url: "https://northstar.example.com/product", title: "Northstar product overview" },
+        { url: "javascript:alert('fixture-source')", title: "Unsafe script source" },
+        { url: "http://127.0.0.1/private", title: "Private source" },
+        { url: "https://user:password@example.com/private", title: "Credential source" },
+      );
+    }
+    if (partial) {
+      profile.competitors = [];
+      profile.questions = [];
+    }
+    if (marker.includes("/unverified")) evidence.length = 0;
     if (marker.includes("/unsafe")) {
       profile.competitors.push({ name: "Northstar", domain: "javascript:alert(1)", reason: "Duplicate suggestion." });
       profile.questions.push(profile.questions[0]);
+      evidence.push(
+        { url: "javascript:alert(1)", title: "Unsafe source" },
+        { url: "https://example.com/onboarding", title: "Duplicate" },
+      );
     }
     return billed({
       answer: profile,
-      citations: [
-        { url: "https://example.com/onboarding", title: "Acme Analytics" },
-        { url: "https://example.com/analytics-comparison", title: "Product analytics comparison" },
-        ...(marker.includes("/unsafe") ? [{ url: "javascript:alert(1)", title: "Unsafe source" }, { url: "https://example.com/onboarding", title: "Duplicate" }] : []),
-      ],
+      citations: evidence,
     }, 5000, 200, unknown);
   }
   if (billing) return billed(errorBody("insufficient_balance"), 0, 402);

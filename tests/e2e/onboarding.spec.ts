@@ -206,13 +206,19 @@ test("review drafts survive reload and switching between steps without repeating
 test("unfinished onboarding drafts stay isolated when the same browser changes Treg keys", async ({ page }) => {
   const firstKey = await firstLogin(page);
   await page.getByLabel("Website URL", { exact: true }).fill(website);
+  await page.getByLabel("Who are your buyers?", { exact: true }).fill("Private buyer context for the first key.");
   await page.getByRole("button", { name: "Set up manually", exact: true }).click();
   await page.getByLabel("Brand name", { exact: true }).fill("Private Draft Brand");
+  await page.getByRole("button", { name: "Add competitor", exact: true }).click();
+  await page.getByLabel("Competitor 1", { exact: true }).fill("Private Rival");
+  await page.getByLabel("Competitor 1 website", { exact: true }).fill("private-rival.example.com");
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
   await firstLogin(page);
   await expect(page.getByLabel("Website URL", { exact: true })).toHaveValue("");
+  await expect(page.getByLabel("Who are your buyers?", { exact: true })).toHaveValue("");
   await expect(page.getByText("Private Draft Brand", { exact: true })).toHaveCount(0);
+  expect((await savedWorkspace(page)).snapshot).toBeNull();
   await page.getByRole("button", { name: "Sign out", exact: true }).click();
   await expect(page).toHaveURL(/\/$/);
   await page.goto("/login");
@@ -220,6 +226,9 @@ test("unfinished onboarding drafts stay isolated when the same browser changes T
   await page.getByRole("button", { name: "Open my workspace" }).click();
   await expect(page.getByRole("heading", { name: "Does this sound like you?" })).toBeVisible();
   await expect(page.getByLabel("Brand name", { exact: true })).toHaveValue("Private Draft Brand");
+  await expect(page.getByLabel("Who are your buyers?", { exact: true })).toHaveValue("Private buyer context for the first key.");
+  await expect(page.getByLabel("Competitor 1", { exact: true })).toHaveValue("Private Rival");
+  await expect(page.getByLabel("Competitor 1 website", { exact: true })).toHaveValue("private-rival.example.com");
   expect((await savedWorkspace(page)).snapshot).toBeNull();
 });
 
@@ -234,13 +243,13 @@ test("invalid URLs cannot start research and changing a quoted URL requires a fr
   await page.getByLabel("Website URL", { exact: true }).fill("example.com/onboarding?utm_source=test#pricing");
   await page.getByRole("button", { name: "Get research estimate", exact: true }).click();
   await expect(page.getByRole("button", { name: /^Research my brand/ })).toBeEnabled();
-  expect(calls.estimates).toEqual([{ url: website, estimateOnly: true }]);
+  expect(calls.estimates).toEqual([{ url: website, audience: "", market: { country: "US", language: "en" }, estimateOnly: true }]);
   await page.getByLabel("Website URL", { exact: true }).fill("https://example.com/changed");
   await expect(page.getByRole("button", { name: /^Research my brand/ })).toHaveCount(0);
   await page.getByRole("button", { name: "Get research estimate", exact: true }).click();
   await expect(page.getByRole("button", { name: /^Research my brand/ })).toBeEnabled();
   expect(calls.estimates).toHaveLength(2);
-  expect(calls.estimates[1]).toEqual({ url: "https://example.com/changed", estimateOnly: true });
+  expect(calls.estimates[1]).toEqual({ url: "https://example.com/changed", audience: "", market: { country: "US", language: "en" }, estimateOnly: true });
   expect(calls.research).toHaveLength(0);
   expect(calls.audits).toHaveLength(0);
 });

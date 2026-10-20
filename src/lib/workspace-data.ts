@@ -1,9 +1,54 @@
 import type { AnswerResult, Engine } from "./aeo";
+export const SUPPORTED_MARKET = { country: "US", language: "en" } as const;
+export type MeasurementMarket = typeof SUPPORTED_MARKET;
+export const BUYER_QUESTION_INTENTS = ["category", "comparison", "use-case", "purchase", "branded", "other"] as const;
+export type BuyerQuestionIntent = (typeof BUYER_QUESTION_INTENTS)[number];
+export type BuyerQuestionProvenance = "generated" | "manual" | "discovered";
+export type BuyerQuestion = {
+  text: string;
+  intent: BuyerQuestionIntent;
+  provenance: BuyerQuestionProvenance;
+  reason?: string;
+};
+export type CompetitorDetail = {
+  name: string;
+  domain?: string;
+  reason?: string;
+  /** An observed research citation on this competitor's domain; absent means unverified. */
+  sourceUrl?: string;
+};
+export interface OnboardingResearch {
+  kind: "research";
+  /** Normalized original request context, distinct from the inferred profile. No credentials. */
+  input?: { url: string; audience?: string; market: MeasurementMarket };
+  url: string;
+  domain: string;
+  brand: string;
+  description: string;
+  audience?: string;
+  market?: MeasurementMarket;
+  competitors: CompetitorDetail[];
+  questions: string[];
+  buyerQuestions?: BuyerQuestion[];
+  sources: Array<{ title: string; url: string }>;
+  totalCostUsd: number | null;
+  knownCostUsd: number;
+  costKnown: boolean;
+  errors: Array<{ step: "research"; error: string }>;
+  callIds: string[];
+  completedAt: string;
+}
 export type Project = {
   brand: string;
   domain: string;
   competitors: string[];
   description?: string;
+  audience?: string;
+  market?: MeasurementMarket;
+  competitorDetails?: CompetitorDetail[];
+  /** Reviewed suggestions, including unselected ones. Workspace prompts determine paid scope. */
+  buyerQuestions?: BuyerQuestion[];
+  researchReceipts?: OnboardingResearch[];
   onboardingCompletedAt?: string;
 };
 export type SavedRun = {

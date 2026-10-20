@@ -902,3 +902,4 @@
     transition: none !important;
   }
 }
+.lens-audit-scope{padding:15px 17px;margin:0 0 20px;border:1px solid var(--treg-mint-line);background:var(--treg-mint);border-radius:11px;display:grid;gap:7px;font-size:12px;color:var(--treg-body);line-height:1.7;overflow-wrap:anywhere}.lens-audit-scope>strong{color:var(--treg-ink);font-size:13px}.lens-audit-scope p{margin:0}.lens-profile-details{font-size:12px;color:var(--treg-body);line-height:1.7;margin:15px 0}.lens-profile-details summary{cursor:pointer;font-weight:600;color:var(--treg-ink)}.lens-profile-details ul{list-style:none;padding:0;display:grid;gap:12px}.lens-profile-details li{padding:12px;border:1px solid var(--treg-border);border-radius:8px;display:grid;gap:4px;overflow-wrap:anywhere}.lens-profile-details p{margin:0}.lens-profile-details a{display:inline-flex;align-items:center;gap:5px;color:var(--treg-mint-ink)}

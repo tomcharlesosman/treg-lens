@@ -324,3 +324,83 @@ test("unexpected over-ceiling charges are visible without altering reported cost
   assert.equal(result.brand, "Acme");
   assert.match(result.errors[0].error, /above the approved ceiling/);
 });
+
+test("reviewed audience informs research without pretending other measurement markets are supported", async () => {
+  for (const extra of [
+    { audience: 5 }, { audience: "x".repeat(601) }, { market: null },
+    { market: { country: "GB", language: "en" } }, { market: { country: "US", language: "fr" } },
+    { market: { country: "US" } }, { market: { country: "US", language: "en", token: "hidden" } },
+  ]) {
+    let called = false;
+    assert.throws(() => validateOnboardingInput({ ...input, ...extra }), AeoError);
+    await assert.rejects(researchOnboarding({ ...input, ...extra } as OnboardingInput, async () => {
+      called = true; throw new Error("must not call");
+    }), AeoError);
+    assert.equal(called, false);
+  }
+  const audience = "Independent shop owners buying their first analytics tool.";
+  const result = await researchOnboarding({ ...input, audience, market: { country: "US", language: "en" } },
+    provider(async (_url, init) => {
+      const body = JSON.parse(String(init?.body));
+      assert.match(body.query, /Independent shop owners/);
+      assert.match(body.query, /United States, English/);
+      assert.equal(body.country, undefined);
+      assert.equal(body.language, undefined);
+      return Response.json({ ...response(), answer: { ...response().answer, audience: "Wrong inferred audience" } }, { headers });
+    }));
+  assert.equal(result.audience, audience);
+  assert.deepEqual(result.market, { country: "US", language: "en" });
+  assert.deepEqual(result.input, { url: input.url, audience, market: { country: "US", language: "en" } });
+  assert.doesNotMatch(JSON.stringify(result.input), /token|synthetic-private/);
+});
+
+test("competitor evidence requires a safe observed citation on the competitor's own domain", () => {
+  const normalized = normalizeOnboardingResearch({
+    answer: {
+      ...response().answer,
+      competitors: [
+        { name: "Verified", domain: "northstar.com", sourceUrl: "https://docs.northstar.com/product", reason: "Relevant offering" },
+        { name: "Uncited", domain: "other.com", sourceUrl: "https://other.com/missing" },
+        { name: "Mismatched", domain: "rival.com", sourceUrl: "https://directory.com/rival" },
+        { name: "Unsafe", domain: "safe.com", sourceUrl: "https://user:secret@safe.com/" },
+        { name: "Name only", sourceUrl: "https://name.com/" },
+      ],
+    },
+    citations: [
+      { url: "https://docs.northstar.com/product", title: "Product" },
+      { url: "https://directory.com/rival", title: "Directory" },
+      { url: "https://user:secret@safe.com/", title: "Secret" },
+      { url: "http://127.0.0.1/", title: "Private" },
+      { url: "javascript:alert(1)", title: "Script" },
+    ],
+  }, input);
+  assert.equal(normalized.competitors[0].sourceUrl, "https://docs.northstar.com/product");
+  for (const competitor of normalized.competitors.slice(1)) assert.equal(competitor.sourceUrl, undefined);
+  assert.equal(normalized.competitors[1].domain, "other.com");
+  assert.equal(normalized.competitors[4].domain, undefined);
+  assert.equal(normalized.sources.length, 2);
+  assert.doesNotMatch(JSON.stringify(normalized), /secret|127\.0\.0\.1|javascript:/);
+});
+
+test("question metadata stays generated and matches canonical legacy question strings", () => {
+  const result = normalizeOnboardingResearch({
+    ...response(),
+    answer: {
+      ...response().answer,
+      questions: ["Which tools fit a small team?", "Which alternative is best?", "How much does it cost?"],
+      buyerQuestions: [
+        { text: "which tools fit a small team?", intent: "category", provenance: "discovered", reason: "Find the category" },
+        { text: "Which alternative is best?", intent: "comparison" },
+        { text: "How much does it cost?", intent: "invented", reason: input.token },
+        { text: "Unrequested question?", intent: "branded" },
+      ],
+    },
+  }, input);
+  assert.deepEqual(result.buyerQuestions, [
+    { text: result.questions[0], intent: "category", provenance: "generated", reason: "Find the category" },
+    { text: result.questions[1], intent: "comparison", provenance: "generated" },
+    { text: result.questions[2], intent: "other", provenance: "generated", reason: "[redacted]" },
+  ]);
+  const legacy = normalizeOnboardingResearch(response(), input);
+  assert.deepEqual(legacy.buyerQuestions, [{ text: legacy.questions[0], intent: "other", provenance: "generated" }]);
+});

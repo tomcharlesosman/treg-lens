@@ -26,7 +26,7 @@ import {
   X,
 } from "lucide-react";
 import type { AnswerResult } from "@/lib/aeo";
-import type { Project } from "@/lib/workspace-data";
+import { normalizeDomain, type Project } from "@/lib/workspace-data";
 import type { AuditPersistence } from "./use-server-workspace";
 import "./dialog.css";
 
@@ -78,7 +78,7 @@ const engineOptions: {
     label: "ChatGPT",
     symbol: "✳",
     className: "chatgpt",
-    description: "OpenAI",
+    description: "Web interface",
   },
   {
     id: "perplexity",
@@ -92,14 +92,14 @@ const engineOptions: {
     label: "Gemini",
     symbol: "✦",
     className: "gemini",
-    description: "Google AI",
+    description: "Web interface",
   },
   {
     id: "google",
     label: "Google",
     symbol: "G",
     className: "google",
-    description: "AI Mode",
+    description: "AI Mode web search",
   },
 ];
 
@@ -296,6 +296,7 @@ export function AuditDialog({
         competitors: competitorsList,
         prompts,
         engines,
+        market: { country: "US", language: "en" },
       }),
     [brand, domain, competitorsList, prompts, engines],
   );
@@ -395,6 +396,8 @@ export function AuditDialog({
           competitors: competitorsList,
           prompts,
           engines,
+          market: { country: "US", language: "en" },
+          maxCostUsd: estimate.totalCostUsd,
           ...(apiToken.trim() ? { token: apiToken.trim() } : {}),
         }),
       });
@@ -518,6 +521,7 @@ export function AuditDialog({
             }}
           >
             <div className="lens-dialog-body">
+              <div className="lens-audit-scope" aria-label="Audit scope"><strong>United States / English</strong><span>{prompts.length} {prompts.length === 1 ? "question" : "questions"} × {engines.length} {engines.length === 1 ? "engine" : "engines"} = {prompts.length * engines.length} requested answers</span><p>Choose a small first check, then expand when it answers a useful question. This action does not enable monitoring.</p>{project.audience && brand.trim().toLowerCase() === project.brand.trim().toLowerCase() && normalizeDomain(domain) === normalizeDomain(project.domain) && <p><b>Saved buyer context:</b> {project.audience}</p>}</div>
               <fieldset className="lens-dialog-fieldset" disabled={running}>
                 <div className="lens-field-section-label">
                   <span>01</span> THE BRAND
@@ -680,7 +684,7 @@ export function AuditDialog({
                         onChange={(event) => setApiToken(event.target.value)}
                         placeholder={
                           serverConfigured
-                            ? "Using server credentials"
+                          ? "Using your signed-in key"
                             : "Enter your Treg API token"
                         }
                         autoComplete="off"
@@ -689,7 +693,7 @@ export function AuditDialog({
                     </label>
                     <p className="lens-field-help">
                       {serverConfigured
-                        ? "The server is connected. Add a token to use a different account."
+                        ? "Your signed-in key pays for this audit. Add a token to use a different account."
                         : "Your token is used for this audit and is never saved to disk."}{" "}
                       <a
                         href="https://treg.to/aeo"

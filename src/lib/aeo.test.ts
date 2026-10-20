@@ -205,6 +205,18 @@ test("a durable worker executes its reserved quote with stable per-call idempote
   assert.equal(answer.totalCostUsd, 0.006);
 });
 
+test("a fresh audit estimate above the caller's approval makes zero paid calls", async () => {
+  let paid = 0;
+  await assert.rejects(() => runAudit({ ...input, maxCostUsd: 0.005 }, async (url) => {
+    if (String(url).includes("/call/")) paid++;
+    return Response.json({ endpoint: { cost: { usd: 0.004 } } });
+  }), /estimate increased beyond your approval/);
+  assert.equal(paid, 0);
+  assert.equal(validateAuditInput({ ...input, maxCostUsd: 0.005 }).maxCostUsd, 0.005);
+  assert.throws(() => validateAuditInput({ ...input, maxCostUsd: -1 }), /ceiling/);
+  assert.throws(() => validateAuditInput({ ...input, market: { country: "GB", language: "en" } }), /United States/);
+});
+
 test("asynchronous audit submissions retain unknown billing instead of treating reservations as charges", async () => {
   const response = await runAudit({ ...input, engines: ["chatgpt"] }, async (url) => {
     if (String(url).includes("/catalog/")) return Response.json({ endpoint: { cost: { usd: 0.004 } } });

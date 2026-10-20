@@ -9,7 +9,7 @@ import {
   appendWorkspaceRun, getWorkspace, saveWorkspace, sanitizeWorkspaceSnapshot,
   WorkspaceConflictError, WorkspaceValidationError,
 } from "./workspace-repository";
-import type { SavedRun } from "./workspace-data";
+import type { Project, SavedRun } from "./workspace-data";
 
 const directory = mkdtempSync(join(tmpdir(), "treg-workspace-unit-"));
 const previous = process.env.TREG_DATA_DIR;
@@ -140,4 +140,33 @@ test("simultaneous audit appends preserve every distinct run and deduplicate rep
   const saved = await getWorkspace(owner("3"));
   assert.equal(saved.revision, 3);
   assert.deepEqual(saved.snapshot?.runs.map((item) => item.id).sort(), ["a", "b", "c"]);
+});
+
+test("onboarding evidence and unselected ideas remain durable through audit append and stale profile saves", async () => {
+  const project: Project = {
+    ...snapshot().project, audience: "Agent builders", market: { country: "US", language: "en" },
+    competitorDetails: [{ name: "Composio", domain: "composio.dev", sourceUrl: "https://composio.dev/" }],
+    buyerQuestions: [
+      { text: "Which toolkit?", intent: "category", provenance: "generated" },
+      { text: "How much do toolkits cost?", intent: "purchase", provenance: "generated" },
+    ],
+    researchReceipts: [{
+      kind: "research", url: "https://treg.to/", domain: "treg.to", brand: "Treg", description: "Agent tools",
+      competitors: [{ name: "Composio", domain: "composio.dev", sourceUrl: "https://composio.dev/" }],
+      questions: ["Which toolkit?", "How much do toolkits cost?"],
+      sources: [{ title: "Composio", url: "https://composio.dev/" }],
+      totalCostUsd: null, knownCostUsd: 0, costKnown: false, callIds: ["research-receipt"], errors: [],
+      completedAt: "2026-10-20T12:00:00Z",
+    }],
+  };
+  const initial = await saveWorkspace(owner("4"), { ...snapshot(), project }, 0);
+  const appended = await appendWorkspaceRun(owner("4"), run("with-evidence"));
+  assert.deepEqual(appended.snapshot?.project, project);
+  assert.deepEqual((await getWorkspace(owner("4"))).snapshot?.project, project);
+  await assert.rejects(saveWorkspace(owner("4"), initial.snapshot, initial.revision), WorkspaceConflictError);
+  const final = await getWorkspace(owner("4"));
+  assert.equal(final.snapshot?.project.buyerQuestions?.length, 2);
+  assert.deepEqual(final.snapshot?.prompts, ["Which toolkit?"]);
+  assert.equal(final.snapshot?.project.researchReceipts?.[0].totalCostUsd, null);
+  assert.equal(final.snapshot?.runs.length, 1);
 });

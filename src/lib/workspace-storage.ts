@@ -1,6 +1,7 @@
 import type { AnswerResult } from "./aeo";
 import type { SourceResearch } from "./source-research";
 import type { Project, SavedRun } from "./workspace-data";
+import { normalizeProjectMetadata, validateProjectMetadata } from "./workspace-profile";
 
 export type WorkspaceSnapshot = {
   project: Project;
@@ -135,13 +136,14 @@ export function parseWorkspaceSnapshot(
       !strings(saved.project.competitors) ||
       !optional(saved.project.description, (v) => typeof v === "string" && v.length <= 1200) ||
       !optional(saved.project.onboardingCompletedAt, date) ||
+      !validateProjectMetadata(saved.project) ||
       !strings(saved.prompts) ||
       !Array.isArray(saved.runs) ||
       !saved.runs.every(run)
     )
       return null;
     return {
-      project: saved.project as Project,
+      project: normalizeProjectMetadata(saved.project as Project, saved.prompts),
       prompts: saved.prompts,
       runs: saved.runs,
       done: strings(saved.done) ? saved.done : [],

@@ -1,19 +1,19 @@
 # Full feature verification — 20 October 2026
 
-The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This pass covers URL-led brand onboarding, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Separate real-Neon and public Vercel checks verified storage and hosted transport without paid Treg calls; the earlier dated live check below verified the paid Treg boundary.
+The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This local before-PR pass covers improved URL-led brand onboarding, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Earlier real-Neon, public Vercel and paid-provider checks are recorded separately below; they do not verify this unpushed working tree against live services.
 
 ## Results
 
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
-| HTTP API | 149 | 0 / 0 |
-| Chromium browser workflows | 100 | 0 / 0 |
-| Firefox browser workflows | 100 | 0 / 0 |
-| WebKit browser workflows | 100 | 0 / 0 |
-| Library, setup and operations tests | 137 | 0 / 0 |
-| **Total** | **586** | **0 / 0** |
+| HTTP API | 161 | 0 / 0 |
+| Chromium browser workflows | 111 | 0 / 0 |
+| Firefox browser workflows | 111 | 0 / 0 |
+| WebKit browser workflows | 111 | 0 / 0 |
+| Library, setup and operations tests | 153 | 0 / 0 |
+| **Total** | **647** | **0 / 0** |
 
-The complete 449-case production API/browser run passed with zero retries or skips: 149 HTTP tests plus 100 browser scenarios in each of Chromium, Firefox and WebKit. The 137 library/setup/operations tests also passed. Lint, TypeScript, 183 local documentation links and the production build passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
+The complete 494-case production API/browser run passed in 4.9 minutes with zero failures, retries or skips: 161 HTTP tests plus 111 browser scenarios in each of Chromium, Firefox and WebKit. The 153 library/setup/operations tests also passed. Lint, fresh route type generation, TypeScript, 184 local documentation links and the production build passed. The production app was built first, then `npx playwright test` ran all four projects against the isolated test server; `npm run check` passed again after the final UI changes. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
 
 New coverage includes server durability after clearing the browser cache, scoped legacy migration, failed-save recovery, revision conflicts, complete backup restoration, confirmed audit deletion, idempotent monitoring recovery merges, and an exact-8 MiB backup round trip with answer hashes checked. Worker HTTP tests make isolated schedules due and execute the actual auth, pricing, provider adapters, ledger and workspace routes. They cover success, UTC cadence, revocation, per-run/monthly budgets, partial failures, missing charges, pending reservations, and retained paid results when the workspace is full.
 
@@ -21,7 +21,21 @@ Library/operations regressions exercise cross-process SQLite reads, atomic rollb
 
 Hosted transport coverage exercises owner-bound uploads above the 3 MiB direct-save threshold, 1 MiB chunk limits, UTF-8 character boundaries, exact 8 MiB round trips, checksum/schema failures, immutable chunk replay, concurrent revision conflicts, expiry/abort, encrypted staging, bounded retention, and replay of the original committed snapshot after later edits. Client tests cover lost commit acknowledgments without duplicate writes; streamed JSON tests round-trip Unicode above the platform response limit. Hosted cron tests reject absent/incorrect bearer values and spoofed Vercel headers. The local POST runner and hosted GET dispatcher share the tested monitor domain logic. Remote-mode operations tests confirm local backup and pause commands refuse without touching an unrelated SQLite database or exposing credentials.
 
-## URL-led brand onboarding — 20 October 2026
+## Before-PR onboarding improvements — 20 October 2026
+
+This pass targets the original standalone repository at `/Users/ozzy/Projects/treg-lens`, on top of `56aa1cb`. It is local working-tree verification: no PR, push or deployment was made. The separate native Treg integration and OpenSEO reference fork were not changed. No runtime dependency was added.
+
+The reviewed profile now includes buyer context, explicit US/English measurement coverage, editable competitor websites, evidence-linked suggestions, and buyer-question intent and provenance. Three questions form a small starter selection; owners can revise it and retain reviewed unselected ideas. Original research input, sources and charges are saved separately from profile edits and can be reopened from the workspace. A name-only correction keeps a competitor's website while invalidating its old research rationale and supporting link.
+
+Research and audit have separate approvals. Changing website or buyer context invalidates the research quote. If browser storage cannot retain the interruption marker, paid research is refused before submission; manual setup remains available. The audit server also refuses a refreshed catalog estimate above the amount approved in the dialog before making a paid call. Saving a profile enables neither an audit nor recurring monitoring.
+
+First-audit findings use saved answers and citations, with exact evidence links and a few suggested investigations. Missing answers are disclosed before findings and are not counted as brand absence. Unknown charges remain visible. No new research is purchased to produce these findings, and they make no causal ranking or traffic claims.
+
+New production browser regressions cover competitor correction through back/reload/server save, buyer context and intent/provenance persistence, original receipt input after later profile edits, free manual setup, stale approvals, safe citations, partial/unverified research, blocked storage, saved receipt access, and partial first-result inspection at phone width. New HTTP/library cases cover context bounds, unsupported markets, approved estimate ceilings with zero provider submissions, metadata validation, bounded receipts, backward-compatible workspace snapshots, and finding denominators/deduplication. The first targeted run exposed ambiguous accessible names on two controls and an outdated URL-error assertion; those were corrected and the affected cases rerun.
+
+All new upstream responses are synthetic fixtures. This pass makes **zero paid live Treg calls** and does not establish current provider suggestion quality or hosted behavior. Desktop website/profile/question screens and phone findings were inspected visually. The hosted checks later in this document retain their original scope and do not apply to this unpushed working tree.
+
+## URL-led brand onboarding baseline — 20 October 2026
 
 New users sign in through the actual session route, enter a website, approve a research estimate, review editable brand/competitor suggestions, choose buyer questions, and save before reviewing a first audit. Eighteen onboarding scenarios run in each browser, including manual setup without research, existing-workspace compatibility, cross-browser persistence, key-scoped drafts, changing websites, keyboard/mobile use, interrupted requests, partial/unknown billing, save failures, revision conflicts, and lost save acknowledgments. Separate HTTP tests verify authentication, origin checks, public URLs/DNS, refreshed price ceilings, structured provider contracts, response bounds and duplicate-submission guards.
 
