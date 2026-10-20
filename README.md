@@ -4,7 +4,7 @@
 
 [![Tests](https://github.com/tomcharlesosman/treg-lens/actions/workflows/test.yml/badge.svg)](https://github.com/tomcharlesosman/treg-lens/actions/workflows/test.yml)
 
-A live, self-hosted AI visibility product powered by the [Treg AEO toolkit](https://treg.to/aeo). Connect your Treg key, discover buyer questions, collect answers, compare competitors, research citations, and track changes with budgeted daily or weekly audits. Private workspaces are saved on your server.
+A live, self-hosted AI visibility product powered by the [Treg AEO toolkit](https://treg.to/aeo). Connect your Treg key and enter your website to get a suggested brand profile, competitors, and buyer questions. Review your choices, collect answers, research citations, and track changes with budgeted daily or weekly audits. Private workspaces are saved on your server.
 
 [**Open Treg Lens**](https://treg-lens-tom-osmans-projects.vercel.app) · [Fork the repository](https://github.com/tomcharlesosman/treg-lens/fork) · [Agent quickstart](docs/AGENT-QUICKSTART.md) · [Documentation](#documentation) · [MIT license](LICENSE)
 

@@ -313,6 +313,54 @@ One task is issued per unique prompt/engine pair, with at most 12 worker calls i
 
 `position` uses an explicit numbered recommendation rank when recognized, otherwise first-mention order among recognized brands. Brand detection is heuristic; it is not a sentiment or factuality judgment. Unsafe citation schemes and credentials are discarded, fragments and common tracking parameters removed, and citations deduplicated. See [analytics](./ARCHITECTURE.md#analytics-and-evidence).
 
+## Brand onboarding research
+
+### POST `/api/aeo/onboard`
+
+```json
+{
+  "url": "example.com",
+  "estimateOnly": true
+}
+```
+
+`url` accepts a public HTTP(S) URL or bare domain; credentials, unsafe/private hosts and nonstandard ports are refused using the source-research URL rules. Query parameters and fragments are removed; a public path is preserved. `estimateOnly` must be boolean when supplied. An estimate requires no key, public DNS lookup, or paid request and returns:
+
+```ts
+type OnboardingEstimate = {
+  kind: "estimate";
+  currency: "USD";
+  totalCostUsd: number;
+  note: string;
+  pricedAt: string;
+};
+```
+
+To research, send `{ "url": "example.com", "maxCostUsd": 0.005 }` with a verified session or explicit `token`. Use the amount returned by the current estimate, not this example. The positive maximum cannot exceed **$0.05**. The route checks public DNS and refreshes the catalog; a quote above the accepted maximum returns `409` before paid work. Only fixed per-call USD pricing for the allowlisted native `exa.web.answer` endpoint is accepted. One request uses Exa's structured `outputSchema`, with streaming and provider waterfall disabled, a per-call Treg ceiling, and a 90-second timeout. The route duration is 120 seconds.
+
+```ts
+type OnboardingResearch = {
+  kind: "research";
+  url: string;
+  domain: string;
+  brand: string;
+  description: string;
+  competitors: Array<{ name: string; domain?: string; reason?: string }>;
+  questions: string[];
+  sources: Array<{ title: string; url: string }>;
+  totalCostUsd: number | null;
+  knownCostUsd: number;
+  costKnown: boolean;
+  errors: Array<{ step: "research"; error: string }>;
+  callIds: string[];
+  completedAt: string;
+};
+```
+
+At most five competitors, eight questions, and twelve safe source links are returned. Questions are AI-generated suggestions for review, not observed queries or measured demand. Malformed or incomplete provider fields stay empty and produce inspectable errors; missing fields are never filled with example brands. Responses are bounded to 512 KiB, text fields are capped, and unsafe links/embedded HTML are filtered.
+
+After a paid submission, upstream errors return a `200` research receipt with errors and known or unknown costs. HTTP `202` is unsettled work; its reservation is not a settled charge and `totalCostUsd` remains `null`. The route does not poll, retry, save a project, start an audit, or enable monitoring. Check Treg activity before deliberately repeating ambiguous work. The client reviews suggestions and saves the chosen profile/questions through the ordinary revision-checked workspace API. An onboarding description (up to 1,200 characters) and a valid `onboardingCompletedAt` timestamp are optional project fields.
+
 ## Prompt discovery
 
 ### POST `/api/aeo/discover`
@@ -475,7 +523,7 @@ Application errors use `{ "error": "human-readable message" }` and `Cache-Contro
 | `400` | Invalid fields/JSON, unsafe or unresolved source URL, team selection problem, or a workflow safety limit |
 | `401` | Missing caller credential or invalid/revoked explicit key |
 | `403` | Rejected `Origin` header |
-| `409` | Stale workspace revision or an attempt to edit a running monitoring schedule |
+| `409` | Stale workspace revision, onboarding price above the accepted estimate, or an attempt to edit a running monitoring schedule |
 | `405` | Unsupported HTTP method; framework response |
 | `413` | Request body exceeds its route limit: 16 KiB normally, 8 MiB plus 4 KiB envelope for workspace PUT, 4 KiB upload manifests, or 1 MiB chunks |
 | `415` | Request is not JSON |
@@ -492,6 +540,7 @@ Partial provider errors usually return `200` with an `errors` array, including u
 | Paid audit | Nominally 3 active audits; 10-second cooldown per forwarded address |
 | Paid discovery | Nominally 3 active discoveries; 10-second cooldown per forwarded address |
 | Paid source | Nominally 3 active source lookups; 5-second cooldown per forwarded address |
+| Paid onboarding | Nominally 3 active website researches; 10-second cooldown per forwarded address |
 | Monitor tick | Durable global database lease; one due job per tick, per-workspace monitoring budgets |
 | Workspace | Atomic revision compare-and-swap, 8 MiB snapshot bound and 4 KiB envelope allowance |
 | Estimates, session GET/DELETE, status | No application rate guard |

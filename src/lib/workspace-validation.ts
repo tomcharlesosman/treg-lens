@@ -49,7 +49,11 @@ export function sanitizeWorkspaceSnapshot(value: unknown): WorkspaceSnapshot {
   if (ids.some((id) => !id.trim() || id.length > 200) || new Set(ids).size !== ids.length)
     throw new WorkspaceValidationError("Audit run IDs must be nonempty and unique.");
   return {
-    project: { brand: snapshot.project.brand, domain: snapshot.project.domain, competitors: [...snapshot.project.competitors] },
+    project: {
+      brand: snapshot.project.brand, domain: snapshot.project.domain, competitors: [...snapshot.project.competitors],
+      ...(snapshot.project.description !== undefined ? { description: snapshot.project.description } : {}),
+      ...(snapshot.project.onboardingCompletedAt !== undefined ? { onboardingCompletedAt: snapshot.project.onboardingCompletedAt } : {}),
+    },
     prompts: [...snapshot.prompts], runs: snapshot.runs.map(cleanRun), done: [...snapshot.done],
     sourceResearch: Object.fromEntries(Object.entries(snapshot.sourceResearch).map(([key, source]) => [key, {
       kind: source.kind, url: source.url, domain: source.domain, brand: source.brand,

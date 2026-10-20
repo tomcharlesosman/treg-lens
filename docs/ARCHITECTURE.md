@@ -32,6 +32,7 @@ Only the server sends credentials upstream. The database stores workspace snapsh
 | [`src/components/workspace.tsx`](../src/components/workspace.tsx) | Live workspace, recovery, navigation, metrics, imports and exports |
 | [`src/lib/aeo.ts`](../src/lib/aeo.ts) | Audit input limits, live pricing, engine requests, normalization and billing |
 | [`src/lib/discovery.ts`](../src/lib/discovery.ts) | Bounded keyword ideas and actual People Also Ask questions |
+| [`src/lib/onboarding.ts`](../src/lib/onboarding.ts), [`brand-onboarding.tsx`](../src/components/brand-onboarding.tsx) | URL-led brand research, editable suggestions, and recoverable first-run setup |
 | [`src/lib/source-research.ts`](../src/lib/source-research.ts) | Public-URL/DNS checks, Moz metrics and Exa page evidence |
 | [`src/lib/treg-session.ts`](../src/lib/treg-session.ts), [`treg-auth.ts`](../src/lib/treg-auth.ts) | Encrypted sessions, key validation and credential ownership |
 | [`src/lib/database.ts`](../src/lib/database.ts) | Private data path, built-in SQLite connection, WAL and database setup |
@@ -52,6 +53,12 @@ Workspace identity is an opaque HMAC of the key and stable `SESSION_SECRET`. Cli
 An operator `TREG_TOKEN` is never a fallback for a public paid route. Keys are excluded from snapshots, JSON/CSV reports, browser storage, logs, and public schedule responses. Enabling monitoring is the explicit exception to stateless credential retention: its encrypted key stays on the server until monitoring is paused or removed.
 
 ## Durable workspace and concurrency
+
+New live workspaces start with an empty brand and no example questions. Guided setup collects a public website, offers a free catalog estimate, then submits one explicitly approved `exa.web.answer` request through Treg. Its structured output provides a suggested brand description, competitors, and generated buyer questions with cited sources. These suggestions are not search-volume or People Also Ask observations; the separate discovery flow provides those. Returned text and links are untrusted, bounded, and sanitized.
+
+Research never starts automatically. The route revalidates the caller, checks public DNS, refreshes fixed pricing, and refuses a price above the visitor's accepted maximum (hard limit $0.05). There is no direct page fetch, provider waterfall, automatic retry, or automatic audit. Manual setup needs no paid call. The UI keeps editable setup drafts and the research receipt in a per-workspace browser key; an interrupted in-flight marker warns before another paid request. Confirming setup writes brand, optional description, competitor names, selected questions, and `onboardingCompletedAt` through ordinary workspace revision checks. Audit review opens only after the save is acknowledged.
+
+Established workspaces with saved audits or customized profiles/questions bypass first-run setup. Untouched old Treg example workspaces are guided into setup. Optional profile fields preserve compatibility with older backups. Save failures keep the review open; stale revisions require explicit conflict recovery. No database migration or additional dependency is needed.
 
 Local forks default to `data/treg-lens.sqlite`, or `treg-lens.sqlite` inside `TREG_DATA_DIR`. Node provides built-in SQLite; no external service is needed. The directory has mode 0700 and files 0600 where supported; configure equivalent Windows ACLs. SQLite uses WAL, foreign keys, a five-second busy timeout, and serialized sessions on one persistent host.
 

@@ -84,7 +84,7 @@ test("empty authenticated workspace, settings validation, persistence, and memor
   expect(await browserData(page)).not.toContain(primaryKey);
   expect(await browserData(page)).not.toContain(secondaryKey);
   const stored = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), storageKey);
-  expect(stored.project).toEqual({ brand: "Treg Research", domain: "research.treg.to", competitors: ["Composio", "Firecrawl"] });
+  expect(stored.project).toMatchObject({ brand: "Treg Research", domain: "research.treg.to", competitors: ["Composio", "Firecrawl"] });
   await page.getByRole("button", { name: "Settings", exact: true }).click();
   await expect(settings.getByLabel(/API token/)).toHaveValue(secondaryKey);
   await settings.getByRole("button", { name: "Close settings" }).click();
@@ -389,7 +389,7 @@ test("saved answers render complete safe markdown and all CSV, JSON, and single-
 });
 
 test("workspace data is isolated per signed-in key and restored when returning to the original key", async ({ page }) => {
-  const switchThroughLogin = async (token: string) => {
+  const switchThroughLogin = async (token: string, isNew = false) => {
     await page.getByRole("link", { name: "Treg Lens home" }).click();
     await page.getByRole("link", { name: "Log in", exact: true }).first().click();
     await expect(page).toHaveURL(/\/login$/);
@@ -399,8 +399,12 @@ test("workspace data is isolated per signed-in key and restored when returning t
     await form.getByLabel("Treg API key", { exact: true }).fill(contextKey(page.context(), token));
     await form.getByRole("button", { name: "Open my workspace" }).click();
     await expect(page).toHaveURL(/\/app$/);
-    await nav(page, "Overview");
-    await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+    if (isNew) {
+      await expect(page.getByLabel("Website URL", { exact: true })).toHaveValue("");
+    } else {
+      await nav(page, "Overview");
+      await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+    }
     const session = await (await page.request.get("/api/auth/session")).json();
     return `${storagePrefix}${session.workspaceId}`;
   };
@@ -408,11 +412,10 @@ test("workspace data is isolated per signed-in key and restored when returning t
   await nav(page, "Opportunities");
   await page.getByRole("button", { name: "Mark done", exact: true }).click();
   await waitForServerSave(page);
-  const secondKey = await switchThroughLogin(secondaryKey);
+  const secondKey = await switchThroughLogin(secondaryKey, true);
   expect(secondKey).not.toBe(originalKey);
-  await expect(page.getByRole("heading", { name: "Your baseline starts here" })).toBeVisible();
-  await nav(page, "Audit history");
-  await expect(page.getByText("0 RUNS", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Put your brand in focus." })).toBeVisible();
+  expect((await (await page.request.get("/api/workspace")).json()).snapshot).toBeNull();
   await switchThroughLogin(primaryKey);
   await nav(page, "Audit history");
   await expect(page.getByText("2 RUNS", { exact: true })).toBeVisible();
@@ -421,7 +424,7 @@ test("workspace data is isolated per signed-in key and restored when returning t
   const storage = await browserData(page);
   expect(storage).not.toContain(primaryKey);
   expect(storage).not.toContain(secondaryKey);
-  expect(await page.evaluate((prefix) => Object.keys(localStorage).filter((key) => key.startsWith(prefix)).length, storagePrefix)).toBe(2);
+  expect(await page.evaluate((prefix) => Object.keys(localStorage).filter((key) => key.startsWith(prefix) && !key.endsWith(":onboarding:v1")).length, storagePrefix)).toBe(2);
 });
 
 test("corrupt local data recovers to an empty workspace and legacy unscoped data is never imported", async ({ page }) => {

@@ -40,11 +40,11 @@ function Pixel() {
 const questions = [
   {
     q: "How do I get started?",
-    a: "Paste an org-scoped Treg API key above. Lens verifies it with Treg without running a paid audit, then opens your workspace. A separate sample preview is available before connecting.",
+    a: "Paste a team-scoped Treg API key, then enter your website. Lens shows the cost before researching your brand and suggesting competitors and buyer questions. Review and edit the suggestions, or set up manually for free. Returning users go straight to their saved workspace.",
   },
   {
     q: "Is Treg Lens free?",
-    a: "The software is free and MIT licensed. Live research uses your Treg credits and may also incur your own hosting costs. Lens shows a current estimate before you start a paid audit, prompt discovery, or source lookup.",
+    a: "The software is free and MIT licensed. Live research uses your Treg credits and may also incur your own hosting costs. Lens shows a current estimate before brand research, audits, prompt discovery, or source lookups. Manual brand setup is free.",
   },
   {
     q: "Which answer engines can I track?",

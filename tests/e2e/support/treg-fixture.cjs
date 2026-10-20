@@ -32,6 +32,7 @@ const prices = {
   "treg.web.url.metrics": 0.003,
   "moz.web.url.metrics": 0.003,
   "exa.web.contents.get": 0.001,
+  "exa.web.answer": 0.005,
 };
 const callPaths = new Set([
   "cloro.ai-search.chatgpt.scrape",
@@ -42,6 +43,7 @@ const callPaths = new Set([
   "cloro.google.serp.organic",
   "treg.web.url.metrics",
   "exa.web.contents.get",
+  "exa.web.answer",
 ]);
 let callCount = 0;
 function response(body, status = 200, headers = {}) {
@@ -101,7 +103,7 @@ globalThis.fetch = async function fixtureFetch(input, init) {
       : catalogId === "treg.web.url.metrics"
         ? ["moz.web.url.metrics", "dataforseo.web.url.metrics"]
         : undefined;
-    return response({ endpoint: { id: catalogId, cost: { usd: prices[catalogId] }, ...(routed ? { routed_children: routed } : {}) } });
+    return response({ endpoint: { id: catalogId, cost: { usd: prices[catalogId], ...(catalogId === "exa.web.answer" ? { type: "per_call", currency: "USD", unit: "call" } : {}) }, ...(routed ? { routed_children: routed } : {}) } });
   }
   const id = url.pathname.match(/^\/call\/([^/]+)$/)?.[1];
   if (!id || !callPaths.has(id) || method !== "POST")
@@ -118,6 +120,43 @@ globalThis.fetch = async function fixtureFetch(input, init) {
   const failure = /\[failure\]|\/failure/.test(marker);
   const billing = /\[billing\]|\/billing/.test(marker);
   const partial = /\[partial\]|\/partial/.test(marker);
+  if (id === "exa.web.answer") {
+    if (body.text !== false || body.stream !== false || body.outputSchema?.type !== "object" || !marker.startsWith("Research the business at this exact website: "))
+      throw new Error("E2E fixture refused an incorrect structured onboarding research contract");
+    if (billing) return billed(errorBody("insufficient_balance"), 0, 402);
+    if (failure) return billed(errorBody(), 0, 503);
+    if (marker.includes("/pending")) return billed({ status: "pending" }, 1000, 202);
+    if (marker.includes("/malformed")) return billed({ answer: "This is not a structured business profile." }, 5000);
+    const profile = {
+      brand: "Acme Analytics",
+      description: "Acme Analytics helps product teams understand customer behavior and improve retention.",
+      competitors: [
+        { name: "Northstar", domain: "northstar.example.com", reason: "Product analytics and retention reporting for SaaS teams." },
+        { name: "SignalDesk", domain: "signaldesk.example.com", reason: "Customer behavior analytics for growing product teams." },
+        { name: "MetricFlow", domain: "metricflow.example.com", reason: "Analytics dashboards and user journey insights." },
+      ],
+      questions: [
+        "Which product analytics tools are best for a growing SaaS team?",
+        "How does Acme Analytics compare with Northstar?",
+        "What should a small product team look for in analytics software?",
+        "Which tools help identify why customers stop using a product?",
+        "How can I measure product retention without a data team?",
+        "Which product analytics software is easiest to implement?",
+      ],
+    };
+    if (marker.includes("/unsafe")) {
+      profile.competitors.push({ name: "Northstar", domain: "javascript:alert(1)", reason: "Duplicate suggestion." });
+      profile.questions.push(profile.questions[0]);
+    }
+    return billed({
+      answer: profile,
+      citations: [
+        { url: "https://example.com/onboarding", title: "Acme Analytics" },
+        { url: "https://example.com/analytics-comparison", title: "Product analytics comparison" },
+        ...(marker.includes("/unsafe") ? [{ url: "javascript:alert(1)", title: "Unsafe source" }, { url: "https://example.com/onboarding", title: "Duplicate" }] : []),
+      ],
+    }, 5000, 200, unknown);
+  }
   if (billing) return billed(errorBody("insufficient_balance"), 0, 402);
   if (failure || (partial && (id.includes("gemini") || id === "treg.web.url.metrics" || id === "treg.google.keywords.ideas")))
     return billed(errorBody(), 0, 503);

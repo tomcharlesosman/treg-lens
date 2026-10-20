@@ -87,7 +87,7 @@ export default function Login() {
             brand into <span className="ll-mark">focus</span>.
           </h2>
           <p>
-            Paste your Treg API key to open your workspace. No extra account
+            Paste your Treg API key, then add your website. No extra account
             or password to remember.
           </p>
           <div className="ll-keybox signin-keybox">

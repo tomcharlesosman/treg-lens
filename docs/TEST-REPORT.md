@@ -1,25 +1,33 @@
 # Full feature verification — 20 October 2026
 
-The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This pass covers the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Separate real-Neon and public Vercel checks verified storage and hosted transport without paid Treg calls; the earlier dated live check below verified the paid Treg boundary.
+The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This pass covers URL-led brand onboarding, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Separate real-Neon and public Vercel checks verified storage and hosted transport without paid Treg calls; the earlier dated live check below verified the paid Treg boundary.
 
 ## Results
 
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
-| HTTP API | 119 | 0 / 0 |
-| Chromium browser workflows | 78 | 0 / 0 |
-| Firefox browser workflows | 78 | 0 / 0 |
-| WebKit browser workflows | 78 | 0 / 0 |
-| Library, setup and operations tests | 121 | 0 / 0 |
-| **Total** | **474** | **0 / 0** |
+| HTTP API | 149 | 0 / 0 |
+| Chromium browser workflows | 100 | 0 / 0 |
+| Firefox browser workflows | 100 | 0 / 0 |
+| WebKit browser workflows | 100 | 0 / 0 |
+| Library, setup and operations tests | 137 | 0 / 0 |
+| **Total** | **586** | **0 / 0** |
 
-The complete 353-case production API/browser run passed with zero retries or skips: 119 HTTP tests plus 78 browser scenarios in each of Chromium, Firefox and WebKit. The 121 library/setup/operations tests also passed. Lint, TypeScript and the production build passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
+The complete 449-case production API/browser run passed with zero retries or skips: 149 HTTP tests plus 100 browser scenarios in each of Chromium, Firefox and WebKit. The 137 library/setup/operations tests also passed. Lint, TypeScript, 183 local documentation links and the production build passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
 
 New coverage includes server durability after clearing the browser cache, scoped legacy migration, failed-save recovery, revision conflicts, complete backup restoration, confirmed audit deletion, idempotent monitoring recovery merges, and an exact-8 MiB backup round trip with answer hashes checked. Worker HTTP tests make isolated schedules due and execute the actual auth, pricing, provider adapters, ledger and workspace routes. They cover success, UTC cadence, revocation, per-run/monthly budgets, partial failures, missing charges, pending reservations, and retained paid results when the workspace is full.
 
 Library/operations regressions exercise cross-process SQLite reads, atomic rollback, encrypted credential ownership, concurrent runner leases, crashes before and after journaling, exact quote execution, UTC slot alignment, online WAL-consistent backups, and the real worker CLI against an isolated HTTP server. Existing coverage also includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and backup exports when browser storage rejects writes.
 
 Hosted transport coverage exercises owner-bound uploads above the 3 MiB direct-save threshold, 1 MiB chunk limits, UTF-8 character boundaries, exact 8 MiB round trips, checksum/schema failures, immutable chunk replay, concurrent revision conflicts, expiry/abort, encrypted staging, bounded retention, and replay of the original committed snapshot after later edits. Client tests cover lost commit acknowledgments without duplicate writes; streamed JSON tests round-trip Unicode above the platform response limit. Hosted cron tests reject absent/incorrect bearer values and spoofed Vercel headers. The local POST runner and hosted GET dispatcher share the tested monitor domain logic. Remote-mode operations tests confirm local backup and pause commands refuse without touching an unrelated SQLite database or exposing credentials.
+
+## URL-led brand onboarding — 20 October 2026
+
+New users sign in through the actual session route, enter a website, approve a research estimate, review editable brand/competitor suggestions, choose buyer questions, and save before reviewing a first audit. Eighteen onboarding scenarios run in each browser, including manual setup without research, existing-workspace compatibility, cross-browser persistence, key-scoped drafts, changing websites, keyboard/mobile use, interrupted requests, partial/unknown billing, save failures, revision conflicts, and lost save acknowledgments. Separate HTTP tests verify authentication, origin checks, public URLs/DNS, refreshed price ceilings, structured provider contracts, response bounds and duplicate-submission guards.
+
+The review stays open until the server acknowledges the saved profile. A failed save never puts a completion marker into the active browser cache; reloading keeps the recoverable draft. If the server committed but its acknowledgment was lost, a reload adopts that saved profile without another write or paid request. Desktop and 390-pixel screenshots were also inspected.
+
+The anonymous live Treg catalog verified the native `exa.web.answer` contract and fixed price. Onboarding's paid provider responses were tested with fixtures; this verification made **zero paid live onboarding calls**. No dependency or hosting configuration changed.
 
 ## Real Neon storage smoke — 20 October 2026
 
@@ -39,7 +47,7 @@ Committed revision `f7e32f03295b2286f1f17aa332ce34a5571c0e2d` was cloned into a 
 | `npm run check` | Passed; 121 tests and 176 local documentation links | 10.84 s |
 | `npm run build` | Passed; production routes generated | 6.24 s |
 
-The generated secret had 64 characters and mode 0600, and was absent from the captured command logs. The clone remained clean. Install/check/build created no application data directory and made no paid calls or deployment. The install reported the already documented development-linter advisory; no forced dependency changes were applied. This repeat installation check is separate from the primary 474-test count.
+The generated secret had 64 characters and mode 0600, and was absent from the captured command logs. The clone remained clean. Install/check/build created no application data directory and made no paid calls or deployment. The install reported the already documented development-linter advisory; no forced dependency changes were applied. This earlier repeat installation check is separate from the current suite count.
 
 ## Public Vercel smoke — 20 October 2026
 

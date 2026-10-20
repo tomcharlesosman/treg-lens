@@ -48,7 +48,7 @@ export async function signIn(page: Page, token = PRIMARY_TOKEN) {
   await page.getByLabel("Treg API key", { exact: true }).fill(token);
   await page.getByRole("button", { name: "Open my workspace" }).click();
   await expect(page).toHaveURL(/\/app$/);
-  await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+  await expect(page.getByLabel("Website URL", { exact: true })).toBeVisible();
 }
 
 export async function expectNoHorizontalOverflow(page: Page) {

@@ -63,14 +63,18 @@ Then open `http://localhost:3001`. Remove that PowerShell environment override l
 ## Connect a key and run a first audit
 
 1. Get a **team-scoped API key** from [Treg](https://treg.to/app) and paste it at `/login`. You do not need an operator `TREG_TOKEN` or a separate Lens account. Key validation is free; a valid zero-balance key can sign in.
-2. Open project settings. Set your brand, domain, and competitor names before interpreting metrics. Matching depends on the names you configure.
-3. Add a buyer question, or use **Discover prompts** with 2–3 seed phrases. Review the discovery estimate before starting it, then select the returned questions or keywords you want to track.
+2. New workspaces open guided brand setup. Enter your public **Website URL**, then get a free research estimate. Review the maximum cost before choosing **Research my brand**. Lens makes one Treg research call to suggest your brand name, business description, competitors, and buyer questions, with source links. You can instead choose **Set up manually** without spending credits.
+3. Confirm or edit your brand profile and competitors, then select and edit up to eight buyer questions. These initial questions are AI-generated suggestions, not measured search demand or People Also Ask results. **Save and review first audit** saves your choices before opening the audit dialog; **Save and open workspace** saves without opening an audit. Returning users go straight to their saved workspace. Later, **Discover prompts** uses 2–3 seed phrases to find keyword ideas and actual People Also Ask questions, with its own estimate.
 4. Open **Run audit**, choose prompts and engines, and review the current estimate. Start with one prompt and one engine to inspect the workflow. Up to 8 prompts and 4 engines are supported.
 5. Inspect the answer and its cited URLs. A cited-page research request has its own estimate and paid action for Moz metrics and Exa extraction.
 6. Review opportunities, copy an explicitly labeled writing-brief template, and export a report. Publishing and outreach remain actions you perform yourself.
 7. Return from another browser with the same key to the same instance and verify your saved project. Use JSON import/export for reviewed backups. Enable budgeted monitoring only when you want future paid audits.
 
 Live discovery, audits, and source research use your Treg team's billing. Estimates are quotes, not final charges or balance reservations. Missing billing headers mean unknown cost. A partial failure preserves successful evidence; an ambiguous timeout can still have upstream activity. Check Treg activity before deliberately retrying.
+
+Brand research also uses your own key and billing. Its execution refreshes the quote and refuses a price above the maximum you accepted. Suggestions are editable and can be incomplete or wrong; review them against the linked sources. Brand research does not run an audit or enable monitoring. Your URL's query string and fragment are removed before research; use a public website, without login credentials.
+
+Setup drafts and the research receipt stay in this browser, scoped to the signed-in workspace, so a reload can resume review. No API key is stored with them. A reload during research warns that the request may have been charged and does not automatically repeat it. Check Treg activity before another research request, or continue manually. A save failure retains the draft; resolve connection or version conflicts before continuing. Confirmed brand details and questions are saved on the server, and appear on another browser using the same key. The raw setup draft and research receipt are local recovery data, not a server backup.
 
 Perplexity uses the Sonar model API; the other engines use web-interface answers. Audits use United States / English parameters. Repeat the same inputs when comparing runs, and treat scores as prioritization heuristics rather than promises of visibility.
 

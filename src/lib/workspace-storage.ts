@@ -133,6 +133,8 @@ export function parseWorkspaceSnapshot(
       !text(saved.project.brand) ||
       !text(saved.project.domain) ||
       !strings(saved.project.competitors) ||
+      !optional(saved.project.description, (v) => typeof v === "string" && v.length <= 1200) ||
+      !optional(saved.project.onboardingCompletedAt, date) ||
       !strings(saved.prompts) ||
       !Array.isArray(saved.runs) ||
       !saved.runs.every(run)

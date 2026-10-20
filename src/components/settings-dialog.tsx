@@ -32,6 +32,7 @@ export function SettingsDialog({
   const id = useId();
   const [brand, setBrand] = useState(project.brand);
   const [domain, setDomain] = useState(project.domain);
+  const [description, setDescription] = useState(project.description ?? "");
   const [competitors, setCompetitors] = useState(
     project.competitors.join(", "),
   );
@@ -49,6 +50,7 @@ export function SettingsDialog({
     if (open && !wasOpen.current) {
       setBrand(project.brand);
       setDomain(project.domain);
+      setDescription(project.description ?? "");
       setCompetitors(project.competitors.join(", "));
       setApiToken(token);
     }
@@ -106,6 +108,7 @@ export function SettingsDialog({
                 brand: brand.trim(),
                 domain: domain.trim(),
                 competitors: competitorList,
+                ...(project.description !== undefined || description.trim() ? { description: description.trim() } : {}),
               },
               apiToken.trim(),
             );
@@ -145,6 +148,17 @@ export function SettingsDialog({
               </div>
             </label>
           </div>
+          <label className="lens-dialog-field" htmlFor={`${id}-description-field`}>
+            Business description
+            <textarea
+              id={`${id}-description-field`}
+              value={description}
+              onChange={(event) => setDescription(event.target.value)}
+              maxLength={1200}
+              rows={3}
+              placeholder="What you offer and who you help."
+            />
+          </label>
           <label className="lens-dialog-field" htmlFor={`${id}-competitors`}>
             Competitors
             <textarea

@@ -1,5 +1,11 @@
 import type { AnswerResult, Engine } from "./aeo";
-export type Project = { brand: string; domain: string; competitors: string[] };
+export type Project = {
+  brand: string;
+  domain: string;
+  competitors: string[];
+  description?: string;
+  onboardingCompletedAt?: string;
+};
 export type SavedRun = {
   id: string;
   brand: string;

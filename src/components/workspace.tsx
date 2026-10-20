@@ -56,9 +56,11 @@ import WorkspaceBackup, { downloadWorkspaceBackup } from "./workspace-backup";
 import MonitorSettings from "./monitor-settings";
 import "./workspace-live.css";
 import SettingsDialog from "./settings-dialog";
+import BrandOnboarding from "./brand-onboarding";
+import { isExampleProfile, needsBrandOnboarding, updateProjectProfile } from "@/lib/workspace-onboarding";
+import type { WorkspaceSnapshot } from "@/lib/workspace-storage";
 import type { AnswerResult } from "@/lib/aeo";
 import {
-  DEFAULT_PROJECT,
   ENGINES,
   brandStats,
   createDemoRuns,
@@ -538,6 +540,7 @@ export default function Workspace({
     undefined,
   );
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [finishingOnboarding, setFinishingOnboarding] = useState(false);
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
   const [researchSource, setResearchSource] = useState<{
     url: string;
@@ -691,11 +694,26 @@ export default function Workspace({
     setToast(run.results.length ? `Audit complete. ${run.results.length} real AI answers added.` : "Audit recorded. All engines returned errors.");
   };
   const saveProject = (next: Project, nextToken: string) => {
-    setProject(next);
+    setProject((previous) => updateProjectProfile(previous, next));
     setToken(nextToken);
 
     setSettingsOpen(false);
     setToast("Workspace settings saved.");
+  };
+  const completeOnboarding = async (profile: Pick<WorkspaceSnapshot, "project" | "prompts">, openAudit: boolean) => {
+    // Keep the review mounted until its exact snapshot is acknowledged by the server.
+    setFinishingOnboarding(true);
+    if (sync.phase === "conflict" || sync.phase === "offline" || sync.phase === "saving") return false;
+    const next = { ...profile.project, onboardingCompletedAt: new Date().toISOString() };
+    if (!await workspace.saveProfile({ project: next, prompts: profile.prompts })) return false;
+    setFinishingOnboarding(false);
+    if (openAudit) {
+      auditProject.current = next;
+      setAuditPrompts(profile.prompts);
+      setAuditOpen(true);
+    }
+    setToast("Your brand is ready. Review the estimate before starting an audit.");
+    return true;
   };
   const openSettings = () => {
     if (demoMode) router.push("/login");
@@ -867,6 +885,31 @@ export default function Workspace({
       />
     );
   if (!loaded) return <div className="workspace-loading" role="status"><p>Loading your saved workspace…</p></div>;
+  if (!demoMode && (finishingOnboarding || needsBrandOnboarding(workspace.snapshot))) return (
+      <BrandOnboarding
+        initialProject={isExampleProfile(workspace.snapshot) ? { brand: "", domain: "", competitors: [] } : project}
+        initialPrompts={isExampleProfile(workspace.snapshot) ? [] : prompts}
+        storageKey={storageKey}
+        onComplete={completeOnboarding}
+        onLogout={logout}
+        error={sync.error || (loggingOut ? "Signing out…" : toast)}
+        recovery={(sync.phase === "offline" || sync.phase === "conflict") && (
+        <section className={`workspace-sync is-${sync.phase}`} aria-label="Workspace synchronization">
+          <span>{sync.phase === "conflict" ? "Conflicting workspace versions" : "Workspace connection unavailable"}</span>
+          <p>{sync.error} Your onboarding draft stays in this browser.</p>
+          <div className="sync-actions">
+            <button className="button" onClick={() => downloadWorkspaceBackup(workspace.snapshot)}>Download unsaved workspace</button>
+            <button className="button" onClick={() => { void workspace.retry(); }}>Retry sync</button>
+            {sync.phase === "conflict" && <button className="button" onClick={async () => {
+              if (window.confirm("Load the latest saved workspace? Your onboarding draft stays in this browser. Download any other unsaved workspace changes first.")) {
+                if (await workspace.loadServer()) setFinishingOnboarding(false);
+              }
+            }}>Load server version</button>}
+          </div>
+        </section>
+        )}
+      />
+  );
   return (
     <div
       className="app-shell"
@@ -1116,7 +1159,7 @@ export default function Workspace({
             <div className="sync-actions"><button className="button" onClick={() => { void workspace.refresh(); }} disabled={sync.phase === "saving"}><RefreshCw size={12} /> Refresh</button><button className="button" onClick={() => setBackupOpen(true)}>Backup and restore</button><button className="button" onClick={() => setMonitorOpen(true)}><Clock size={12} /> Monitoring</button>{(sync.phase === "offline" || sync.phase === "conflict") && <button className="button" onClick={() => { void workspace.retry(); }}>Retry sync</button>}{sync.phase === "conflict" && <button className="button" onClick={() => setConfirmServer(true)}>Load server version</button>}</div>
             {sync.error && <p>{sync.error}</p>}{sync.cacheError && <p>{sync.cacheError}</p>}
           </section>}
-          {!demo && view === "overview" && !projectRuns.length && <section className="workspace-onboarding" aria-label="Set up your workspace"><div><h2>{project.brand === DEFAULT_PROJECT.brand && project.domain === DEFAULT_PROJECT.domain ? "Set up your brand." : "Your brand is ready for its first answers."}</h2><p>{project.brand === DEFAULT_PROJECT.brand && project.domain === DEFAULT_PROJECT.domain ? "Treg and the current questions are editable examples. Configure your own brand, then add or discover your buyers’ questions." : "Review your buyer questions, choose your engines, and run a real audit. Monitoring can repeat it on a schedule."}</p></div><button className="button primary" onClick={openSettings}>Set up your brand</button><button className="button" onClick={() => nav("prompts")}>Manage buyer questions</button></section>}
+          {!demo && view === "overview" && !projectRuns.length && <section className="workspace-onboarding" aria-label="Set up your workspace"><div><h2>Your brand is ready for its first answers.</h2><p>Review your buyer questions, choose your engines, and run a real audit. Monitoring can repeat it on a schedule.</p></div><button className="button primary" onClick={openSettings}>Edit brand profile</button><button className="button" onClick={() => nav("prompts")}>Manage buyer questions</button></section>}
           {demo && (
             <div className="demo-strip">
               <span>

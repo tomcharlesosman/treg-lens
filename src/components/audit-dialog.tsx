@@ -26,14 +26,11 @@ import {
   X,
 } from "lucide-react";
 import type { AnswerResult } from "@/lib/aeo";
+import type { Project } from "@/lib/workspace-data";
 import type { AuditPersistence } from "./use-server-workspace";
 import "./dialog.css";
 
-export type ProjectSettings = {
-  brand: string;
-  domain: string;
-  competitors: string[];
-};
+export type ProjectSettings = Project;
 export type AuditRun = {
   id: string;
   brand: string;

@@ -37,6 +37,14 @@ export async function signIn(page: Page, token = primaryKey) {
   expect(response.status()).toBe(200);
   const session = await response.json();
   expect(session.authenticated).toBe(true);
+  // These tests exercise an established workspace; first-run setup has its own browser suite.
+  const existing = await (await page.request.get("/api/workspace")).json();
+  if (!existing.snapshot) {
+    await saveServerSnapshot(page, {
+      project: { ...DEFAULT_PROJECT, onboardingCompletedAt: "2026-10-20T12:00:00.000Z" },
+      prompts: DEFAULT_PROMPTS, runs: [], done: [], sourceResearch: {},
+    });
+  }
   await page.goto("/app");
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
   await expect.poll(() => page.evaluate((prefix) => Object.keys(localStorage).some((key) => key.startsWith(prefix)), storagePrefix)).toBe(true);

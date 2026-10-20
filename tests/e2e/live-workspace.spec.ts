@@ -23,8 +23,8 @@ async function cacheUnreadSave(page: Page, key: string, snapshot: unknown, revis
 
 test("server-saved brand and prompts survive deleting the entire browser cache", async ({ page }) => {
   await signIn(page);
-  await expect(page.getByRole("region", { name: "Set up your workspace" })).toContainText("editable examples");
-  await page.getByRole("button", { name: "Set up your brand", exact: true }).click();
+  await expect(page.getByRole("region", { name: "Set up your workspace" })).toContainText("first answers");
+  await page.getByRole("button", { name: "Edit brand profile", exact: true }).click();
   const settings = page.getByRole("dialog", { name: "Your workspace." });
   await settings.getByLabel("Brand name", { exact: true }).fill("My actual brand");
   await settings.getByLabel("Website", { exact: true }).fill("example.com");
@@ -44,10 +44,12 @@ test("server-saved brand and prompts survive deleting the entire browser cache",
 });
 
 test("a valid scoped browser workspace migrates only when the server has no snapshot", async ({ page }) => {
-  const key = await signIn(page);
+  const response = await page.request.post("/api/auth/session", { data: { token: `treg-e2e-legacy-${crypto.randomUUID()}` } });
+  expect(response.ok()).toBe(true);
+  const key = `treg-lens-workspace-v1:${(await response.json()).workspaceId}`;
   const legacy = { ...storedFixture(), project: { brand: "Migrated brand", domain: "example.com", competitors: [] } };
-  await page.evaluate(({ key, legacy }) => localStorage.setItem(key, JSON.stringify(legacy)), { key, legacy });
-  await page.reload();
+  await page.addInitScript(({ key, legacy }) => localStorage.setItem(key, JSON.stringify(legacy)), { key, legacy });
+  await page.goto("/app");
   await expect(page.getByRole("button", { name: /Migrated brand workspace/ })).toBeVisible();
   await waitForServerSave(page);
   const server = await (await page.request.get("/api/workspace")).json();

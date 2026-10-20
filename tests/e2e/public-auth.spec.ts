@@ -183,7 +183,7 @@ test.describe("API-key sign-in and encrypted browser session", () => {
     expect(publicSession.workspaceId).toMatch(/^treg_[a-f0-9]{24}$/);
     expect(publicSession).not.toHaveProperty("token");
     await page.reload();
-    await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Website URL", { exact: true })).toBeVisible();
     await expect(page).toHaveURL(/\/app$/);
   });
 
@@ -222,7 +222,7 @@ test.describe("API-key sign-in and encrypted browser session", () => {
     await key.fill(PRIMARY_TOKEN);
     await submit.click();
     await expect(page).toHaveURL(/\/app$/);
-    await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Website URL", { exact: true })).toBeVisible();
   });
 
   test("disables key editing and duplicate submissions while verification is in flight", async ({ page }) => {
@@ -268,7 +268,7 @@ test.describe("API-key sign-in and encrypted browser session", () => {
     await form.getByLabel("Treg API key", { exact: true }).fill("treg-e2e-secondary");
     await form.getByRole("button", { name: "Open my workspace" }).click();
     await expect(page).toHaveURL(/\/app$/);
-    await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
+    await expect(page.getByLabel("Website URL", { exact: true })).toBeVisible();
   });
 
   test("handles a transient browser connection failure and permits retry", async ({ page }) => {

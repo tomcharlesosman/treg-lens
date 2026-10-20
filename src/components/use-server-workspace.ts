@@ -5,6 +5,7 @@ import { DEFAULT_PROJECT, DEFAULT_PROMPTS, type Project, type SavedRun } from "@
 import type { WorkspaceSnapshot } from "@/lib/workspace-storage";
 import { sanitizeWorkspaceSnapshot } from "@/lib/workspace-validation";
 import { saveWorkspaceSnapshot, type WorkspaceSaveAttempt } from "@/lib/workspace-upload-client";
+import { updateProjectProfile } from "@/lib/workspace-onboarding";
 
 export type WorkspaceEnvelope = { snapshot: WorkspaceSnapshot | null; revision: number; updatedAt: string | null };
 export type SyncPhase = "loading" | "sample" | "saved" | "unsaved" | "saving" | "offline" | "conflict";
@@ -17,8 +18,12 @@ export function withoutCredentials(value: unknown): unknown {
   if (value && typeof value === "object") return Object.fromEntries(Object.entries(value).filter(([key]) => !sensitive.test(key)).map(([key, item]) => [key, withoutCredentials(item)]));
   return value;
 }
-export function emptyWorkspace(): WorkspaceSnapshot {
-  return { project: { ...DEFAULT_PROJECT, competitors: [...DEFAULT_PROJECT.competitors] }, prompts: [...DEFAULT_PROMPTS], runs: [], done: [], sourceResearch: {} };
+export function emptyWorkspace(demoMode = false): WorkspaceSnapshot {
+  return {
+    project: demoMode ? { ...DEFAULT_PROJECT, competitors: [...DEFAULT_PROJECT.competitors] } : { brand: "", domain: "", competitors: [] },
+    prompts: demoMode ? [...DEFAULT_PROMPTS] : [],
+    runs: [], done: [], sourceResearch: {},
+  };
 }
 function snapshotFrom(value: unknown): WorkspaceSnapshot | null {
   try { return sanitizeWorkspaceSnapshot(value); } catch { return null; }
@@ -38,9 +43,9 @@ function envelopeFrom(value: unknown): WorkspaceEnvelope {
 const message = (error: unknown) => error instanceof Error ? error.message : "Workspace synchronization is unavailable.";
 
 export function useServerWorkspace(storageKey: string, demoMode: boolean) {
-  const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(emptyWorkspace);
+  const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(() => emptyWorkspace(demoMode));
   const [sync, setSync] = useState<WorkspaceSync>({ phase: demoMode ? "sample" : "loading", revision: null, updatedAt: null, error: "", cacheError: "", isNew: false });
-  const state = useRef({ snapshot: emptyWorkspace(), revision: null as number | null, updatedAt: null as string | null, dirty: false, version: 0, loaded: demoMode, serverVerified: false, saving: false, refreshing: false, disposed: false, conflict: null as WorkspaceEnvelope | null });
+  const state = useRef({ snapshot: emptyWorkspace(demoMode), revision: null as number | null, updatedAt: null as string | null, dirty: false, version: 0, loaded: demoMode, serverVerified: false, saving: false, refreshing: false, disposed: false, conflict: null as WorkspaceEnvelope | null });
   const pendingUpload = useRef<WorkspaceSaveAttempt | null>(null);
   const metaKey = storageKey.replace("treg-lens-workspace-v1", "treg-lens-sync-v1");
   const publish = useCallback((phase: SyncPhase, error = "", isNew?: boolean) => {
@@ -179,8 +184,43 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
       return false;
     }
   }, [adopt, publish, readServer]);
+  const saveProfile = useCallback(async (profile: Pick<WorkspaceSnapshot, "project" | "prompts">): Promise<boolean> => {
+    const current = state.current;
+    if (demoMode || !current.loaded || !current.serverVerified || current.disposed ||
+      current.saving || current.refreshing || current.conflict || current.revision === null || current.dirty) return false;
+    const version = current.version;
+    const submitted = { ...current.snapshot, ...profile };
+    current.saving = true;
+    publish("saving");
+    try {
+      // The wizard owns its recoverable draft. Do not put a completion marker
+      // into the active snapshot/cache until this exact save is acknowledged.
+      const response = await saveWorkspaceSnapshot(withoutCredentials(submitted), current.revision, { current: null });
+      const data = await response.json();
+      if (current.disposed) return false;
+      if (response.status === 409) {
+        current.conflict = envelopeFrom(data);
+        publish("conflict", "Your workspace changed in another tab. Your setup draft is retained; review the saved server version before continuing.");
+        return false;
+      }
+      if (!response.ok) throw new Error(data.error || "Your profile could not be saved. Your setup draft is retained.");
+      const envelope = envelopeFrom(data);
+      if (current.version !== version) {
+        current.conflict = envelope;
+        publish("conflict", "Your profile was saved while other edits were pending. Review the server version before continuing.");
+        return false;
+      }
+      adopt(envelope);
+      return true;
+    } catch (error) {
+      if (!current.disposed) publish("offline", message(error));
+      return false;
+    } finally {
+      current.saving = false;
+    }
+  }, [adopt, demoMode, publish]);
   const acceptAudit = useCallback(async (run: SavedRun, persistence?: AuditPersistence, originalProject?: Project) => {
-    const append = (value: WorkspaceSnapshot, selectProject: boolean): WorkspaceSnapshot => ({ ...value, runs: [...value.runs.filter((old) => old.id !== run.id), run], ...(selectProject ? { project: { brand: run.brand, domain: run.domain, competitors: run.competitors ?? value.project.competitors }, prompts: [...new Set([...value.prompts, ...(run.prompts ?? [])])] } : {}) });
+    const append = (value: WorkspaceSnapshot, selectProject: boolean): WorkspaceSnapshot => ({ ...value, runs: [...value.runs.filter((old) => old.id !== run.id), run], ...(selectProject ? { project: updateProjectProfile(value.project, { brand: run.brand, domain: run.domain, competitors: run.competitors ?? value.project.competitors }), prompts: [...new Set([...value.prompts, ...(run.prompts ?? [])])] } : {}) });
     const current = state.current;
     if (persistence?.saved) {
       const requestedVersion = current.version;
@@ -232,7 +272,9 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
       try {
         const remote = await readServer();
         if (cancelled) return;
-        if (local && ((remote.snapshot === null && remote.revision === 0) || localDirty) && !matchesServer(local, remote.snapshot)) {
+        const localHasContent = local && (local.project.brand.trim() || local.project.domain.trim() ||
+          local.prompts.length || local.runs.length || local.done.length || Object.keys(local.sourceResearch).length);
+        if (local && ((remote.snapshot === null && remote.revision === 0 && localHasContent) || localDirty) && !matchesServer(local, remote.snapshot)) {
           current.snapshot = local;
           current.revision = remote.snapshot === null ? remote.revision : localRevision ?? remote.revision;
           current.updatedAt = remote.updatedAt;
@@ -272,5 +314,5 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
     const timer = window.setInterval(onFocus, 30_000);
     return () => { window.removeEventListener("focus", onFocus); document.removeEventListener("visibilitychange", onFocus); window.clearInterval(timer); };
   }, [demoMode, refresh]);
-  return { snapshot, sync, loaded: demoMode || sync.phase !== "loading", change, field, save, refresh, retry, loadServer, acceptAudit };
+  return { snapshot, sync, loaded: demoMode || sync.phase !== "loading", change, field, save, saveProfile, refresh, retry, loadServer, acceptAudit };
 }
