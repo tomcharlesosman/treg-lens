@@ -23,6 +23,11 @@ export function emptyWorkspace(): WorkspaceSnapshot {
 function snapshotFrom(value: unknown): WorkspaceSnapshot | null {
   try { return sanitizeWorkspaceSnapshot(value); } catch { return null; }
 }
+// A save the server committed before this page read the response leaves dirty data that is already saved.
+function matchesServer(local: unknown, remote: WorkspaceSnapshot | null) {
+  const clean = snapshotFrom(withoutCredentials(local));
+  return Boolean(clean && remote) && JSON.stringify(clean) === JSON.stringify(withoutCredentials(remote));
+}
 function envelopeFrom(value: unknown): WorkspaceEnvelope {
   const data = value as Partial<WorkspaceEnvelope> | null;
   if (!data || !Number.isSafeInteger(data.revision) || Number(data.revision) < 0 || !(data.updatedAt === null || typeof data.updatedAt === "string")) throw new Error("The server returned an invalid workspace version.");
@@ -136,7 +141,7 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
       if (current.disposed || current.saving || pendingUpload.current) return false;
       current.serverVerified = true;
       if (current.revision !== null && remote.revision < current.revision) return false;
-      if (current.dirty) {
+      if (current.dirty && !matchesServer(current.snapshot, remote.snapshot)) {
         if (remote.revision !== current.revision && !(remote.snapshot === null && remote.revision === 0 && current.revision === null)) {
           current.conflict = remote;
           publish("conflict", "The server changed while you had local edits. Neither version was overwritten. Download a backup or load the saved server version.");
@@ -227,7 +232,7 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
       try {
         const remote = await readServer();
         if (cancelled) return;
-        if (local && ((remote.snapshot === null && remote.revision === 0) || localDirty)) {
+        if (local && ((remote.snapshot === null && remote.revision === 0) || localDirty) && !matchesServer(local, remote.snapshot)) {
           current.snapshot = local;
           current.revision = remote.snapshot === null ? remote.revision : localRevision ?? remote.revision;
           current.updatedAt = remote.updatedAt;

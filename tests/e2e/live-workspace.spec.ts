@@ -12,6 +12,14 @@ async function addPrompt(page: Page, prompt: string) {
   await modal.getByRole("button", { name: "Add prompt", exact: true }).click();
   await expect(modal).toBeHidden();
 }
+const syncKey = (key: string) => key.replace("treg-lens-workspace-v1", "treg-lens-sync-v1");
+async function cacheUnreadSave(page: Page, key: string, snapshot: unknown, revision: number) {
+  // Runs before the app on the next load, as if the tab closed before reading its save response.
+  await page.addInitScript(({ key, meta, snapshot, revision }) => {
+    localStorage.setItem(key, JSON.stringify(snapshot));
+    localStorage.setItem(meta, JSON.stringify({ revision, dirty: true }));
+  }, { key, meta: syncKey(key), snapshot, revision });
+}
 
 test("server-saved brand and prompts survive deleting the entire browser cache", async ({ page }) => {
   await signIn(page);
@@ -106,6 +114,62 @@ test("a CAS conflict keeps both versions until the user explicitly loads the ser
   await expect(page.locator(".prompt-cell").filter({ hasText: remotePrompt })).toHaveCount(1);
   await expect(page.locator(".prompt-cell").filter({ hasText: localPrompt })).toHaveCount(0);
   expect((await (await page.request.get("/api/workspace")).json()).revision).toBe(server.revision);
+});
+
+test("a recovered browser copy identical to its committed save reloads as saved instead of conflicting", async ({ page }) => {
+  const key = await seedWorkspace(page);
+  const before = await (await page.request.get("/api/workspace")).json();
+  const prompt = "Which edit reached the server before the tab closed?";
+  const edited = { ...before.snapshot, prompts: [...before.snapshot.prompts, prompt] };
+  const committed = await saveServerSnapshot(page, edited);
+  await cacheUnreadSave(page, key, edited, before.revision);
+  await page.reload();
+  await waitForServerSave(page);
+  await expect(sync(page)).not.toContainText("Conflicting workspace versions");
+  await nav(page, "Prompt tracking");
+  await expect(page.locator(".prompt-cell").filter({ hasText: prompt })).toHaveCount(1);
+  expect(await page.evaluate((meta) => JSON.parse(localStorage.getItem(meta)!), syncKey(key))).toEqual({ revision: committed.revision, dirty: false });
+  expect((await (await page.request.get("/api/workspace")).json()).revision).toBe(committed.revision);
+});
+
+test("a recovered browser copy that differs from a newer server save still keeps both versions", async ({ page }) => {
+  const key = await seedWorkspace(page);
+  const before = await (await page.request.get("/api/workspace")).json();
+  const remotePrompt = "A question saved from another device";
+  const localPrompt = "A question this browser never saved";
+  const committed = await saveServerSnapshot(page, { ...before.snapshot, prompts: [...before.snapshot.prompts, remotePrompt] });
+  await cacheUnreadSave(page, key, { ...before.snapshot, prompts: [...before.snapshot.prompts, localPrompt] }, before.revision);
+  await page.reload();
+  await expect(sync(page)).toContainText("Conflicting workspace versions");
+  await expect(sync(page)).toContainText("Recovered unsynced browser edits and a newer saved server version.");
+  await nav(page, "Prompt tracking");
+  await expect(page.locator(".prompt-cell").filter({ hasText: localPrompt })).toHaveCount(1);
+  await expect(page.locator(".prompt-cell").filter({ hasText: remotePrompt })).toHaveCount(0);
+  const server = await (await page.request.get("/api/workspace")).json();
+  expect(server.revision).toBe(committed.revision);
+  expect(server.snapshot).toEqual(committed.snapshot);
+});
+
+test("refreshing after a lost save acknowledgement adopts the committed save without a conflict", async ({ page }) => {
+  await seedWorkspace(page);
+  const before = await (await page.request.get("/api/workspace")).json();
+  await page.route("**/api/workspace", async (route) => {
+    if (route.request().method() !== "PUT") return route.continue();
+    const saved = await route.fetch();
+    expect(saved.status()).toBe(200);
+    await route.abort("failed");
+  });
+  const prompt = "Which save committed after its response was lost?";
+  await addPrompt(page, prompt);
+  await expect(sync(page)).toContainText("Unsynced · browser fallback");
+  await page.unroute("**/api/workspace");
+  const committed = await (await page.request.get("/api/workspace")).json();
+  expect(committed.revision).toBe(before.revision + 1);
+  expect(committed.snapshot.prompts).toContain(prompt);
+  await sync(page).getByRole("button", { name: "Refresh", exact: true }).click();
+  await waitForServerSave(page);
+  await expect(sync(page)).not.toContainText("Conflicting workspace versions");
+  expect((await (await page.request.get("/api/workspace")).json()).revision).toBe(committed.revision);
 });
 
 test("full backup ignores report filters, restores only after confirmation, and rejects demo/credential/malformed files", async ({ page }) => {
