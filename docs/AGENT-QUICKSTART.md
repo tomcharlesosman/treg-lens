@@ -33,6 +33,38 @@ Set up Treg Lens locally in this checkout and verify that it works.
 
 For a specific change, append the desired behavior and acceptance criteria. If you want a public deployment or a live audit, state the destination or research inputs and spending constraints separately.
 
+## Copy this deployment prompt
+
+Replace the destination placeholders with the repository and Vercel team you authorize. This prompt authorizes deployment; it does not authorize paid Treg research or enabling user schedules.
+
+```text
+Deploy my Treg Lens fork publicly on Vercel using Neon storage.
+
+Authorized repository: <exact GitHub owner/repository and branch>
+Authorized Vercel team: <exact team name or ID>
+Project: <existing project or authorized new project name>
+
+Read AGENTS.md and docs/DEPLOYMENT.md. Reuse the selected project/database
+if already connected; do not create duplicates or introduce AWS infrastructure.
+Keep local .env.local and SQLite data intact. Store database connections and a
+stable random SESSION_SECRET privately in production configuration. Never print
+credentials or put them into code, logs, chat, build artifacts, or public variables.
+Use the repository's guided Deploy with Vercel / Neon product flow where possible.
+Account authentication, permissions, or provider terms may require my own action.
+
+Run relevant checks. Use the checked-in Vercel config: its build command runs
+the repeatable db:migrate script before building, so no manual SQL setup is needed.
+Keep previews isolated from production data and secrets. Leave minutely cron
+disabled unless I authorize Pro monitoring configuration; manual flows work on
+Hobby. Do not upgrade a plan, enable paid user schedules, or run paid Treg calls.
+
+Deploy the reviewed code to the authorized production project. Verify public
+marketing, login, health, and protected workspace behavior without a Vercel bypass
+or private login cookie. Let visitors enter their own Treg keys. Report the exact
+production URL, deployed commit, checks performed, and any genuine remaining
+account/permission step. Do not claim checks or a live URL that you did not verify.
+```
+
 ## The working baseline
 
 Use these commands from the repository root. They work in macOS/Linux terminals and Windows PowerShell:
@@ -62,8 +94,9 @@ A successful baseline means local checks pass, the protected live application is
 | `npm run dev` | Start the local development app |
 | `npm run monitor` | Start the separate monitoring loop; users still explicitly enable schedules/budgets |
 | `npm run monitor -- --once` | Check one due schedule for host-scheduler integration |
+| `npm run db:migrate` | Explicitly prepare the selected database; Vercel's build command invokes it automatically |
 | `npm run backup -- /private/path/new.sqlite` | Create a consistent online server backup in a new protected file |
-| `npm run monitor -- --pause-all` | With app/worker stopped after database restore, disable schedules and clear retained credentials before review |
+| `npm run monitor -- --pause-all` | Offline SQLite recovery only; Postgres is refused and uses the documented remote procedure |
 | `npm run build` | Build production assets; no Treg credential required |
 | `npm run doctor -- --production` | Check production environment-file precedence and runtime dependencies |
 | `npm run doctor -- --e2e` | Check browser binaries, OpenSSL, and free test ports 3100/3101 |
@@ -88,7 +121,7 @@ Synthetic `treg-e2e-*` keys and test provider responses belong only to the isola
 
 ## Keep the footprint small
 
-There are seven direct runtime packages: Next.js, React, React DOM, iron-session, lucide-react, react-markdown, and remark-gfm. They provide the app framework, encrypted cookies, icons, and Markdown rendering. Treg calls use native `fetch`; charts use local SVG and calculations; onboarding scripts use Node built-ins. SQLite uses Node's built-in `node:sqlite`; no database service or package is required. No Redis, Docker, ORM, managed identity provider, Treg SDK, scheduler package, or agent framework is required. See the [dependency rationale](DEPENDENCIES.md) before adding a package.
+There are eight direct runtime packages: Next.js, React, React DOM, iron-session, lucide-react, react-markdown, remark-gfm, and `@neondatabase/serverless`. The last is the single driver for optional hosted Postgres. Local forks still use built-in `node:sqlite` without a database service. Native `fetch`, SVG, and Node crypto/fs cover the remaining work. No Redis, Docker, ORM, managed identity provider, Treg SDK, scheduler package, or agent framework is required. The dynamic `vercel.ts` config adds no configuration SDK dependency. See [dependencies](DEPENDENCIES.md).
 
 Fonts are checked in, approximately 102 KB total, and loaded with `next/font/local`. They include licenses and provenance and require no Google Fonts download at build or runtime. Do not reintroduce a network font dependency as a setup shortcut.
 
@@ -97,7 +130,7 @@ Fonts are checked in, approximately 102 KB total, and loaded with `next/font/loc
 - Paid routes require the caller's validated key or encrypted session. Keep provider URLs and endpoint IDs allowlisted. Never turn operator environment credentials into a public fallback.
 - Quotes use current catalog prices and paid work refreshes them. Preserve per-call ceilings, partial results, provider errors, and the distinction between unknown and zero cost. Do not automatically retry ambiguous paid work.
 - Session keys belong in the encrypted HttpOnly cookie; optional overrides remain in memory. Monitoring retains a separate AES-GCM-encrypted key only after explicit consent. Keep plaintext keys out of source, logs, browser storage, screenshots, and exports.
-- Project history is server-side SQLite, separated by verified key and stable deployment secret. Preserve revision compare-and-swap, atomic run append, bounded backup import, browser recovery, and demo isolation. Never silently overwrite a newer server snapshot or automatically migrate another key's history.
+- Project history is server-side SQLite by default or optional hosted Postgres, separated by verified key and stable secret. Preserve shared asynchronous domain logic, revision compare-and-swap, atomic run append, bounded import, owner-bound chunk transport, browser recovery, and demo isolation. Never overwrite a newer snapshot or migrate another key's history silently. Force SQLite and temporary data in automated fixtures; never inherit a production DATABASE_URL.
 - Manual audit/discovery dialogs retain progress across close/reopen in the mounted tab. Scheduled jobs have durable leases and budget reservations. Never automatically retry ambiguous paid work; preserve reservations on interruption and require deliberate review before re-enabling. Keep accessible focus and safe Markdown.
 
 Use [architecture](ARCHITECTURE.md), [API contracts](API.md), [contributing](../CONTRIBUTING.md), and [security](../SECURITY.md) for details. The [verification report](TEST-REPORT.md) distinguishes fixture coverage from dated live checks. State what you verified rather than treating either as a deployment guarantee.

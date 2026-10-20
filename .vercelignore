@@ -1,0 +1,10 @@
+.env*
+.agents
+.claude
+skills-lock.json
+data
+output
+tests
+docs/*.png
+*.sqlite*
+.git

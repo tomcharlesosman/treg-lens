@@ -1,6 +1,6 @@
 import { createCipheriv, createDecipheriv, createHmac, randomBytes, randomUUID, timingSafeEqual } from "node:crypto";
 import { AeoError, estimateAudit, runAudit, validateAuditInput, type AuditInput, type AuditResponse, type CostEstimate } from "./aeo";
-import { getDatabase } from "./database";
+import { withStorage, type StorageSession } from "./storage-database";
 import { appendWorkspaceRun } from "./workspace-repository";
 import { validateSessionSecret, validateTregKey } from "./treg-session";
 import type { MonitorInput, MonitorSchedule, MonitorState } from "./monitor-types";
@@ -15,39 +15,6 @@ const dollars = (micro: number) => micro / 1_000_000;
 const micros = (usd: number) => Math.ceil(usd * 1_000_000);
 const month = (now: number) => new Date(now).toISOString().slice(0, 7);
 const iso = (now: number) => new Date(now).toISOString();
-
-function database() {
-  const db = getDatabase();
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS monitor_schedules (
-      workspace_id TEXT PRIMARY KEY, input_json TEXT NOT NULL, credential TEXT,
-      enabled INTEGER NOT NULL, next_run_at TEXT, last_run_at TEXT,
-      last_status TEXT NOT NULL, last_error TEXT
-    );
-    CREATE TABLE IF NOT EXISTS monitor_jobs (
-      id TEXT PRIMARY KEY, workspace_id TEXT NOT NULL, month TEXT NOT NULL,
-      started_at TEXT NOT NULL, completed_at TEXT, status TEXT NOT NULL,
-      reserved_micro INTEGER NOT NULL DEFAULT 0, charged_micro INTEGER,
-      error TEXT, result_json TEXT
-    );
-    CREATE INDEX IF NOT EXISTS monitor_jobs_workspace_month ON monitor_jobs(workspace_id, month);
-    CREATE TABLE IF NOT EXISTS monitor_worker (
-      id INTEGER PRIMARY KEY CHECK (id = 1), last_seen_at TEXT,
-      lease_id TEXT, lease_until INTEGER
-    );
-    INSERT OR IGNORE INTO monitor_worker(id) VALUES (1);
-  `);
-  if (!db.prepare("PRAGMA table_info(monitor_jobs)").all().some((column) => column.name === "result_json"))
-    db.exec("ALTER TABLE monitor_jobs ADD COLUMN result_json TEXT");
-  return db;
-}
-
-function atomic<T>(fn: () => T): T {
-  const db = database();
-  db.exec("BEGIN IMMEDIATE");
-  try { const value = fn(); db.exec("COMMIT"); return value; }
-  catch (error) { db.exec("ROLLBACK"); throw error; }
-}
 
 function derivedKey(secret: string, purpose: string) {
   return createHmac("sha256", validateSessionSecret(secret)).update(purpose).digest();
@@ -112,43 +79,47 @@ export function nextMonitorRun(previous: string, intervalHours: 24 | 168, now = 
   return iso(prior + Math.max(1, Math.floor((now - prior) / interval) + 1) * interval);
 }
 
-function spent(workspaceId: string, now: number) {
-  const result = database().prepare("SELECT COALESCE(SUM(COALESCE(charged_micro, reserved_micro)), 0) AS total FROM monitor_jobs WHERE workspace_id = ? AND month = ?").get(workspaceId, month(now)) as { total: number };
-  return Number(result.total);
+async function spent(tx: StorageSession, workspaceId: string, now: number) {
+  const result = await tx.get("SELECT COALESCE(SUM(COALESCE(charged_micro, reserved_micro)), 0) AS total FROM monitor_jobs WHERE workspace_id = ? AND month = ?", workspaceId, month(now));
+  return Number(result?.total ?? 0);
 }
 
-export function getMonitorState(workspaceId: string, now = Date.now()): MonitorState {
-  const db = database();
-  const row = db.prepare("SELECT * FROM monitor_schedules WHERE workspace_id = ?").get(workspaceId) as ScheduleRow | undefined;
-  const worker = db.prepare("SELECT last_seen_at FROM monitor_worker WHERE id = 1").get() as { last_seen_at: string | null };
+async function readMonitorState(tx: StorageSession, workspaceId: string, now: number): Promise<MonitorState> {
+  const row = await tx.get("SELECT * FROM monitor_schedules WHERE workspace_id = ?", workspaceId) as ScheduleRow | undefined;
+  const worker = await tx.get("SELECT last_seen_at FROM monitor_worker WHERE id = 1") as { last_seen_at: string | null };
   let schedule: MonitorSchedule | null = null;
   if (row) {
-    const recoverable = db.prepare("SELECT completed_at FROM monitor_jobs WHERE workspace_id=? AND status='storage-error' AND result_json IS NOT NULL ORDER BY started_at DESC LIMIT 1").get(workspaceId);
-    schedule = { ...JSON.parse(row.input_json), enabled: Boolean(row.enabled), nextRunAt: row.next_run_at, lastRunAt: row.last_run_at, lastStatus: row.last_status, lastError: row.last_error, spentMonthUsd: dollars(spent(workspaceId, now)), ...(recoverable ? { recoveryAudit: { completedAt: String(recoverable.completed_at), url: "/api/monitor/results" } } : {}) };
+    const recoverable = await tx.get("SELECT completed_at FROM monitor_jobs WHERE workspace_id=? AND status='storage-error' AND result_json IS NOT NULL ORDER BY started_at DESC LIMIT 1", workspaceId);
+    schedule = { ...JSON.parse(row.input_json), enabled: Boolean(row.enabled), nextRunAt: row.next_run_at, lastRunAt: row.last_run_at, lastStatus: row.last_status, lastError: row.last_error, spentMonthUsd: dollars(await spent(tx, workspaceId, now)), ...(recoverable ? { recoveryAudit: { completedAt: String(recoverable.completed_at), url: "/api/monitor/results" } } : {}) };
   }
   return { schedule, worker: { lastSeenAt: worker.last_seen_at, healthy: Boolean(worker.last_seen_at && now - Date.parse(worker.last_seen_at) < LEASE_MS) } };
 }
 
-export function saveMonitor(workspaceId: string, input: MonitorInput, token: string, secret: string, now = Date.now()) {
-  const validated = validateMonitorInput(input);
-  return atomic(() => {
-    const db = database();
-    if (db.prepare("SELECT id FROM monitor_jobs WHERE workspace_id = ? AND status = 'running'").get(workspaceId))
-      throw new AeoError("An audit is running. Pause or change monitoring after it finishes.", 409);
-    db.prepare(`INSERT INTO monitor_schedules(workspace_id,input_json,credential,enabled,next_run_at,last_status)
-      VALUES(?,?,?,?,?,?) ON CONFLICT(workspace_id) DO UPDATE SET
-      input_json=excluded.input_json,credential=excluded.credential,enabled=excluded.enabled,
-      next_run_at=excluded.next_run_at,last_status=excluded.last_status,last_error=NULL`)
-      .run(workspaceId, JSON.stringify(validated), validated.enabled ? encryptMonitorToken(token, workspaceId, secret) : null, Number(validated.enabled), validated.enabled ? firstMonitorRun(validated.hourUtc, now) : null, validated.enabled ? "scheduled" : "paused");
-    return getMonitorState(workspaceId, now);
-  });
+export async function getMonitorState(workspaceId: string, now = Date.now()): Promise<MonitorState> {
+  return withStorage((tx) => readMonitorState(tx, workspaceId, now));
 }
 
-export function pauseMonitor(workspaceId: string, now = Date.now()) {
+export async function saveMonitor(workspaceId: string, input: MonitorInput, token: string, secret: string, now = Date.now()) {
+  const validated = validateMonitorInput(input);
+  return withStorage(async (tx) => {
+    if (await tx.get("SELECT id FROM monitor_jobs WHERE workspace_id = ? AND status = 'running'", workspaceId))
+      throw new AeoError("An audit is running. Pause or change monitoring after it finishes.", 409);
+    await tx.run(`INSERT INTO monitor_schedules(workspace_id,input_json,credential,enabled,next_run_at,last_status)
+      VALUES(?,?,?,?,?,?) ON CONFLICT(workspace_id) DO UPDATE SET
+      input_json=excluded.input_json,credential=excluded.credential,enabled=excluded.enabled,
+      next_run_at=excluded.next_run_at,last_status=excluded.last_status,last_error=NULL`,
+      workspaceId, JSON.stringify(validated), validated.enabled ? encryptMonitorToken(token, workspaceId, secret) : null, Number(validated.enabled), validated.enabled ? firstMonitorRun(validated.hourUtc, now) : null, validated.enabled ? "scheduled" : "paused");
+    return readMonitorState(tx, workspaceId, now);
+  }, { write: true, lock: "monitor" });
+}
+
+export async function pauseMonitor(workspaceId: string, now = Date.now()) {
   // A request already sent to a provider can still complete. Removing the
   // credential prevents future runs without discarding the in-flight evidence.
-  database().prepare("UPDATE monitor_schedules SET enabled=0, credential=NULL, next_run_at=NULL, last_status=CASE WHEN last_status='running' THEN last_status ELSE 'paused' END WHERE workspace_id=?").run(workspaceId);
-  return getMonitorState(workspaceId, now);
+  return withStorage(async (tx) => {
+    await tx.run("UPDATE monitor_schedules SET enabled=0, credential=NULL, next_run_at=NULL, last_status=CASE WHEN last_status='running' THEN last_status ELSE 'paused' END WHERE workspace_id=?", workspaceId);
+    return readMonitorState(tx, workspaceId, now);
+  }, { write: true, lock: "monitor" });
 }
 
 type TickDependencies = {
@@ -161,29 +132,28 @@ type TickDependencies = {
 export async function tickMonitor(secret: string, dependencies: TickDependencies = {}) {
   validateSessionSecret(secret);
   const now = dependencies.now ?? Date.now();
-  const db = database();
   const leaseId = randomUUID();
-  const claimed = atomic(() => {
-    db.prepare("UPDATE monitor_worker SET last_seen_at=? WHERE id=1").run(iso(now));
-    const worker = db.prepare("SELECT lease_id, lease_until FROM monitor_worker WHERE id=1").get() as { lease_id: string | null; lease_until: number | null };
+  const claimed = await withStorage(async (tx) => {
+    await tx.run("UPDATE monitor_worker SET last_seen_at=? WHERE id=1", iso(now));
+    const worker = await tx.get("SELECT lease_id, lease_until FROM monitor_worker WHERE id=1") as { lease_id: string | null; lease_until: number | string | null };
     if (worker.lease_id && Number(worker.lease_until) > now) return null;
-    // A stale paid task is never retried automatically. Keep its full reserved
-    // ceiling until an operator reconciles Treg activity and explicitly resumes.
-    const stale = db.prepare("SELECT id,workspace_id,result_json FROM monitor_jobs WHERE status='running'").all() as { id: string; workspace_id: string; result_json: string | null }[];
+    // A stale paid task is never retried automatically. Preserve collected
+    // evidence or its reserved ceiling until an operator explicitly resumes.
+    const stale = await tx.all("SELECT id,workspace_id,result_json FROM monitor_jobs WHERE status='running'") as { id: string; workspace_id: string; result_json: string | null }[];
     for (const row of stale) {
       const status = row.result_json ? "storage-error" : "interrupted";
       const error = row.result_json ? "The worker stopped after collecting an audit. Download the recovered audit before resuming monitoring." : "The previous worker stopped before settlement. Check Treg activity before re-enabling monitoring; the reserved budget is retained.";
-      db.prepare("UPDATE monitor_schedules SET enabled=0,credential=NULL,next_run_at=NULL,last_status=?,last_error=? WHERE workspace_id=?").run(status, error, row.workspace_id);
-      db.prepare("UPDATE monitor_jobs SET status=?,completed_at=?,error=? WHERE id=?").run(status, iso(now), error, row.id);
+      await tx.run("UPDATE monitor_schedules SET enabled=0,credential=NULL,next_run_at=NULL,last_status=?,last_error=? WHERE workspace_id=?", status, error, row.workspace_id);
+      await tx.run("UPDATE monitor_jobs SET status=?,completed_at=?,error=? WHERE id=?", status, iso(now), error, row.id);
     }
-    const row = db.prepare("SELECT * FROM monitor_schedules WHERE enabled=1 AND next_run_at<=? ORDER BY next_run_at LIMIT 1").get(iso(now)) as ScheduleRow | undefined;
-    if (!row) { db.prepare("UPDATE monitor_worker SET lease_id=NULL,lease_until=NULL WHERE id=1").run(); return null; }
-    db.prepare("UPDATE monitor_worker SET lease_id=?,lease_until=? WHERE id=1").run(leaseId, now + LEASE_MS);
+    const row = await tx.get("SELECT * FROM monitor_schedules WHERE enabled=1 AND next_run_at<=? ORDER BY next_run_at LIMIT 1", iso(now)) as ScheduleRow | undefined;
+    if (!row) { await tx.run("UPDATE monitor_worker SET lease_id=NULL,lease_until=NULL WHERE id=1"); return null; }
+    await tx.run("UPDATE monitor_worker SET lease_id=?,lease_until=? WHERE id=1", leaseId, now + LEASE_MS);
     const id = randomUUID();
-    db.prepare("INSERT INTO monitor_jobs(id,workspace_id,month,started_at,status) VALUES(?,?,?,?,'running')").run(id, row.workspace_id, month(now), iso(now));
-    db.prepare("UPDATE monitor_schedules SET last_status='running',last_run_at=?,last_error=NULL WHERE workspace_id=?").run(iso(now), row.workspace_id);
+    await tx.run("INSERT INTO monitor_jobs(id,workspace_id,month,started_at,status) VALUES(?,?,?,?,'running')", id, row.workspace_id, month(now), iso(now));
+    await tx.run("UPDATE monitor_schedules SET last_status='running',last_run_at=?,last_error=NULL WHERE workspace_id=?", iso(now), row.workspace_id);
     return { row, id, input: validateMonitorInput(JSON.parse(row.input_json)) };
-  });
+  }, { write: true, lock: "monitor" });
   if (!claimed) return { processed: false };
   const { row, id, input } = claimed;
   let paidStarted = false;
@@ -198,49 +168,62 @@ export async function tickMonitor(secret: string, dependencies: TickDependencies
     const reserve = micros(quote.totalCostUsd);
     if (!Number.isSafeInteger(reserve) || reserve <= 0 || reserve > micros(input.perRunBudgetUsd))
       throw new AeoError("The live catalog estimate exceeds the per-audit budget. Increase the limit or reduce prompts and engines.", 402);
-    atomic(() => {
-      const current = db.prepare("SELECT enabled FROM monitor_schedules WHERE workspace_id=?").get(row.workspace_id) as { enabled: number };
+    await withStorage(async (tx) => {
+      const current = await tx.get("SELECT enabled FROM monitor_schedules WHERE workspace_id=?", row.workspace_id) as { enabled: number };
       if (!current.enabled) throw new AeoError("Monitoring was paused before provider calls started.");
-      if (spent(row.workspace_id, now) + reserve > micros(input.monthlyBudgetUsd))
+      if (await spent(tx, row.workspace_id, now) + reserve > micros(input.monthlyBudgetUsd))
         throw new AeoError("The monthly monitoring budget is exhausted. Increase it or re-enable monitoring next month.", 402);
-      db.prepare("UPDATE monitor_jobs SET reserved_micro=? WHERE id=?").run(reserve, id);
-    });
+      await tx.run("UPDATE monitor_jobs SET reserved_micro=? WHERE id=?", reserve, id);
+    }, { write: true, lock: "monitor" });
     paidStarted = true;
     const result = await (dependencies.run ?? ((data, estimate, prefix) => runAudit(data, fetch, { estimate, idempotencyPrefix: prefix })))(config, quote, id);
     settledResult = result;
     const savedRun = { id: `monitor-${id}`, ...input.config, ...result };
-    // Journal the paid answer before rolling it into the bounded workspace.
-    // A full workspace must not discard evidence the user already paid for.
-    db.prepare("UPDATE monitor_jobs SET result_json=?,charged_micro=? WHERE id=?").run(JSON.stringify(savedRun), result.totalCostKnown === true ? micros(result.totalCostUsd) : null, id);
-    resultStored = true;
-    appendWorkspaceRun(row.workspace_id, savedRun);
+    // This DB-only write is idempotent. Retrying its acknowledgement cannot
+    // issue another provider request or charge the user's team again.
+    const journal = () => withStorage(async (tx) => {
+      await tx.run("UPDATE monitor_jobs SET result_json=?,charged_micro=? WHERE id=?", JSON.stringify(savedRun), result.totalCostKnown === true ? micros(result.totalCostUsd) : null, id);
+    }, { write: true, lock: "monitor" });
+    try { await journal(); resultStored = true; }
+    catch {
+      const retained = await withStorage((tx) => tx.get("SELECT result_json FROM monitor_jobs WHERE id=?", id));
+      if (retained?.result_json) resultStored = true;
+      else { await journal(); resultStored = true; }
+    }
+    await appendWorkspaceRun(row.workspace_id, savedRun);
     const uncertain = result.totalCostKnown !== true;
     const partial = result.errors.length > 0;
     const overBudget = result.totalCostUsd > quote.totalCostUsd;
     const pause = uncertain || partial || overBudget;
+    const status = partial ? "partial" : uncertain ? "unsettled" : "complete";
     const message = uncertain ? "Some charges are unsettled. The full catalog reservation is retained; check Treg activity before resuming." : overBudget ? "A provider reported charges above its reservation. Check Treg activity before resuming." : partial ? "Some engines returned errors. Successful answers were saved; review the audit before resuming." : null;
-    atomic(() => {
-      db.prepare("UPDATE monitor_jobs SET completed_at=?,status=?,charged_micro=?,error=? WHERE id=?").run(iso(Date.now()), partial ? "partial" : uncertain ? "unsettled" : "complete", uncertain ? null : micros(result.totalCostUsd), message, id);
-      // DELETE/pause during an in-flight call must never be undone on completion.
-      db.prepare(`UPDATE monitor_schedules SET enabled=CASE WHEN ? THEN 0 ELSE enabled END,
-        credential=CASE WHEN ? THEN NULL ELSE credential END,
-        next_run_at=CASE WHEN ? OR enabled=0 THEN NULL ELSE ? END,last_status=?,last_error=? WHERE workspace_id=?`)
-        .run(Number(pause), Number(pause), Number(pause), nextMonitorRun(row.next_run_at!, input.intervalHours, now), partial ? "partial" : uncertain ? "unsettled" : "complete", message, row.workspace_id);
-    });
+    await withStorage(async (tx) => {
+      await tx.run("UPDATE monitor_jobs SET completed_at=?,status=?,charged_micro=?,error=? WHERE id=?", iso(Date.now()), status, uncertain ? null : micros(result.totalCostUsd), message, id);
+      // Pause during an in-flight call must never be undone on completion.
+      await tx.run(`UPDATE monitor_schedules SET enabled=CASE WHEN ?=1 THEN 0 ELSE enabled END,
+        credential=CASE WHEN ?=1 THEN NULL ELSE credential END,
+        next_run_at=CASE WHEN ?=1 OR enabled=0 THEN NULL ELSE ? END,last_status=?,last_error=? WHERE workspace_id=?`,
+        Number(pause), Number(pause), Number(pause), nextMonitorRun(row.next_run_at!, input.intervalHours, now), status, message, row.workspace_id);
+    }, { write: true, lock: "monitor" });
     return { processed: true, status: pause ? "paused" : "complete" };
   } catch (error) {
-    const storageError = settledResult !== null && resultStored;
-    const safeError = storageError ? "The completed audit could not fit in the workspace. Download the recovered audit, export a full backup, and remove older history before resuming." : error instanceof AeoError ? error.message : paidStarted ? "The audit could not be settled. Check Treg activity before resuming; its budget reservation is retained." : "Monitoring could not start. Reconnect your Treg key and check the worker configuration.";
-    atomic(() => {
-      db.prepare("UPDATE monitor_jobs SET completed_at=?,status=?,charged_micro=?,error=? WHERE id=?").run(iso(Date.now()), storageError ? "storage-error" : "error", settledResult?.totalCostKnown === true ? micros(settledResult.totalCostUsd) : paidStarted ? null : 0, safeError, id);
-      db.prepare("UPDATE monitor_schedules SET enabled=0,credential=NULL,next_run_at=NULL,last_status=?,last_error=? WHERE workspace_id=?").run(storageError ? "storage-error" : error instanceof AeoError && error.status === 402 ? "budget-paused" : "error", safeError, row.workspace_id);
-    });
+    await withStorage(async (tx) => {
+      // A remote commit can succeed while its acknowledgement is lost. Check
+      // durable evidence again rather than hiding an already stored paid answer.
+      const retained = settledResult ? await tx.get("SELECT result_json FROM monitor_jobs WHERE id=?", id) : undefined;
+      const storageError = settledResult !== null && (resultStored || Boolean(retained?.result_json));
+      const safeError = storageError ? "The completed audit could not fit in the workspace. Download the recovered audit, export a full backup, and remove older history before resuming." : error instanceof AeoError ? error.message : paidStarted ? "The audit could not be settled. Check Treg activity before resuming; its budget reservation is retained." : "Monitoring could not start. Reconnect your Treg key and check the worker configuration.";
+      await tx.run("UPDATE monitor_jobs SET completed_at=?,status=?,charged_micro=?,error=? WHERE id=?", iso(Date.now()), storageError ? "storage-error" : "error", settledResult?.totalCostKnown === true ? micros(settledResult.totalCostUsd) : paidStarted ? null : 0, safeError, id);
+      await tx.run("UPDATE monitor_schedules SET enabled=0,credential=NULL,next_run_at=NULL,last_status=?,last_error=? WHERE workspace_id=?", storageError ? "storage-error" : error instanceof AeoError && error.status === 402 ? "budget-paused" : "error", safeError, row.workspace_id);
+    }, { write: true, lock: "monitor" });
     return { processed: true, status: "paused" };
   } finally {
-    db.prepare("UPDATE monitor_worker SET last_seen_at=?,lease_id=NULL,lease_until=NULL WHERE id=1 AND lease_id=?").run(iso(Date.now()), leaseId);
+    await withStorage(async (tx) => {
+      await tx.run("UPDATE monitor_worker SET last_seen_at=?,lease_id=NULL,lease_until=NULL WHERE id=1 AND lease_id=?", iso(Date.now()), leaseId);
+    }, { write: true, lock: "monitor" });
   }
 }
 
-export function recoverMonitorRuns(workspaceId: string) {
-  return database().prepare("SELECT result_json FROM monitor_jobs WHERE workspace_id=? AND status='storage-error' AND result_json IS NOT NULL ORDER BY started_at").all(workspaceId).map((row) => JSON.parse(String(row.result_json)));
+export async function recoverMonitorRuns(workspaceId: string) {
+  return withStorage(async (tx) => (await tx.all("SELECT result_json FROM monitor_jobs WHERE workspace_id=? AND status='storage-error' AND result_json IS NOT NULL ORDER BY started_at", workspaceId)).map((row) => JSON.parse(String(row.result_json))));
 }

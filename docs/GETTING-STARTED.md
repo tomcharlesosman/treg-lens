@@ -76,9 +76,9 @@ Perplexity uses the Sonar model API; the other engines use web-interface answers
 
 ## Save, back up, and restore
 
-Settings, prompts, audits, completed moves, and source research are saved in the server's SQLite database. The same verified key and deployment secret identify the same workspace across browsers. Another key opens a separate workspace. Possession of a shared Treg key grants access to that key's workspace; Lens does not provide team invitations or roles.
+Settings, prompts, audits, completed moves, and source research are saved in the selected server database: built-in SQLite locally or optional hosted Postgres. The same verified key and deployment secret identify the same workspace across browsers. Another key opens a separate workspace. Possession of a shared Treg key grants access to that key's workspace; Lens does not provide team invitations or roles.
 
-The default database is `data/treg-lens.sqlite`. `TREG_DATA_DIR` selects another private persistent local directory. Keep the application secret and data directory stable between restarts. An ephemeral host or a new checkout with an empty data directory cannot recover the old server's history.
+The local default database is `data/treg-lens.sqlite`; hosted Vercel uses DATABASE_URL for Neon storage. `TREG_DATA_DIR` selects another private persistent local directory. Keep the application secret and data directory stable between restarts. An ephemeral host or a new checkout with an empty data directory cannot recover the old server's history.
 
 The browser can retain recovery data for unsaved changes or older browser-only installations. A server revision protects concurrent saves. If another tab or scheduled audit changes the workspace, refresh and review the conflict before saving; export unsaved work first. Do not overwrite a newer server snapshot by guessing its revision.
 
@@ -88,15 +88,19 @@ If a completed monitoring audit cannot be saved, download its recovery file from
 
 Authentication keys stay out of browser storage and reports. The session cookie is encrypted and HttpOnly. An optional per-request override stays in memory until reload. Enabling a monitor separately authorizes an encrypted server-retained credential.
 
+For a hosted instance, use the [guided Vercel + Neon deployment](DEPLOYMENT.md#guided-vercel-and-neon-deployment). It creates your repository, connects storage, collects the private application secret, and deploys with schema preparation in the build. Visitors still enter their own Treg keys. Manual research works on Hobby; minutely hosted monitoring requires Pro configuration.
+
 ## Enable daily or weekly monitoring
 
-Run the app server, then start the worker in a second terminal:
+On a local/persistent host, run the app server and start the worker in a second terminal:
 
 ```bash
 npm run monitor
 ```
 
 If using a different app port or origin, configure `MONITOR_BASE_URL` in that worker's environment. The default is `http://127.0.0.1:3000`; remote origins require HTTPS. The worker and server must use the same stable secret and configuration mode. See [worker deployment](DEPLOYMENT.md#monitoring-worker) for a supervised process or one-shot cron invocation.
+
+On Vercel Pro, the operator instead enables TREG_VERCEL_MONITORING=1 with a separate private CRON_SECRET and redeploys. Hosted forks install no cron by default.
 
 In the private workspace, review the prompts/engines, choose daily or weekly monitoring and a UTC hour, set per-audit and monthly limits, and explicitly enable it. Confirm the worker heartbeat. Enabling a schedule in the UI does not launch a worker process.
 

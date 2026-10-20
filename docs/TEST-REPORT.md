@@ -1,23 +1,29 @@
-# Full feature verification — 19 October 2026
+# Full feature verification — 20 October 2026
 
-The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This pass covers the live workspace, durable SQLite storage, backup restoration and budgeted monitoring. Automated runs use synthetic provider responses; the dated live smoke below separately verified the Treg boundary.
+The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This pass covers the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. A separate real-Neon smoke verified the remote storage path without paid Treg calls; the earlier dated live check below verified the Treg boundary.
 
 ## Results
 
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
-| HTTP API | 114 | 0 / 0 |
-| Chromium browser workflows | 76 | 0 / 0 |
-| Firefox browser workflows | 76 | 0 / 0 |
-| WebKit browser workflows | 76 | 0 / 0 |
-| Library, setup and operations tests | 92 | 0 / 0 |
-| **Total** | **434** | **0 / 0** |
+| HTTP API | 119 | 0 / 0 |
+| Chromium browser workflows | 78 | 0 / 0 |
+| Firefox browser workflows | 78 | 0 / 0 |
+| WebKit browser workflows | 78 | 0 / 0 |
+| Library, setup and operations tests | 121 | 0 / 0 |
+| **Total** | **474** | **0 / 0** |
 
-The complete 342-case API/browser run passed with retries disabled. Lint, TypeScript and the production build also passed. Production dependency audit reported zero vulnerabilities. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. All three browser engines completed the same 76 scenarios. The test server uses a fresh private database and synthetic credentials; it never opens the development workspace database.
+The complete 353-case production API/browser run passed with zero retries or skips: 119 HTTP tests plus 78 browser scenarios in each of Chromium, Firefox and WebKit. The 121 library/setup/operations tests also passed. Lint, TypeScript and the production build passed. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
 
 New coverage includes server durability after clearing the browser cache, scoped legacy migration, failed-save recovery, revision conflicts, complete backup restoration, confirmed audit deletion, idempotent monitoring recovery merges, and an exact-8 MiB backup round trip with answer hashes checked. Worker HTTP tests make isolated schedules due and execute the actual auth, pricing, provider adapters, ledger and workspace routes. They cover success, UTC cadence, revocation, per-run/monthly budgets, partial failures, missing charges, pending reservations, and retained paid results when the workspace is full.
 
 Library/operations regressions exercise cross-process SQLite reads, atomic rollback, encrypted credential ownership, concurrent runner leases, crashes before and after journaling, exact quote execution, UTC slot alignment, online WAL-consistent backups, and the real worker CLI against an isolated HTTP server. Existing coverage also includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and backup exports when browser storage rejects writes.
+
+Hosted transport coverage exercises owner-bound uploads above the 3 MiB direct-save threshold, 1 MiB chunk limits, UTF-8 character boundaries, exact 8 MiB round trips, checksum/schema failures, immutable chunk replay, concurrent revision conflicts, expiry/abort, encrypted staging, bounded retention, and replay of the original committed snapshot after later edits. Client tests cover lost commit acknowledgments without duplicate writes; streamed JSON tests round-trip Unicode above the platform response limit. Hosted cron tests reject absent/incorrect bearer values and spoofed Vercel headers. The local POST runner and hosted GET dispatcher share the tested monitor domain logic. Remote-mode operations tests confirm local backup and pause commands refuse without touching an unrelated SQLite database or exposing credentials.
+
+## Real Neon storage smoke — 20 October 2026
+
+A separate check used the provisioned Neon database and synthetic owner namespaces to verify remote compare-and-swap, atomic audit append, runner leases, budget reservations/settlement, and retained-result recovery. All synthetic owner rows were removed afterward. It made **zero paid Treg calls**. This establishes that the remote storage adapter worked against that database at the time checked; it is separate from the fixture test count and does not claim a public Vercel deployment or live scheduled-provider run.
 
 Open-source onboarding includes 12 setup regressions for stable existing secrets, private file creation, Windows line endings, empty and duplicate overrides, test-mode handling, Node minimums, and environment precedence. `npm run check` also verifies local documentation links and heading anchors. The earlier onboarding verification used a source-only copy in a directory containing spaces for clean install, repeated setup with byte-for-byte secret preservation, doctor, checks, and a fresh production build with external network connections blocked. No environment file, dependency installation, or build cache was copied into that installation. Fonts remain vendored with licenses and provenance. Current commit-specific clean installs and platform results are recorded by GitHub Actions.
 
@@ -38,7 +44,7 @@ Each fix is covered by an end-to-end regression. The storage validator also has 
 
 The durable-product review additionally fixed asynchronous reservation headers being mistaken for settled charges, discarded paid evidence when a workspace is full, late-worker schedule drift, lost evidence after a post-collection crash, stale client responses, fallback writes before server verification, and full-backup envelope size limits. These cases have targeted HTTP, browser or library regressions in the suites above.
 
-## Live Treg checks
+## Live Treg checks — 19 October 2026
 
 These requests ran separately against the development instance with a private key. They are not part of CI and did not use fixture responses.
 

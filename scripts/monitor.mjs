@@ -1,13 +1,16 @@
 import { createHmac } from "node:crypto";
 import { existsSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { readConfiguration, runtimeIssue, secretIssue } from "./project.mjs";
+import { readConfiguration, runtimeIssue, secretIssue, storageMode } from "./project.mjs";
 
 const problem = runtimeIssue();
 if (problem) throw new Error(problem);
 const { secret, environment } = readConfiguration(process.cwd(), process.env, process.env.NODE_ENV || "production");
+const storage = storageMode(environment);
 if (process.argv.includes("--pause-all")) {
   if (process.argv.slice(2).length !== 1) throw new Error("Use --pause-all by itself with the server and worker stopped.");
+  if (storage !== "sqlite")
+    throw new Error("--pause-all supports SQLite only. No local or remote schedules were changed. For Postgres, disable hosted cron and follow the remote pause/restore procedure in docs/DEPLOYMENT.md.");
   const path = join(resolve(environment.TREG_DATA_DIR || "data"), "treg-lens.sqlite");
   if (!existsSync(path)) throw new Error("No database exists in TREG_DATA_DIR; no schedules were changed.");
   const { DatabaseSync } = await import("node:sqlite");

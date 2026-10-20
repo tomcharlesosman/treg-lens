@@ -14,7 +14,7 @@ const script = resolve("scripts/monitor.mjs");
 const secret = "synthetic-monitor-runner-cli-test-secret-32-characters";
 function environment() {
   const env = { ...process.env };
-  for (const key of ["SESSION_SECRET", "TREG_DATA_DIR", "MONITOR_BASE_URL", "NODE_ENV"]) delete env[key];
+  for (const key of ["SESSION_SECRET", "TREG_DATA_DIR", "MONITOR_BASE_URL", "NODE_ENV", "DATABASE_URL", "TREG_STORAGE", "VERCEL"]) delete env[key];
   return env;
 }
 
@@ -70,6 +70,31 @@ test("offline operator recovery pauses all restored schedules and removes creden
     db = new DatabaseSync(path);
     assert.deepEqual({ ...db.prepare("SELECT enabled,credential,next_run_at,last_status FROM monitor_schedules").get() }, { enabled: 0, credential: null, next_run_at: null, last_status: "paused" });
     assert.equal(db.prepare("SELECT reserved_micro FROM monitor_jobs").get().reserved_micro, 8000);
+    db.close();
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});
+
+test("remote pause-all refuses before touching an unrelated local SQLite database or exposing credentials", async () => {
+  const root = mkdtempSync(join(tmpdir(), "treg-worker-remote-pause-"));
+  mkdirSync(join(root, "data"));
+  const path = join(root, "data", "treg-lens.sqlite");
+  let db = new DatabaseSync(path);
+  db.exec("CREATE TABLE monitor_schedules (enabled INTEGER,credential TEXT,next_run_at TEXT,last_status TEXT,last_error TEXT); INSERT INTO monitor_schedules VALUES(1,'keep-local-envelope','2026-10-19T00:00:00Z','scheduled',NULL);");
+  db.close();
+  const databaseUrl = "postgresql://user:synthetic-private-database-password@example.com/test?sslmode=require";
+  try {
+    writeFileSync(join(root, ".env.local"), `DATABASE_URL=${databaseUrl}\n`);
+    for (const overrides of [{}, { TREG_STORAGE: "postgres" }]) {
+      await assert.rejects(() => execute(process.execPath, [script, "--pause-all"], { cwd: root, env: { ...environment(), ...overrides } }), (error) => {
+        assert.equal(error.code, 1);
+        assert.match(error.stderr, /supports SQLite only/);
+        assert.match(error.stderr, /No local or remote schedules were changed/);
+        assert.ok(!(error.stdout + error.stderr).includes("synthetic-private-database-password"));
+        return true;
+      });
+    }
+    db = new DatabaseSync(path);
+    assert.deepEqual({ ...db.prepare("SELECT enabled,credential,last_status FROM monitor_schedules").get() }, { enabled: 1, credential: "keep-local-envelope", last_status: "scheduled" });
     db.close();
   } finally { rmSync(root, { recursive: true, force: true }); }
 });

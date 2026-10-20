@@ -21,7 +21,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import KeySignInForm from "./key-sign-in-form";
-import { GITHUB_FORK_URL, GITHUB_REPOSITORY } from "@/lib/site";
+import { DEPLOY_VERCEL_URL, GITHUB_FORK_URL, GITHUB_REPOSITORY } from "@/lib/site";
 import "./marketing.css";
 
 export function MarketingLogo({ light = false }: { light?: boolean }) {
@@ -507,6 +507,9 @@ export default function MarketingPage() {
                 rel="noreferrer"
               >
                 <GitFork size={16} /> Fork on GitHub <ArrowUpRight size={14} />
+              </a>
+              <a href={DEPLOY_VERCEL_URL} target="_blank" rel="noreferrer">
+                Deploy your own <ArrowUpRight size={13} />
               </a>
               <a
                 href={`${GITHUB_REPOSITORY}#readme`}

@@ -32,6 +32,8 @@ npm run test:e2e:report
 
 ## Coverage
 
+The complete local pass on **20 October 2026** passed **474 test executions**: 121 library/setup/operations tests and 353 production E2E tests (119 HTTP API plus 78 scenarios in each of Chromium, Firefox and WebKit), with zero failures, retries or skips. The separate real-Neon storage smoke made no paid Treg calls. See [the dated report](TEST-REPORT.md) for scope and evidence; these counts do not claim a public deployment.
+
 | Area | Coverage |
 | --- | --- |
 | Public pages | Product links, fork destinations, navigation anchors, all FAQ disclosures, compact sign-in, and demo entry points |
@@ -39,7 +41,9 @@ npm run test:e2e:report
 | Demo boundaries | All paid/account entry points require sign-in, demo edits stay separate from private saved workspaces, exports are labeled illustrative |
 | Settings and storage | Empty workspace, project validation, competitors, durable server save/reload, cross-browser per-key isolation, revision conflicts, browser recovery/migration, malformed data, legacy key removal, and backup of unsaved changes |
 | Full backups | Complete versioned workspace export/import, replacement confirmation, rejected filtered/demo/credential-bearing files, exact-8 MiB round trips, confirmed audit deletion, idempotent recovery merges, and source-research preservation |
+| Hosted transport | Automatic chunk saves above 3 MiB, 1 MiB request bounds, owner isolation, encrypted staging, checksums/UTF-8/schema, immutable replay, lost acknowledgments, revision conflicts, expiry/abort, bounded retention and streamed large JSON |
 | Scheduled monitoring | Explicit configuration/consent, encrypted credentials, runner authorization, UTC schedule/heartbeat, budgets/reservations, fixture-backed due-job execution, retained partial evidence, interruption pauses, and recovery download |
+| Hosted cron and operations | Independent cron bearer auth, rejection of spoofed platform headers, shared monitor execution rules, fail-closed storage selection and remote refusal by SQLite-only backup/pause commands |
 | Audits | Live estimate UI, price breakdown, prompt/engine validation, example prompts, four-engine run, result details, partial/all failures, balance errors, unknown billing, background completion across close/reopen without duplicate requests, completed rechecks and latest-answer persistence |
 | Prompt tracking | Add, case-insensitive duplicate prevention, remove, tabs, search, keyboard shortcut, empty answers and prompt recheck |
 | Discovery | Seed validation, estimates, keyword/People Also Ask results, volumes, tabs, deduplication, selection/import, combined eight-selection limit, reset/change seeds, background continuation and retained results, partial failures and pending reservations |
@@ -57,7 +61,7 @@ Playwright is pinned to 1.61.1 so this checkout can also exercise the frozen Web
 
 ## Provider boundary and costs
 
-Normal automated runs use `tests/e2e/support/treg-fixture.cjs` as a Node preload **only in the test server process**. The HTTPS harness supplies a temporary `TREG_DATA_DIR`; it never uses the development or production workspace database. Scheduler integration tests make a schedule due in that isolated database and invoke the real internal runner route. This test-only database manipulation is not a public application endpoint or authorization bypass. Application route handlers, request validation, session encryption, browser code, storage and downloads remain real. The fixture replaces Treg's network responses, checks request contracts and spend guards, and refuses unknown Treg paths. Its keys and session secret are synthetic, public test data. The application has no test authentication endpoint or configurable upstream bypass.
+Normal automated runs use `tests/e2e/support/treg-fixture.cjs` as a Node preload **only in the test server process**. The HTTPS harness forces `TREG_STORAGE=sqlite`, excludes inherited remote configuration, and supplies a temporary `TREG_DATA_DIR`; it never uses the development or production workspace database. Scheduler integration tests make a schedule due in that isolated database and invoke the real internal runner route. This test-only database manipulation is not a public application endpoint or authorization bypass. Application route handlers, request validation, session encryption, browser code, storage and downloads remain real. The fixture replaces Treg's network responses, checks request contracts and spend guards, and refuses unknown Treg paths. Its keys and session secret are synthetic, public test data. The application has no test authentication endpoint or configurable upstream bypass.
 
 Fixtures cover provider success, refusal, partial errors, insufficient balance, pending work and missing billing headers. They do not establish that a live upstream provider is currently available. Live checks must be run separately with a private key, fresh estimates and an explicit spending budget; never add them to the default suite or CI.
 
@@ -69,8 +73,8 @@ Reports, screenshots and failure traces are written under the ignored `output/pl
 
 ## Durable storage and worker verification
 
-The live product now persists workspaces and schedules on the server. A fixture-backed pass establishes the tested database, revision, import, and runner behavior; it does not prove a production disk is persistent or a worker is supervised. Verify `/api/health`, save/reload from a fresh browser with the same key, a reviewed full-backup restore, and an enabled worker heartbeat on the actual host. Paid live verification still requires deliberate inputs and a spending limit.
+The live product persists workspaces and schedules through shared SQLite/Postgres domain logic. Local fixture passes do not by themselves prove a hosted Postgres transaction or Vercel transport works; those checks must be recorded separately. A fixture-backed pass establishes the tested database, revision, import, and runner behavior; it does not prove a production disk is persistent or a worker is supervised. Verify `/api/health`, save/reload from a fresh browser with the same key, a reviewed full-backup restore, and an enabled worker heartbeat on the actual host. Paid live verification still requires deliberate inputs and a spending limit.
 
-For operations, `npm run backup -- /private/path/new.sqlite` produces a consistent SQLite backup without a CLI/database package. Keep real databases and their credentials out of test artifacts. Stop server/worker and use `npm run monitor -- --pause-all` before restarting from an old database backup; external billing is not rolled back by restore.
+For operations, `npm run backup -- /private/path/new.sqlite` produces a consistent SQLite backup without a CLI/database package. Keep real databases and their credentials out of test artifacts. For SQLite, stop server/worker and use `npm run monitor -- --pause-all` before restarting from an old backup; remote mode is refused and uses the documented provider/private SQL recovery procedure; external billing is not rolled back by restore.
 
 The dated [verification report](TEST-REPORT.md) records the complete local verification pass. GitHub Actions records results for each commit; use that run when checking a particular checkout.

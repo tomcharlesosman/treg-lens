@@ -7,6 +7,7 @@ import {
 import { authorizePaidInput, authErrorResponse, getTregSession } from "@/lib/treg-auth";
 import { TregAuthError, workspaceIdForToken } from "@/lib/treg-session";
 import { appendWorkspaceRun } from "@/lib/workspace-repository";
+import { streamJson } from "@/lib/stream-json";
 
 export const maxDuration = 300;
 
@@ -47,7 +48,7 @@ export async function POST(request: Request) {
     const audit = await runAudit(input);
     let persistence: { saved: boolean; workspaceRevision?: number; workspaceUpdatedAt?: string | null; storageError?: string };
     try {
-      const workspace = appendWorkspaceRun(savedWorkspaceId, {
+      const workspace = await appendWorkspaceRun(savedWorkspaceId, {
         id: auditId, brand: input.brand, domain: input.domain,
         prompts: input.prompts, competitors: input.competitors, engines: input.engines,
         ...audit,
@@ -56,7 +57,7 @@ export async function POST(request: Request) {
     } catch {
       persistence = { saved: false, storageError: "The audit completed, but server storage is unavailable. Export these results before leaving this page; do not rerun the paid audit to save it." };
     }
-    return Response.json({ ...audit, auditId, savedWorkspaceId, ...persistence }, {
+    return streamJson({ ...audit, auditId, savedWorkspaceId, ...persistence }, {
       headers: { "Cache-Control": "no-store" },
     });
   } catch (error) {

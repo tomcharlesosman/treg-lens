@@ -39,6 +39,13 @@ test.describe("Public marketing and navigation", () => {
     }
     await expect(page.getByRole("contentinfo").getByRole("link", { name: "GitHub", exact: true })).toHaveAttribute("href", REPOSITORY_URL);
     await expect(page.getByRole("link", { name: "The AEO toolkit" })).toHaveAttribute("href", "https://treg.to/aeo");
+    const deployment = page.getByRole("link", { name: "Deploy your own" });
+    const deploymentUrl = new URL((await deployment.getAttribute("href"))!);
+    expect(deploymentUrl.origin).toBe("https://vercel.com");
+    expect(deploymentUrl.searchParams.get("repository-url")).toBe(`${REPOSITORY_URL}/tree/main`);
+    expect(deploymentUrl.searchParams.get("env")).toBe("SESSION_SECRET");
+    expect(JSON.parse(deploymentUrl.searchParams.get("products")!)).toEqual([{ type: "integration", integrationSlug: "neon", productSlug: "neon", protocol: "storage" }]);
+    await expect(deployment).toHaveAttribute("target", "_blank");
     await expect(page.getByRole("link", { name: "Open your workspace", exact: true }).first()).toHaveAttribute("href", "/login");
     await page.getByRole("link", { name: "Preview sample data", exact: true }).first().click();
     await expect(page).toHaveURL(/\/demo$/);

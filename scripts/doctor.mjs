@@ -4,7 +4,7 @@ import { fileURLToPath } from "node:url";
 import { createRequire } from "node:module";
 import { spawnSync } from "node:child_process";
 import { createConnection } from "node:net";
-import { readConfiguration, runtimeIssue, secretIssue } from "./project.mjs";
+import { readConfiguration, runtimeIssue, secretIssue, storageMode } from "./project.mjs";
 
 const root = fileURLToPath(new URL("../", import.meta.url));
 const args = new Set(process.argv.slice(2));
@@ -42,6 +42,12 @@ try {
   check(!issue, issue ? `${issue} Source: ${configuration.source || "not configured"}.` : `SESSION_SECRET is configured (${configuration.source}); value hidden`);
   if (configuration.source !== "server environment" && configuration.secret?.includes("$"))
     console.log("NOTE  This file uses dollar signs. Next expands dotenv variables; verify the effective value at runtime or use a literal setup-generated secret.");
+  try {
+    const storage = storageMode(configuration.environment);
+    check(true, storage === "sqlite" ? "SQLite storage selected; no external database service is required" : "Postgres storage selected; DATABASE_URL is configured and hidden (connection not tested)");
+  } catch (error) {
+    check(false, error instanceof Error ? error.message : "Storage configuration could not be validated.");
+  }
   if (args.has("--e2e")) {
     const openssl = spawnSync("openssl", ["version"], { stdio: "ignore" });
     const help = openssl.status === 0 ? spawnSync("openssl", ["req", "-help"], { encoding: "utf8" }) : null;
@@ -55,7 +61,7 @@ try {
     }
     for (const port of [3100, 3101]) check(await portFree(port), `E2E port ${port} must be free (the suite never reuses an existing server)`);
   }
-  console.log("No secrets were printed; no Treg requests were made. This checks local prerequisites, not provider availability or deployment security.");
+  console.log("No secrets were printed; no Treg or database requests were made. This checks local prerequisites, not provider availability or deployment security.");
   process.exitCode = failed ? 1 : 0;
 } catch (error) {
   console.error(`Doctor: ${error instanceof Error ? error.message : "Could not inspect this checkout."}`);

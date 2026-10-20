@@ -40,3 +40,21 @@ export function secretIssue(secret) {
     ? "SESSION_SECRET needs a stable random value of at least 32 characters. Run npm run setup for a new local installation. Existing nonempty secrets are never replaced automatically."
     : null;
 }
+
+/** Select storage without connecting or including a credential in an error. */
+export function storageMode(environment) {
+  const requested = environment.TREG_STORAGE;
+  if (requested && !["sqlite", "postgres"].includes(requested))
+    throw new Error("TREG_STORAGE must be sqlite or postgres.");
+  const databaseUrl = environment.DATABASE_URL?.trim();
+  const selected = requested || (databaseUrl ? "postgres" : "sqlite");
+  if (environment.VERCEL === "1" && selected !== "postgres")
+    throw new Error("Vercel requires durable Postgres storage and DATABASE_URL; SQLite is for a persistent local host.");
+  if (selected === "postgres") {
+    let url;
+    try { url = new URL(databaseUrl || ""); } catch { /* Return only the safe configuration error below. */ }
+    if (!url || !["postgres:", "postgresql:"].includes(url.protocol) || !url.hostname)
+      throw new Error("Postgres storage requires a valid private DATABASE_URL using postgres:// or postgresql://. Its value is hidden.");
+  }
+  return selected;
+}

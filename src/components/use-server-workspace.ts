@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState, type SetStateAction } from "r
 import { DEFAULT_PROJECT, DEFAULT_PROMPTS, type Project, type SavedRun } from "@/lib/workspace-data";
 import type { WorkspaceSnapshot } from "@/lib/workspace-storage";
 import { sanitizeWorkspaceSnapshot } from "@/lib/workspace-validation";
+import { saveWorkspaceSnapshot, type WorkspaceSaveAttempt } from "@/lib/workspace-upload-client";
 
 export type WorkspaceEnvelope = { snapshot: WorkspaceSnapshot | null; revision: number; updatedAt: string | null };
 export type SyncPhase = "loading" | "sample" | "saved" | "unsaved" | "saving" | "offline" | "conflict";
@@ -35,6 +36,7 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
   const [snapshot, setSnapshot] = useState<WorkspaceSnapshot>(emptyWorkspace);
   const [sync, setSync] = useState<WorkspaceSync>({ phase: demoMode ? "sample" : "loading", revision: null, updatedAt: null, error: "", cacheError: "", isNew: false });
   const state = useRef({ snapshot: emptyWorkspace(), revision: null as number | null, updatedAt: null as string | null, dirty: false, version: 0, loaded: demoMode, serverVerified: false, saving: false, refreshing: false, disposed: false, conflict: null as WorkspaceEnvelope | null });
+  const pendingUpload = useRef<WorkspaceSaveAttempt | null>(null);
   const metaKey = storageKey.replace("treg-lens-workspace-v1", "treg-lens-sync-v1");
   const publish = useCallback((phase: SyncPhase, error = "", isNew?: boolean) => {
     const current = state.current;
@@ -53,6 +55,7 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
   }, [demoMode, storageKey, metaKey]);
   const adopt = useCallback((envelope: WorkspaceEnvelope) => {
     const current = state.current;
+    pendingUpload.current = null;
     current.snapshot = envelope.snapshot ?? emptyWorkspace();
     current.revision = envelope.revision;
     current.updatedAt = envelope.updatedAt;
@@ -98,16 +101,18 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
     current.saving = true;
     publish("saving");
     try {
-      const response = await fetch("/api/workspace", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ snapshot: withoutCredentials(submitted), revision }) });
+      const response = await saveWorkspaceSnapshot(withoutCredentials(submitted), revision, pendingUpload);
       const data = await response.json();
       if (current.disposed) return false;
       if (response.status === 409) {
         current.conflict = envelopeFrom(data);
+        pendingUpload.current = null;
         publish("conflict", "A newer server version exists. Your local changes are retained. Download a backup before choosing which version to load.");
         return false;
       }
       if (!response.ok) throw new Error(data.error || "The server could not save this workspace. Your changes are retained locally.");
       const envelope = envelopeFrom(data);
+      pendingUpload.current = null;
       current.revision = envelope.revision;
       current.updatedAt = envelope.updatedAt;
       current.dirty = current.version !== version;
@@ -124,11 +129,11 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
   }, [cache, demoMode, publish]);
   const refresh = useCallback(async (): Promise<boolean> => {
     const current = state.current;
-    if (demoMode || current.disposed || !current.loaded || current.saving || current.refreshing) return false;
+    if (demoMode || current.disposed || !current.loaded || current.saving || current.refreshing || pendingUpload.current) return false;
     current.refreshing = true;
     try {
       const remote = await readServer();
-      if (current.disposed || current.saving) return false;
+      if (current.disposed || current.saving || pendingUpload.current) return false;
       current.serverVerified = true;
       if (current.revision !== null && remote.revision < current.revision) return false;
       if (current.dirty) {
@@ -152,6 +157,7 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
     }
   }, [adopt, demoMode, publish, readServer]);
   const retry = useCallback(async () => {
+    if (pendingUpload.current) { await save(); return; }
     if (await refresh()) await save();
   }, [refresh, save]);
   const loadServer = useCallback(async () => {

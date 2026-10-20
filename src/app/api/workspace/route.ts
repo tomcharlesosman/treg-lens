@@ -1,6 +1,7 @@
 import { assertSameOrigin } from "@/lib/aeo";
 import { getTregSession, authErrorResponse } from "@/lib/treg-auth";
 import { TregAuthError } from "@/lib/treg-session";
+import { streamJson } from "@/lib/stream-json";
 import {
   getWorkspace, saveWorkspace, MAX_WORKSPACE_BYTES,
   WorkspaceConflictError, WorkspaceValidationError,
@@ -42,7 +43,7 @@ async function readWorkspaceRequest(request: Request): Promise<unknown> {
 function failure(error: unknown): Response {
   if (error instanceof TregAuthError) return authErrorResponse(error);
   if (error instanceof WorkspaceConflictError)
-    return Response.json({ error: error.message, ...error.current }, { status: 409, headers });
+    return streamJson({ error: error.message, ...error.current }, { status: 409, headers });
   if (error instanceof WorkspaceValidationError || error instanceof RequestError)
     return Response.json({ error: error.message }, { status: error instanceof RequestError ? error.status : 400, headers });
   if (error instanceof Error && error.name === "AeoError" && "status" in error)
@@ -53,7 +54,7 @@ function failure(error: unknown): Response {
 export async function GET(request: Request) {
   try {
     assertSameOrigin(request);
-    return Response.json(getWorkspace((await session()).workspaceId), { headers });
+    return streamJson(await getWorkspace((await session()).workspaceId), { headers });
   } catch (error) { return failure(error); }
 }
 export async function PUT(request: Request) {
@@ -64,6 +65,6 @@ export async function PUT(request: Request) {
     if (!body || typeof body !== "object" || Array.isArray(body)) throw new WorkspaceValidationError();
     const data = body as Record<string, unknown>;
     if (typeof data.revision !== "number") throw new WorkspaceValidationError();
-    return Response.json(saveWorkspace(owner.workspaceId, data.snapshot, data.revision), { headers });
+    return streamJson(await saveWorkspace(owner.workspaceId, data.snapshot, data.revision), { headers });
   } catch (error) { return failure(error); }
 }

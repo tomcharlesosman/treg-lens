@@ -8,8 +8,13 @@ Start with the [README](../README.md) for setup, [architecture](./ARCHITECTURE.m
 
 | Method | Path | Credential required | Provider work |
 | --- | --- | --- | --- |
-| `GET` | `/api/health` | None | SQLite connection/readiness only, no Treg request |
+| `GET` | `/api/health` | None | Selected database readiness only, no Treg request |
 | `GET`, `PUT` | `/api/workspace` | Verified session cookie | Durable snapshot read or revision-checked save |
+| `POST` | `/api/workspace/uploads` | Verified session cookie | Begin owner-bound snapshot upload |
+| `PUT` | `/api/workspace/uploads/:id/chunks/:index` | Verified session cookie | Stage a binary chunk, no provider work |
+| `POST` | `/api/workspace/uploads/:id/commit` | Verified session cookie | Validate and atomically save staged content |
+| `DELETE` | `/api/workspace/uploads/:id` | Verified session cookie | Abort uncommitted upload |
+| `GET` | `/api/cron/monitor` | Independent CRON_SECRET bearer | One hosted due audit when cron is installed |
 | `GET`, `PUT`, `DELETE` | `/api/monitor` | Verified session cookie | Read/configure/pause scheduling; no immediate paid run |
 | `GET` | `/api/monitor/results` | Verified session cookie | Download retained scheduled results after storage overflow |
 | `POST` | `/api/internal/monitor/tick` | Internal runner bearer | One due scheduled audit, if any |
@@ -26,7 +31,7 @@ Next.js supplies `OPTIONS` with an `Allow` header and `HEAD` for GET-enabled rou
 
 ## Request and authentication rules
 
-Research/authentication JSON requests and monitor PUT use `Content-Type: application/json` and fit within **16,384 bytes**, including when sent without `Content-Length`. Workspace PUT allows **8 MiB of snapshot data plus 4 KiB of JSON-envelope overhead**, with a bounded streamed body reader. The internal tick and DELETE routes do not require JSON bodies. Invalid JSON or invalid fields return `400`; oversized bodies return `413`; other content types return `415`. Unknown fields are ignored by the current validators.
+Research/authentication JSON requests and monitor PUT use `Content-Type: application/json` and fit within **16,384 bytes**, including when sent without `Content-Length`. Workspace PUT allows **8 MiB of snapshot data plus 4 KiB of JSON-envelope overhead**, with a bounded streamed body reader. Above 3 MiB the browser uses bounded chunk uploads. Manifests allow 4 KiB JSON and chunks 1 MiB application/octet-stream. Internal ticks, upload commit, and DELETE routes need no JSON body. Invalid JSON or invalid fields return `400`; oversized bodies return `413`; other content types return `415`. Unknown fields are ignored by the current validators.
 
 Public mutations inspect `Origin` when supplied; the workspace route also checks it on GET. The internal runner instead requires its bearer credential. A valid HTTP(S) origin must have the same host and port as the request's `Host` header; the check does not compare the incoming request scheme. Requests without `Origin`, such as server-side scripts, are accepted. These routes do not configure cross-origin browser access.
 
@@ -90,13 +95,13 @@ Returns `200` with `{ "configured": true }` or `{ "configured": false }`, using 
 
 ### GET `/api/health`
 
-Unauthenticated local storage probe with `Cache-Control: no-store`. Returns `200 {"status":"ok","storage":"ready"}` when the SQLite connection responds, otherwise `503 {"status":"unavailable","storage":"unavailable"}`. No Treg call or tenant information is returned. This does not prove provider availability, funding, free disk space, or an active worker.
+Unauthenticated storage probe with `Cache-Control: no-store`. Returns `200 {"status":"ok","storage":"ready"}` when the selected database responds, otherwise `503 {"status":"unavailable","storage":"unavailable"}`. No Treg call or tenant information is returned. This does not prove provider availability, funding, free disk space, or an active worker.
 
 ## Durable workspace
 
 ### GET `/api/workspace`
 
-Requires a verified session; callers do not supply a workspace ID. Returns private/no-store JSON:
+Requires a verified session; callers do not supply a workspace ID. Returns streamed private/no-store JSON:
 
 ```ts
 type WorkspaceEnvelope = {
@@ -122,6 +127,19 @@ Body: `{ "snapshot": { ... }, "revision": 0 }`, using the revision most recently
 A successful transaction returns the envelope with an incremented revision. A stale revision returns **409** with `{ error, snapshot, revision, updatedAt }` containing the current saved state. Preserve/export unsaved edits and explicitly refresh before choosing a replacement. Do not simply retry an old snapshot with the new revision. Invalid data is 400, oversized HTTP input is 413, and unavailable storage is 503.
 
 The separate full-backup format is `{ kind: "treg-lens-workspace-backup", version: 1, demo: false, exportedAt, snapshot }`. The UI validates the same 8 MiB workspace-data limit, allows a small wrapper overhead, and asks for replacement confirmation. Filtered reports, illustrative demo exports, credential fields, duplicate IDs, or invalid research are rejected. Import does not restore session or monitor authorization. A monitoring-recovery file uses the separate merge flow below.
+
+### Large workspace upload protocol
+
+Use this protocol for large snapshots; the browser chooses it above 3 MiB. All routes require the verified owner session, same-origin checks, and private/no-store responses. Upload IDs never grant another key access.
+
+1. `POST /api/workspace/uploads` with a JSON manifest `{ id, revision, totalBytes, sha256 }`: client-generated UUID, expected nonnegative revision, 1 byte–8 MiB of UTF-8 snapshot data, and lowercase SHA-256 hex digest. The manifest body is limited to 4 KiB. Returns `{ id, expiresAt, chunkBytes: 1048576 }`.
+2. `PUT /api/workspace/uploads/:id/chunks/:index` with `Content-Type: application/octet-stream`. Index is zero-based; each chunk must have its exact declared size, at most 1 MiB. Repeating identical bytes is safe; changing an uploaded chunk is refused. Returns `{ index, received: true }`.
+3. `POST /api/workspace/uploads/:id/commit` with no required body. The server verifies complete ordering, length, UTF-8, checksum, snapshot schema, and the original revision before one atomic save. It returns the normal streamed workspace envelope. A conflict is 409, with no blind overwrite. Replaying a committed upload returns its original saved snapshot/revision rather than making a duplicate write or returning newer unrelated state.
+4. `DELETE /api/workspace/uploads/:id` aborts an uncommitted draft and returns `{ aborted: true }`.
+
+Drafts expire after 15 minutes. Creating a new manifest replaces older pending drafts for that owner, allowing recovery after a closed tab. Staged chunks are AES-256-GCM encrypted with a separate secret-derivation purpose and owner/upload/index associated data; retention is bounded to two completed uploads plus one pending upload per owner. Expired or unavailable uploads return 404. Final workspace content remains ordinary database data; this staging protection is not whole-database encryption. The in-tab client preserves its manifest for safe retry after a lost commit acknowledgment. Neither upload retries nor save recovery repeats paid research.
+
+Large workspace/recovery JSON responses stream so the 8 MiB snapshot contract fits hosted response transport. For a hosted API client, use chunks rather than sending a body beyond the platform's independent payload cap.
 
 ## Scheduled monitoring
 
@@ -183,7 +201,13 @@ Verified-session download of `{ version: 1, kind: "monitoring-recovery", runs: S
 
 Internal worker route, not a user integration endpoint. It requires the purpose-derived runner bearer credential generated by `scripts/monitor.mjs`; an ordinary Treg key or session cookie receives 401. No request body is required. A tick claims at most one due schedule and returns `{ processed: false }` or `{ processed: true, status: "complete" | "paused" }`.
 
-A ten-minute SQLite lease prevents overlapping claims. Before paid work, the worker revalidates its encrypted key, reads current catalog prices, and atomically reserves the full ceiling in the job's UTC calendar month. Execution uses that exact quote, per-call caps, and stable job-based idempotency. Final known charges replace the reservation; unknown final charges retain it. Partial/ambiguous failures, interrupted jobs, budget exhaustion, or a storage failure pause monitoring. A stale paid job is not automatically resubmitted. An old database restore is not a billing rollback; use the [documented restore procedure](DEPLOYMENT.md#backups-restore-and-upgrades).
+A ten-minute shared database lease prevents overlapping claims. Before paid work, the worker revalidates its encrypted key, reads current catalog prices, and atomically reserves the full ceiling in the job's UTC calendar month. Execution uses that exact quote, per-call caps, and stable job-based idempotency. Final known charges replace the reservation; unknown final charges retain it. Partial/ambiguous failures, interrupted jobs, budget exhaustion, or a storage failure pause monitoring. A stale paid job is not automatically resubmitted. An old database restore is not a billing rollback; use the [documented restore procedure](DEPLOYMENT.md#backups-restore-and-upgrades).
+
+### GET `/api/cron/monitor`
+
+Hosted counterpart to the local POST tick. Requires `Authorization: Bearer <CRON_SECRET>` with an independently configured secret of at least 32 characters; missing/short configuration and ordinary sessions/Treg keys fail closed with 401. The route calls the same monitor domain logic and returns its processed/status envelope. It never accepts a user-controlled schedule or credential in the request.
+
+`vercel.ts` installs its minutely production cron only when `TREG_VERCEL_MONITORING=1`; the Pro configuration gives this handler 360 seconds, below the shared ten-minute lease. Hosted forks omit cron by default for Hobby compatibility. Enabling a user schedule does not install a runner. Preview deployments do not run native cron. All existing budget, journal, uncertainty, and pause rules apply.
 
 ## Audit estimate and execution
 
@@ -453,7 +477,7 @@ Application errors use `{ "error": "human-readable message" }` and `Cache-Contro
 | `403` | Rejected `Origin` header |
 | `409` | Stale workspace revision or an attempt to edit a running monitoring schedule |
 | `405` | Unsupported HTTP method; framework response |
-| `413` | Request body exceeds its route limit: 16 KiB normally, 8 MiB plus 4 KiB envelope for workspace PUT |
+| `413` | Request body exceeds its route limit: 16 KiB normally, 8 MiB plus 4 KiB envelope for workspace PUT, 4 KiB upload manifests, or 1 MiB chunks |
 | `415` | Request is not JSON |
 | `429` | Process-local attempt, concurrency, or cooldown guard |
 | `503` | Missing sign-in configuration, unavailable validation/pricing, or an unexpected server failure |
@@ -468,11 +492,11 @@ Partial provider errors usually return `200` with an `errors` array, including u
 | Paid audit | Nominally 3 active audits; 10-second cooldown per forwarded address |
 | Paid discovery | Nominally 3 active discoveries; 10-second cooldown per forwarded address |
 | Paid source | Nominally 3 active source lookups; 5-second cooldown per forwarded address |
-| Monitor tick | Durable global SQLite lease; one due job per tick, per-workspace monitoring budgets |
+| Monitor tick | Durable global database lease; one due job per tick, per-workspace monitoring budgets |
 | Workspace | Atomic revision compare-and-swap, 8 MiB snapshot bound and 4 KiB envelope allowance |
 | Estimates, session GET/DELETE, status | No application rate guard |
 
-Each route owns a separate in-memory counter/map. The address is the first `x-forwarded-for` value or `local`; a trusted reverse proxy must overwrite forwarded headers. No `Retry-After` or rate-limit headers are returned. Manual-route counters reset with the process and are not shared between instances. Monitoring leases/reservations and workspace revisions persist in the SQLite database. Source DNS preflight happens before its active counter is acquired, so its guard is best-effort rather than an atomic concurrency guarantee. Add an atomic shared limiter if your deployment needs a durable spending boundary.
+Each route owns a separate in-memory counter/map. The address is the first `x-forwarded-for` value or `local`; a trusted reverse proxy must overwrite forwarded headers. No `Retry-After` or rate-limit headers are returned. Manual-route counters reset with the process and are not shared between instances. Monitoring leases/reservations and workspace revisions persist in the selected database. Source DNS preflight happens before its active counter is acquired, so its guard is best-effort rather than an atomic concurrency guarantee. Add an atomic shared limiter if your deployment needs a durable spending boundary.
 
 ## Source of truth
 

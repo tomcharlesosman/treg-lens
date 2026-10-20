@@ -1,6 +1,6 @@
 # Working in Treg Lens
 
-This is an existing Next.js 16 App Router application. Keep its seven runtime dependencies purposeful. Read [README.md](README.md) and [docs/AGENT-QUICKSTART.md](docs/AGENT-QUICKSTART.md) before setup; [architecture](docs/ARCHITECTURE.md) and [API contracts](docs/API.md) explain implementation boundaries.
+This is an existing Next.js 16 App Router application. Keep its eight runtime dependencies purposeful; the single Neon driver supports optional hosted storage. Read [README.md](README.md) and [docs/AGENT-QUICKSTART.md](docs/AGENT-QUICKSTART.md) before setup; [architecture](docs/ARCHITECTURE.md) and [API contracts](docs/API.md) explain implementation boundaries.
 
 ## Setup and checks
 
@@ -10,8 +10,10 @@ This is an existing Next.js 16 App Router application. Keep its seven runtime de
 - `npm run check` runs lint, fresh route type generation, TypeScript, library/setup tests and local documentation-link checks.
 - `npm run test:e2e` builds and tests production routes/browser flows with upstream fixtures. Install Playwright browsers first; `npm run doctor -- --e2e` checks OpenSSL, browser binaries and ports 3100/3101. Never reuse the development server for this suite.
 - `npm run test:e2e:ui` builds first. Reports and traces remain ignored under `output/playwright/`.
-- The live app uses built-in SQLite in `TREG_DATA_DIR` (default `data`). Preserve real databases and the stable secret. Use a temporary data directory in tests. `npm run monitor` starts the separate worker; starting it does not authorize a paid schedule.
-- `npm run backup -- /private/path/new.sqlite` creates a consistent online database backup. After a database restore, keep server/worker stopped and run `npm run monitor -- --pause-all` before reviewing and re-enabling schedules.
+- Local forks use built-in SQLite in `TREG_DATA_DIR` (default `data`). DATABASE_URL selects optional Postgres; Vercel requires durable remote storage. Preserve real databases and the stable secret. Force TREG_STORAGE=sqlite and a temporary data directory in tests. `npm run monitor` starts the separate worker; starting it does not authorize a paid schedule.
+- `npm run backup -- /private/path/new.sqlite` creates a consistent online database backup. After a SQLite restore, keep server/worker stopped and run `npm run monitor -- --pause-all` before review. Both scripts refuse remote mode; follow the hosted Postgres restore procedure instead.
+
+- `npm run db:migrate` explicitly prepares schemas. The Vercel build command runs it before building; imports and plain Next builds never migrate remote data. Hosted forks omit cron by default for Hobby; TREG_VERCEL_MONITORING=1 plus private CRON_SECRET enables the minutely dispatcher on Pro. User schedules still require explicit consent.
 
 ## Preserve these boundaries
 
@@ -27,7 +29,7 @@ This is an existing Next.js 16 App Router application. Keep its seven runtime de
 
 ## Source map
 
-`src/app` contains routes/pages; `src/components` contains the UI; `src/lib` contains provider adapters, sessions, analytics and storage validation. `scripts` contains dependency-free onboarding, diagnostics, database backup, and monitor-worker commands. Server persistence is in `database.ts`/`workspace-repository.ts`; scheduling and credential envelopes are in `monitoring.ts`. `tests/e2e/support/treg-fixture.cjs` replaces only upstream calls in the isolated test process; it is not an application authentication bypass. See [CONTRIBUTING.md](CONTRIBUTING.md).
+`src/app` contains routes/pages; `src/components` contains the UI; `src/lib` contains provider adapters, sessions, analytics and storage validation. `scripts` contains dependency-free onboarding, diagnostics, database backup, and monitor-worker commands. Shared asynchronous persistence is in `storage-database.ts`/`workspace-repository.ts`; `database.ts` provides the local SQLite connection; scheduling and credential envelopes are in `monitoring.ts`. `tests/e2e/support/treg-fixture.cjs` replaces only upstream calls in the isolated test process; it is not an application authentication bypass. See [CONTRIBUTING.md](CONTRIBUTING.md).
 
 <!-- BEGIN:nextjs-agent-rules -->
 

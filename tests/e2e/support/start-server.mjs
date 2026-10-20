@@ -52,7 +52,7 @@ const next = spawn(
     "--port",
     "3101",
   ],
-  { env: { ...process.env, TREG_DATA_DIR: join(temporary, "data") }, stdio: "inherit" },
+  { env: { ...process.env, VERCEL: "", TREG_STORAGE: "sqlite", TREG_DATA_DIR: join(temporary, "data") }, stdio: "inherit" },
 );
 
 const server = createServer(

@@ -1,10 +1,42 @@
 # Deploy Treg Lens
 
-Run Treg Lens as a **Node.js server on one persistent host behind HTTPS**, with a separate monitor worker when users enable automated audits. Use Node.js 24 LTS; 22.13 is the minimum. SQLite is built into Node, so no database service, ORM, Redis, Docker, identity provider, or Treg SDK is required.
+Choose **Vercel + Neon** for a hosted instance or a **Node.js server on persistent local disk** for the simplest self-hosted installation. Local forks default to built-in SQLite and need no external database service. Hosted mode adds one Postgres driver, with the same workspace, credential, and monitoring rules. Use Node.js 24 LTS; 22.13 is the minimum.
 
-Private workspaces, revisions, schedules, and spending records live in SQLite. Use persistent local disk, protect the data directory, and keep `SESSION_SECRET` stable. An ephemeral filesystem, a static export, or unrelated replicas with separate databases cannot provide this deployment's durability. See [architecture](ARCHITECTURE.md) and [API contracts](API.md) before adapting it.
+Private workspaces, revisions, schedules, and spending records live in the selected database. Keep `SESSION_SECRET` stable. An ephemeral SQLite file, a static export, or unrelated replicas with separate databases cannot provide durability. Vercel fails closed without Postgres configuration. See [architecture](ARCHITECTURE.md) and [API contracts](API.md).
 
-## Build and start
+## Guided Vercel and Neon deployment
+
+Use the **Deploy with Vercel** button in [README](../README.md). Its guided flow has four stages; account sign-in, organization permissions, and provider terms can add screens:
+
+1. Create your own Git repository and Vercel project from the template.
+2. Connect the Neon storage product when prompted. Keep its injected `DATABASE_URL` private and scoped to production. No AWS account or separate database-management stack is needed.
+3. Enter a private random `SESSION_SECRET` of at least 32 characters. This is an application secret, not a Treg key. Preserve it across deployments.
+4. Deploy. The checked-in [Vercel configuration](../vercel.ts) runs `npm run db:migrate && npm run build`; the repeatable migration creates the hosted schema before building. No manual SQL setup is required.
+
+Open the production domain, check `/api/health`, and use `/login` with your own Treg team key. Visitors use their own keys and Treg billing; an operator Treg credential is unnecessary. Verify the public domain from a browser with no Vercel login. Standard Protection can protect previews while leaving production domains public; All Deployments protection would block visitors behind Vercel authentication. See [Vercel protection scopes](https://vercel.com/docs/deployment-protection).
+
+Manual audits, discovery, source research, durable saves, and backups can run on Vercel Hobby. The default config registers no cron. For hosted monitoring, use Pro or Enterprise, set `TREG_VERCEL_MONITORING=1` and a separate private random `CRON_SECRET` of at least 32 characters in production, then redeploy. This installs one minutely dispatcher at `GET /api/cron/monitor`; each user must still explicitly enable their schedule and budgets. Vercel sends `CRON_SECRET` as a bearer credential. Do not reuse a visitor's Treg key or publish this secret. See [cron plan limits](https://vercel.com/docs/cron-jobs/usage-and-pricing).
+
+The hosted cron gets a 360-second function limit, below the ten-minute durable lease. The route's default 300 seconds remains Hobby-compatible when cron is disabled. The dispatcher claims at most one due audit per invocation; co-due users are serialized and exact-hour execution is not guaranteed. With fast audits, the ceiling is 60 audits/hour; slow audits reduce throughput. Missed/duplicate deliveries are handled by persisted due times and the shared lease. Uncertain paid work pauses rather than retrying.
+
+Monitor the Neon plan's compute, storage and transfer quotas as well as Vercel usage. The minutely dispatcher queries/writes the database even when no audit is due, keeping compute active rather than allowing idle scale-to-zero. A free database plan has finite allowances; a continuously running dispatcher or growing usage may require a higher quota. Provider hosting charges are separate from each visitor's Treg research budget. Check [current Neon plans](https://neon.com/pricing) and [scale-to-zero behavior](https://neon.com/docs/introduction/scale-to-zero) before choosing operating limits.
+
+Keep preview database branches, secrets, and cron configuration separate from production. Do not pull hosted credentials over an existing local `.env.local` or point automated fixture tests at the production database. This repository does not provision previews automatically. An independent authenticated worker remains an alternative where your hosting plan permits it.
+
+## Storage selection
+
+| Effective configuration | Storage |
+| --- | --- |
+| No selector or database URL | Built-in SQLite, except on Vercel |
+| `TREG_STORAGE=sqlite` | Explicit local/test SQLite; forbidden on Vercel |
+| `DATABASE_URL` or `TREG_STORAGE=postgres` | Hosted Postgres; a valid private database URL is required |
+| Vercel without durable database configuration | Fails closed; never writes an ephemeral SQLite fallback |
+
+Use the Neon application connection for runtime traffic. `DATABASE_URL_UNPOOLED`, when configured, is preferred by the migration command; use a direct connection for `pg_dump`/`pg_restore`. Never put connection strings in public variables, command arguments that expose secrets, or logs. The app uses request-scoped transactions and no ORM. [Neon's connection guidance](https://neon.com/docs/connect/connection-pooling) explains pooled versus direct URLs.
+
+`npm run db:migrate` explicitly prepares the selected database. On Vercel it runs as the configured deployment build command. Plain `npm run build` and importing application modules never migrate a remote schema. For a custom hosted pipeline, run the migration before serving the app. SQLite initializes locally on first use; ordinary local setup remains unchanged.
+
+## Build and start a persistent Node.js host
 
 From the checkout:
 
@@ -20,6 +52,11 @@ Configure these values in the host's protected runtime environment:
 | --- | --- |
 | `SESSION_SECRET` | Stable private random value, at least 32 characters; seals sessions, namespaces workspaces, and protects monitor credentials |
 | `TREG_DATA_DIR` | Private persistent local directory; defaults to `data` below the process working directory |
+| `TREG_STORAGE` | Optional `sqlite` or `postgres`; local forks normally leave it unset |
+| `DATABASE_URL` | Optional hosted Postgres connection; selects remote storage when no explicit selector is set |
+| `DATABASE_URL_UNPOOLED` | Optional direct connection used by migrations instead of the runtime URL |
+| `TREG_VERCEL_MONITORING` | Set to `1` on Vercel Pro/Enterprise to install minutely cron on redeploy |
+| `CRON_SECRET` | Independent private bearer credential for the hosted GET dispatcher |
 | `MONITOR_BASE_URL` | App origin used by the separate worker; defaults to `http://127.0.0.1:3000`; remote origins require HTTPS |
 | `NODE_ENV` | Use `production` for the production app and worker |
 
@@ -54,7 +91,7 @@ Rotating `SESSION_SECRET` invalidates sessions, changes workspace namespaces, an
 
 ## Monitoring worker
 
-The web process does not start a scheduler. Run a supervised second process from the checkout while the app server is available:
+On a persistent host, the web process does not start a scheduler. Run a supervised second process from the checkout while the app server is available:
 
 ```bash
 npm run monitor
@@ -74,7 +111,7 @@ Enabling monitoring retains the signed-in key encrypted with AES-256-GCM and wor
 
 Unknown charges retain the full reservation. Partial failures, ambiguous outcomes, budget exhaustion, and interrupted paid jobs pause for review; there is no automatic resubmission of uncertain paid work. Check Treg activity before explicitly re-enabling. The original month retains its accounting records after a calendar rollover. Monitor configuration, jobs, reservations, and credentials depend on the database and stable secret, so back them up as sensitive server state.
 
-The internal tick endpoint accepts a purpose-derived runner bearer token, not user session authentication. Let the worker generate it; do not publish it, place it in browser code, or treat knowledge of an ordinary Treg key as runner authorization. Remote workers require an HTTPS origin and do not follow redirects.
+The local POST tick accepts a purpose-derived runner bearer token; the hosted GET cron accepts the independent `CRON_SECRET`. Neither accepts a user session or Treg key as runner authorization. Let the worker generate its token; do not publish either credential. Remote workers require an HTTPS origin and do not follow redirects. The Vercel hosted path uses native cron instead of a persistent Node worker process.
 
 ## HTTPS and proxy behavior
 
@@ -97,11 +134,11 @@ location / {
 
 This assumes nginx is the public edge. Configure any additional trusted proxy chain explicitly. Preserve cookies and private/no-store responses; do not share-cache authenticated pages, workspace APIs, monitoring state, or paid results. Workspace data is capped at 8 MiB, with a separate 4 KiB request-envelope allowance. The 9 MiB proxy limit accommodates that wrapper; the app still enforces its tighter limits. Research routes retain their smaller 16 KiB limit.
 
-The host must support audit/discovery requests up to 300 seconds and source research up to 120 seconds. Raising a proxy timeout does not override the hosting platform's limit. Do not blindly repeat a paid request after timeout.
+The host must support audit/discovery requests up to 300 seconds and source research up to 120 seconds; the enabled hosted cron needs 360 seconds. Raising a proxy timeout does not override the hosting platform's limit. Workspaces remain bounded at 8 MiB; the browser uses owner-bound chunks of at most 1 MiB for saves above 3 MiB, and large JSON responses stream to stay compatible with Vercel transport limits. Do not blindly repeat a paid request after timeout.
 
 ## Health and operations
 
-`GET /api/health` makes no Treg call and exposes no workspace information. It returns `200 {"status":"ok","storage":"ready"}` when the SQLite connection responds, or 503 with unavailable status when it cannot. This is a local application/storage probe, not proof of provider availability, funding, free disk space, HTTPS configuration, or an active monitor worker.
+`GET /api/health` makes no Treg call and exposes no workspace information. It returns `200 {"status":"ok","storage":"ready"}` when the selected database responds, or 503 with unavailable status when it cannot. This is an application/storage probe, not proof of provider availability, funding, free disk space, HTTPS configuration, or an active monitor worker. `doctor` validates configuration without connecting to either database.
 
 `GET /api/aeo/status` describes the caller's verified session. Anonymous `{"configured":false}` is expected; it is not a deployment readiness signal. Verify HTTPS login, logout, durable save/reload, and worker heartbeat separately. A valid zero-balance key can verify sign-in without paid research.
 
@@ -111,7 +148,7 @@ Monitor disk capacity, filesystem permissions, database backups, app/worker avai
 
 Workspace JSON import/export is a user-level backup of research and project content. It does not restore sessions, retained schedule credentials, monitoring consent, or the server's spending ledger. Export before replacing a workspace or resolving a save conflict. CSV is a filtered answer report, not a complete restore format.
 
-For a transactionally consistent online server backup, use a **new file** outside the checkout in protected storage:
+For a transactionally consistent online **SQLite** backup, use a **new file** outside the checkout in protected storage:
 
 ```bash
 npm run backup -- /private/backups/treg-lens-2026-10-19.sqlite
@@ -129,8 +166,25 @@ Before restarting automated execution, run against the restored data directory:
 npm run monitor -- --pause-all
 ```
 
-This offline operator action disables all restored schedules and clears their retained credentials. Keep app and worker stopped while doing it. Then reconcile Treg activity since the backup, restart the app, and let each owner deliberately reconnect and enable a reviewed schedule. Start the worker only after that review. Do not start a worker against a stale backup and assume idempotency will cover newly generated job IDs.
+This offline SQLite action disables all restored schedules and clears their retained credentials. Keep app and worker stopped while doing it. Then reconcile Treg activity since the backup, restart the app, and let each owner deliberately reconnect and enable a reviewed schedule. Start the worker only after that review. Do not start a worker against a stale backup and assume idempotency will cover newly generated job IDs.
+
+### Hosted Postgres backup and restore
+
+`npm run backup` and `npm run monitor -- --pause-all` deliberately refuse Postgres mode before opening any SQLite file. They do not back up or pause the hosted database. Use your provider's protected backup/restore workflow or PostgreSQL `pg_dump`/`pg_restore` with a direct connection. These are operator tools, not additional local application prerequisites. Keep database dumps and the matching application secret separately protected. Review your provider's actual retention and quotas; a free plan is not an unlimited backup policy. See [Neon backup guidance](https://neon.com/docs/postgres/backup-restore/backups).
+
+Before restoring an old hosted database, disable cron, stop independent workers, block schedule edits, and allow any in-flight invocation to finish or reach its timeout. Preserve current evidence and reconcile upstream charges. After restoring, while automated execution and user edits remain disabled, run this transaction in the provider's private SQL editor against the intended restored database:
+
+```sql
+BEGIN;
+UPDATE monitor_schedules
+SET enabled = 0, credential = NULL, next_run_at = NULL,
+    last_status = 'paused',
+    last_error = 'Paused by the server operator after restore; review billing before resuming.';
+COMMIT;
+```
+
+This preserves job charges/reservations. Verify schedules are disabled without selecting credentials, reconcile Treg activity since the restore point, and reopen the app for owners to review and deliberately re-enable schedules. Re-enable cron only after review. Restoring a database cannot roll back paid calls. The SQL is an explicit recovery action, not a first-deploy step.
 
 Keep the previous application revision, lockfile, compatible build, data backup, and configuration before upgrades. Validate the new release, switch the supervised app, and verify login, server save/reload, import/export, and worker status before enabling monitoring. Reverting application code does not revert database changes or restore external billing state. Keep the public origin and secret stable unless performing a deliberate migration.
 
-The supported arrangement is a single persistent host. Docker, managed multi-region databases, team collaboration, notifications, and automated publishing are not provided by this deployment recipe. Fork operators should update repository/support destinations and enable their own private security reporting. See [SECURITY.md](../SECURITY.md), [getting started](GETTING-STARTED.md), and [the agent quickstart](AGENT-QUICKSTART.md).
+SQLite supports one persistent host; hosted deployments share the configured Postgres database. Manual route guards still live in process memory, so hosted scaling does not create a shared limiter. Docker, team collaboration, notifications, and automated publishing are not provided by this recipe. Fork operators should update repository/support destinations and enable their own private security reporting. See [SECURITY.md](../SECURITY.md), [getting started](GETTING-STARTED.md), and [the agent quickstart](AGENT-QUICKSTART.md).

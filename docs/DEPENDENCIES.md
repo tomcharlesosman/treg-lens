@@ -1,6 +1,6 @@
 # Dependencies and maintenance
 
-Treg Lens has **seven direct runtime dependencies** and **eight development dependencies**. This is not the installed package count: transitive dependencies, optional packages and platform binaries are recorded in `package-lock.json`. Every direct dependency is used. Removing safe session or Markdown handling to reduce a headline count would add custom security-sensitive code.
+Treg Lens has **eight direct runtime dependencies** and **eight development dependencies**. This is not the installed package count: transitive dependencies, optional packages and platform binaries are recorded in `package-lock.json`. Every direct dependency is used. Removing safe session or Markdown handling to reduce a headline count would add custom security-sensitive code.
 
 ## Runtime inventory
 
@@ -13,8 +13,9 @@ Treg Lens has **seven direct runtime dependencies** and **eight development depe
 | `lucide-react` | Shared tree-shakable icon components |
 | `react-markdown` | Structured rendering of untrusted answers without raw HTML |
 | `remark-gfm` | Tables, lists and GFM content in answers |
+| `@neondatabase/serverless` | Optional hosted Neon Postgres connections and transactions; local forks keep built-in SQLite |
 
-There is no Treg SDK, Axios, ORM, database client, auth SaaS SDK, charting package, CSS framework or UI component framework. Requests use native `fetch`; charts use SVG; durable storage uses built-in `node:sqlite`; schedules use SQLite leases plus a small Node worker; setup and encrypted monitor credentials use Node's crypto/fs/environment primitives. New scripts add no packages.
+There is no Treg SDK, Axios, ORM, auth SaaS SDK, charting package, CSS framework or UI component framework. Local durable storage uses built-in `node:sqlite` with no external service; hosted Vercel deployments use the one Neon driver. Both use shared asynchronous domain logic and database-backed monitoring leases. Native `fetch`, SVG, and Node crypto/fs/environment primitives cover requests, charts, setup, encryption, backup safety, and the local worker. The optional minutely hosted cron uses Vercel's platform; `vercel.ts` needs no configuration SDK.
 
 The four local fonts total 102,008 bytes. They remove Google Fonts requests during builds and ship with complete OFL licenses, pinned provenance and hashes. See [third-party notices](../THIRD_PARTY_NOTICES.md) and [font provenance](../src/app/fonts/README.md).
 
@@ -38,7 +39,7 @@ Secrets belong in ignored local files or deployment environment variables. No re
 
 ## Audit status
 
-On 19 October 2026, `npm audit --omit=dev` reported **zero production vulnerabilities**. Audit data changes; check your own installation:
+On 19 October 2026, `npm audit --omit=dev` reported **zero production vulnerabilities**. This is a dated result; rerun after lockfile changes, including the hosted driver addition:
 
 ```bash
 npm audit --omit=dev

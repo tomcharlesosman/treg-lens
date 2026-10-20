@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DatabaseSync } from "node:sqlite";
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, mkdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
 import { backup } from "./backup.mjs";
@@ -38,3 +38,26 @@ test("backup configuration follows the server data directory and refuses missing
   } finally { rmSync(root, { recursive: true, force: true }); }
 });
 function exists(path) { return statSync(path).size > 0; }
+
+test("remote backup refuses without exporting a misleading local database or creating a destination", () => {
+  const root = mkdtempSync(join(tmpdir(), "treg-backup-remote-"));
+  mkdirSync(join(root, "data"));
+  const source = join(root, "data", "treg-lens.sqlite");
+  const db = new DatabaseSync(source);
+  db.exec("CREATE TABLE local_only (evidence TEXT); INSERT INTO local_only VALUES ('leave unchanged');");
+  db.close();
+  const original = readFileSync(source);
+  const databaseUrl = "postgresql://user:synthetic-private-database-password@example.com/test?sslmode=require";
+  try {
+    writeFileSync(join(root, ".env.local"), `DATABASE_URL=${databaseUrl}\n`);
+    for (const environment of [{}, { TREG_STORAGE: "postgres" }]) {
+      assert.throws(() => backup(root, "private backups/remote.sqlite", environment), (error) => {
+        assert.match(error.message, /supports SQLite only/);
+        assert.ok(!error.message.includes("synthetic-private-database-password"));
+        return true;
+      });
+      assert.equal(existsSync(join(root, "private backups")), false);
+      assert.deepEqual(readFileSync(source), original);
+    }
+  } finally { rmSync(root, { recursive: true, force: true }); }
+});

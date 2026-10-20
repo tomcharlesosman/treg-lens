@@ -1,2 +1,11 @@
 export const GITHUB_REPOSITORY = "https://github.com/tomcharlesosman/treg-lens";
 export const GITHUB_FORK_URL = `${GITHUB_REPOSITORY}/fork`;
+const deployment = new URL("https://vercel.com/new/clone");
+deployment.searchParams.set("repository-url", `${GITHUB_REPOSITORY}/tree/main`);
+deployment.searchParams.set("repository-name", "treg-lens");
+deployment.searchParams.set("project-name", "treg-lens");
+deployment.searchParams.set("products", JSON.stringify([{ type: "integration", integrationSlug: "neon", productSlug: "neon", protocol: "storage" }]));
+deployment.searchParams.set("env", "SESSION_SECRET");
+deployment.searchParams.set("envDescription", "Create a private random SESSION_SECRET of at least 32 characters for encrypted sessions. This is not your Treg API key. See the linked setup guide.");
+deployment.searchParams.set("envLink", `${GITHUB_REPOSITORY}/blob/main/docs/DEPLOYMENT.md#configuration-and-secrets`);
+export const DEPLOY_VERCEL_URL = deployment.toString();

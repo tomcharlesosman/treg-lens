@@ -13,17 +13,17 @@ async function session() {
 function failure(error: unknown) { return error instanceof TregAuthError ? authErrorResponse(error) : aeoErrorResponse(error); }
 
 export async function GET() {
-  try { return json(getMonitorState((await session()).workspaceId)); }
+  try { return json(await getMonitorState((await session()).workspaceId)); }
   catch (error) { return failure(error); }
 }
 export async function PUT(request: Request) {
   try {
     const input = validateMonitorInput(await readToolRequest(request));
     const owner = await session();
-    return json(saveMonitor(owner.workspaceId, input, owner.token, validateSessionSecret(process.env.SESSION_SECRET)));
+    return json(await saveMonitor(owner.workspaceId, input, owner.token, validateSessionSecret(process.env.SESSION_SECRET)));
   } catch (error) { return failure(error); }
 }
 export async function DELETE(request: Request) {
-  try { assertSameOrigin(request); return json(pauseMonitor((await session()).workspaceId)); }
+  try { assertSameOrigin(request); return json(await pauseMonitor((await session()).workspaceId)); }
   catch (error) { return failure(error); }
 }

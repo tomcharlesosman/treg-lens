@@ -2,7 +2,7 @@ import { DatabaseSync } from "node:sqlite";
 import { chmodSync, closeSync, existsSync, mkdirSync, openSync, rmSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
-import { readConfiguration, runtimeIssue } from "./project.mjs";
+import { readConfiguration, runtimeIssue, storageMode } from "./project.mjs";
 
 /** SQLite creates a transactionally consistent backup, including WAL data. */
 export function backup(root, destination, environment = process.env) {
@@ -10,6 +10,8 @@ export function backup(root, destination, environment = process.env) {
   if (issue) throw new Error(issue);
   if (!destination) throw new Error("Choose a private backup filename: npm run backup -- /private/path/treg-lens.sqlite");
   const config = readConfiguration(root, environment, environment.NODE_ENV || "production").environment;
+  if (storageMode(config) !== "sqlite")
+    throw new Error("npm run backup supports SQLite only. No files or remote data were changed. Back up hosted Postgres through its provider or pg_dump using a protected direct connection; see docs/DEPLOYMENT.md.");
   const source = join(resolve(root, config.TREG_DATA_DIR || "data"), "treg-lens.sqlite");
   const target = resolve(root, destination);
   if (!existsSync(source)) throw new Error("No workspace database exists in TREG_DATA_DIR yet. Sign in and save your first workspace before backing up.");

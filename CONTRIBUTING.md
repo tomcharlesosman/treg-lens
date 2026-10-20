@@ -67,7 +67,7 @@ Choose a focused improvement such as a reproducible parsing bug, an accessibilit
 
 Explain metric definitions and denominators. Test absent brands, partial engine failures, repeated citations, malformed responses, and empty audit sets. Heuristic matches and opportunity rankings should remain recognizable as estimates.
 
-Preserve durable SQLite snapshots, revisions, and browser recovery data when changing schemas. Workspaces use opaque per-key namespaces; never mix one key's data into another workspace or silently overwrite server data with a legacy browser snapshot. Keep full-backup import validated and explicit; filtered reports are not restore files. Test stale writes and atomic scheduled/manual audit append. For export changes, check Unicode, multiline answers, CSV quoting, source research, and empty results.
+Preserve durable SQLite/Postgres snapshots, revisions, and browser recovery data when changing schemas. Workspaces use opaque per-key namespaces; never mix one key's data into another workspace or silently overwrite server data with a legacy browser snapshot. Keep full-backup import validated and explicit; filtered reports are not restore files. Test stale writes and atomic scheduled/manual audit append. For export changes, check Unicode, multiline answers, CSV quoting, source research, and empty results.
 
 ## Scope
 
