@@ -69,6 +69,17 @@ const server = createServer(
       (response) => {
         outgoing.writeHead(response.statusCode || 502, response.headers);
         response.pipe(outgoing);
+        // Next may answer before reading the whole body, such as an early 413.
+        // Node's HTTP client stops relaying socket 'drain' once a response is
+        // complete, so a backpressured pipe would stall and the client's
+        // keep-alive socket would later be reset. Like a reverse proxy, close
+        // the half-sent upstream request and discard the rest of the body.
+        response.once("end", () => {
+          if (upstream.writableEnded) return;
+          incoming.unpipe(upstream);
+          upstream.destroy();
+          incoming.resume();
+        });
       },
     );
     upstream.on("error", () => {
