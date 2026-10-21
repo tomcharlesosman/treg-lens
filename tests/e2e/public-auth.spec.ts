@@ -333,13 +333,13 @@ test.describe("Public demo safeguards", () => {
     await expect(page.getByLabel("Treg API key", { exact: true })).toBeEnabled();
     expect(requests).toEqual([]);
   }
-  for (const action of ["Connect Treg", "Make it yours", "Settings", "Your workspace", "Treg workspace", "Run an audit"]) {
+  for (const action of ["Connect Treg", "Make it yours", "Settings", "Treg workspace", "Run an audit"]) {
     test(`demo gate: ${action} requires sign-in without spending`, async ({ page }) => {
       const requests = paidRequestsFor(page);
       await page.goto("/demo");
       const target = action === "Connect Treg"
         ? page.getByRole("link", { name: action })
-        : page.getByRole("button", { name: action, exact: !["Your workspace", "Treg workspace"].includes(action) });
+        : page.getByRole("button", { name: action, exact: action !== "Treg workspace" });
       await target.click();
       await expectSignInWithoutSpending(page, requests);
     });

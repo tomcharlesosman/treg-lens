@@ -147,7 +147,7 @@ textarea::placeholder {
   font-size: 32px;
   letter-spacing: -1.6px;
   font-weight: 650;
-  margin: 0 10px 31px;
+  margin: 0 10px 26px;
   width: fit-content;
 }
 .lens-word {
@@ -204,7 +204,7 @@ textarea::placeholder {
   background: var(--treg-surface);
   border: 1px solid var(--treg-border);
   border-radius: 9px;
-  margin-bottom: 27px;
+  margin-bottom: 22px;
   box-shadow: 0 2px 2px #00000002;
 }
 .workspace-switch > span:nth-child(2) {
@@ -238,6 +238,9 @@ textarea::placeholder {
 }
 .workspace-switch > svg {
   color: var(--treg-muted);
+}
+.workspace-switch:hover {
+  border-color: var(--treg-border-strong);
 }
 .nav-caption {
   font: 9px var(--font-mono);
@@ -279,7 +282,7 @@ textarea::placeholder {
 }
 .nav-count {
   margin-left: auto;
-  font-size: 9px;
+  font-size: 10px;
   background: var(--treg-panel);
   min-width: 19px;
   padding: 2px 5px;
@@ -290,22 +293,11 @@ textarea::placeholder {
 .nav-divider {
   height: 1px;
   background: var(--line);
-  margin: 22px 10px;
-}
-.end-icon {
-  margin-left: auto;
-}
-.oss-dot {
-  width: 5px;
-  height: 5px;
-  background: var(--treg-success);
-  border-radius: 100%;
-  margin-left: auto;
-  margin-right: 4px;
+  margin: 16px 10px;
 }
 .sidebar-bottom {
   margin-top: auto;
-  padding-top: 45px;
+  padding: 24px 0 14px;
 }
 .build-card {
   margin: 0 5px 17px;
@@ -337,45 +329,6 @@ textarea::placeholder {
   margin-top: 12px;
   font-size: 10px;
   font-weight: 600;
-}
-.profile-button {
-  width: calc(100% + 32px);
-  margin: 10px -16px 0;
-  padding: 16px 23px;
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  text-align: left;
-  border-top: 1px solid var(--line);
-}
-.profile-avatar,
-.topbar-avatar {
-  border-radius: 100%;
-  display: grid;
-  place-items: center;
-  background: var(--treg-panel);
-  color: var(--treg-body);
-  border: 2px solid var(--treg-border);
-  font-size: 11px;
-  width: 30px;
-  height: 30px;
-}
-.profile-button > span:nth-child(2) {
-  flex: 1;
-}
-.profile-button strong {
-  display: block;
-  font-size: 10px;
-  font-weight: 600;
-}
-.profile-button small {
-  display: block;
-  font-size: 9px;
-  margin-top: 3px;
-  color: var(--treg-muted);
-}
-.profile-button > svg {
-  color: var(--treg-muted);
 }
 .main-shell {
   margin-left: 224px;
@@ -415,8 +368,27 @@ textarea::placeholder {
   display: flex;
   position: relative;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   color: var(--treg-muted);
+  height: 34px;
+  padding: 0 6px 0 11px;
+  border: 1px solid var(--treg-border);
+  border-radius: 8px;
+  background: var(--treg-canvas);
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+.global-search:hover {
+  border-color: var(--treg-border-strong);
+}
+.global-search:focus-within {
+  background: var(--treg-surface);
+  border-color: var(--treg-mint-ink);
+  box-shadow: 0 0 0 3px var(--treg-mint);
+}
+.global-search input:focus-visible {
+  outline: none;
 }
 .global-search input {
   border: 0;
@@ -430,9 +402,11 @@ textarea::placeholder {
   padding: 3px 4px;
   border: 1px solid var(--line);
   border-radius: 4px;
-  font-size: 8px;
+  font-size: 10px;
   font-family: var(--font-sans);
-  margin-right: 8px;
+  color: var(--treg-muted);
+  background: var(--treg-surface);
+  white-space: nowrap;
 }
 .icon-button {
   width: 28px;
@@ -460,12 +434,6 @@ textarea::placeholder {
   right: 5px;
   top: 4px;
 }
-.topbar-avatar {
-  width: 28px;
-  height: 28px;
-  font-size: 10px;
-  margin-left: 3px;
-}
 .main-content {
   max-width: 1600px;
   margin: auto;
@@ -480,7 +448,7 @@ textarea::placeholder {
 }
 .eyebrow {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 9px;
   letter-spacing: 1.1px;
   font-weight: 400;
   display: flex;
@@ -556,7 +524,7 @@ textarea::placeholder {
   background: var(--treg-canvas);
   border-radius: 6px;
   color: var(--treg-muted);
-  font-size: 9px;
+  font-size: 10px;
   gap: 12px;
 }
 .demo-strip > span {
@@ -565,7 +533,7 @@ textarea::placeholder {
   gap: 10px;
 }
 .demo-label {
-  font: 7px var(--font-mono);
+  font: 9px var(--font-mono);
   letter-spacing: 0.5px;
   border: 1px solid var(--treg-border);
   border-radius: 3px;
@@ -577,7 +545,7 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-body);
   white-space: nowrap;
 }
@@ -598,7 +566,7 @@ textarea::placeholder {
   z-index: 2;
 }
 .hero-eyebrow {
-  font: 7px var(--font-mono);
+  font: 9px var(--font-mono);
   letter-spacing: 1.15px;
   color: var(--treg-body);
   display: flex;
@@ -631,7 +599,7 @@ textarea::placeholder {
   display: flex;
   gap: 9px;
   align-items: center;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-ink);
   padding: 0;
   margin-top: 15px;
@@ -644,7 +612,7 @@ textarea::placeholder {
   position: absolute;
   bottom: 14px;
   right: 22px;
-  font: 6px var(--font-mono);
+  font: 9px var(--font-mono);
   color: var(--treg-muted);
   letter-spacing: 1.4px;
 }
@@ -777,7 +745,7 @@ textarea::placeholder {
   bottom: 29px;
   left: 126px;
   z-index: 2;
-  font-size: 6.5px;
+  font-size: 10px;
   padding: 6px 9px;
   display: flex;
   align-items: center;
@@ -823,7 +791,7 @@ textarea::placeholder {
   letter-spacing: -0.2px;
 }
 .section-toolbar .muted {
-  font-size: 9px;
+  font-size: 10px;
 }
 .subtle-divider {
   width: 1px;
@@ -837,7 +805,7 @@ textarea::placeholder {
   background: transparent;
   padding-top: 6px;
   padding-bottom: 6px;
-  font-size: 9px;
+  font-size: 10px;
 }
 .metric-grid {
   display: grid;
@@ -894,11 +862,12 @@ textarea::placeholder {
   bottom: -2px;
 }
 .metric-change {
-  font-size: 8px;
+  font-size: 10px;
   margin-top: 11px;
   display: flex;
-  flex-wrap: wrap;
-  gap: 5px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
 }
 .metric-change > span {
   display: flex;
@@ -909,15 +878,26 @@ textarea::placeholder {
 .metric-change .negative {
   color: var(--treg-warning);
 }
+.metric-change > span.is-empty {
+  color: var(--treg-body);
+}
+.metric-change > span.is-empty .mini-dot {
+  background: var(--treg-border-strong);
+}
+.metric-empty {
+  color: var(--treg-border-strong);
+  font-weight: 400;
+}
 .metric-change > small {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-muted);
 }
 .mini-dot {
-  width: 3px;
-  height: 3px;
+  width: 4px;
+  height: 4px;
   border-radius: 50%;
-  background: var(--treg-ink);
+  background: currentColor;
+  flex-shrink: 0;
 }
 .overview-middle {
   display: grid;
@@ -948,13 +928,13 @@ textarea::placeholder {
   align-items: center;
 }
 .panel-heading p {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-muted);
   margin-top: 5px;
 }
 .panel-heading select {
   padding: 6px 24px 6px 8px;
-  font-size: 8px;
+  font-size: 10px;
   border-color: var(--treg-border);
 }
 .info-dot {
@@ -963,7 +943,7 @@ textarea::placeholder {
   border-radius: 50%;
   width: 11px;
   height: 11px;
-  font: 8px var(--font-sans);
+  font: 10px var(--font-sans);
   display: inline-grid;
   place-items: center;
   cursor: help;
@@ -989,7 +969,7 @@ textarea::placeholder {
   font-weight: 400;
 }
 .chart-summary-note {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-body);
   display: flex;
   align-items: center;
@@ -1014,7 +994,7 @@ textarea::placeholder {
   flex-direction: column;
   justify-content: space-between;
   height: 155px;
-  font: 7px var(--font-mono);
+  font: 9px var(--font-mono);
   color: var(--treg-muted);
   padding: 0 0 0;
   text-align: right;
@@ -1033,7 +1013,7 @@ textarea::placeholder {
 .chart-x {
   display: flex;
   justify-content: space-between;
-  font: 7px var(--font-mono);
+  font: 9px var(--font-mono);
   color: var(--treg-muted);
   margin-top: 12px;
   gap: 6px;
@@ -1051,7 +1031,7 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   gap: 5px;
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-body);
   padding: 2px;
 }
@@ -1062,7 +1042,10 @@ textarea::placeholder {
   border-radius: 50%;
 }
 .chart-legend button > span {
-  font-size: 6px;
+  font: 500 9px var(--font-mono);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border: 1px solid var(--treg-border);
   background: var(--treg-canvas);
   color: var(--treg-body);
   padding: 2px 4px;
@@ -1086,14 +1069,14 @@ textarea::placeholder {
   pointer-events: none;
 }
 .chart-tooltip > b {
-  font-size: 8px;
+  font-size: 10px;
   display: block;
   margin-bottom: 6px;
 }
 .chart-tooltip > span {
   display: flex;
   align-items: center;
-  font-size: 8px;
+  font-size: 10px;
   gap: 5px;
   margin-top: 4px;
   color: var(--treg-body);
@@ -1115,22 +1098,28 @@ textarea::placeholder {
 .ranking-label {
   display: flex;
   justify-content: space-between;
-  font: 6px var(--font-mono);
+  font: 9px var(--font-mono);
   letter-spacing: 0.9px;
   color: var(--treg-muted);
   padding: 24px 22px 7px;
 }
 .rank-row {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 11px;
   padding: 12px 21px 10px;
 }
 .rank-row.you {
   background: var(--treg-canvas);
+  box-shadow: inset 2px 0 0 var(--treg-success);
+}
+.rank-row.you .rank-track {
+  background: var(--treg-border);
 }
 .rank-index {
-  font: 8px var(--font-mono);
+  min-width: 14px;
+  line-height: 17px;
+  font: 9px var(--font-mono);
   color: var(--treg-muted);
 }
 .rank-data {
@@ -1148,7 +1137,7 @@ textarea::placeholder {
   width: 17px;
   height: 17px;
   border-radius: 4px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   color: var(--treg-muted);
   background: var(--treg-canvas);
@@ -1166,7 +1155,9 @@ textarea::placeholder {
   font-weight: 500;
 }
 .you-tag {
-  font-size: 6px;
+  font: 500 9px var(--font-mono);
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
   color: var(--treg-body);
   background: var(--treg-canvas);
   border: 1px solid var(--treg-border);
@@ -1183,14 +1174,14 @@ textarea::placeholder {
 }
 .rank-data b small {
   color: var(--treg-muted);
-  font-size: 8px;
+  font-size: 10px;
   margin-left: 2px;
 }
 .rank-track {
   height: 4px;
   border-radius: 5px;
   margin-top: 8px;
-  background: var(--treg-canvas);
+  background: var(--treg-panel);
   overflow: hidden;
 }
 .rank-track > span {
@@ -1206,7 +1197,7 @@ textarea::placeholder {
   align-items: center;
   justify-content: space-between;
   padding: 13px 21px;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-body);
   background: var(--treg-surface);
 }
@@ -1220,7 +1211,7 @@ textarea::placeholder {
   gap: 18px;
 }
 .outline-tag {
-  font: 7px var(--font-mono);
+  font: 9px var(--font-mono);
   letter-spacing: 0.5px;
   border: 1px solid var(--line);
   background: var(--treg-canvas);
@@ -1273,7 +1264,7 @@ textarea::placeholder {
   flex-shrink: 0;
 }
 .engine-card > strong {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 500;
   white-space: nowrap;
 }
@@ -1286,7 +1277,7 @@ textarea::placeholder {
 }
 .engine-card-value > small {
   font-family: var(--font-sans);
-  font-size: 7px;
+  font-size: 10px;
   margin-left: 3px;
   color: var(--treg-muted);
   letter-spacing: 0;
@@ -1307,12 +1298,12 @@ textarea::placeholder {
 }
 .engine-caption {
   display: block;
-  font-size: 7px;
+  font-size: 10px;
   color: var(--treg-muted);
   margin-top: 7px;
 }
 .next-panel {
-  background: var(--treg-canvas);
+  background: var(--treg-surface);
 }
 .next-panel .panel-heading {
   padding-top: 19px;
@@ -1321,7 +1312,7 @@ textarea::placeholder {
   margin-top: 8px;
 }
 .tiny-eyebrow {
-  font: 6px var(--font-mono);
+  font: 9px var(--font-mono);
   letter-spacing: 0.7px;
   display: flex;
   align-items: center;
@@ -1343,7 +1334,7 @@ textarea::placeholder {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 8px;
+  font-size: 10px;
   border-radius: 4px;
   padding: 4px 6px;
   font-weight: 400;
@@ -1365,7 +1356,7 @@ textarea::placeholder {
   border: 1px solid var(--treg-border);
 }
 .next-content > .status-tag {
-  font-size: 6px;
+  font-size: 9px;
   letter-spacing: 0.5px;
   font-family: var(--font-mono);
 }
@@ -1378,7 +1369,7 @@ textarea::placeholder {
   line-height: 1.4;
 }
 .next-content p {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-muted);
   line-height: 1.8;
   margin-top: 7px;
@@ -1394,7 +1385,7 @@ textarea::placeholder {
 }
 .next-content .text-button {
   margin-top: 15px;
-  font-size: 9px;
+  font-size: 10px;
 }
 .text-button:hover {
   color: var(--treg-ink);
@@ -1406,7 +1397,7 @@ textarea::placeholder {
   gap: 15px;
   padding: 25px 0 22px;
   margin-top: 9px;
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-muted);
 }
 .page-footer > span {
@@ -1439,7 +1430,7 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-muted);
   margin-left: 7px;
 }
@@ -1469,7 +1460,7 @@ textarea::placeholder {
 }
 .filter-tabs button > span {
   background: var(--treg-panel);
-  font-size: 8px;
+  font-size: 10px;
   padding: 2px 4px;
   border-radius: 3px;
 }
@@ -1486,7 +1477,7 @@ table {
   font-size: 11px;
 }
 th {
-  font: 7px var(--font-mono);
+  font: 9px var(--font-mono);
   letter-spacing: 1px;
   color: var(--treg-muted);
   background: var(--treg-surface);
@@ -1523,7 +1514,7 @@ tbody > tr:hover {
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-muted);
   margin-top: 4px;
 }
@@ -1579,7 +1570,7 @@ tbody > tr:hover {
   padding: 14px 20px;
   background: var(--treg-surface);
   border-top: 1px solid var(--line);
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-muted);
 }
 .table-bottom > span:last-child {
@@ -1656,9 +1647,10 @@ tbody > tr:hover {
   color: var(--treg-body);
 }
 .rank-badge {
-  font: 6px var(--font-mono);
+  font: 9px var(--font-mono);
   letter-spacing: 0.6px;
   color: var(--treg-muted);
+  white-space: nowrap;
 }
 .competitor-card h2 {
   font-size: 17px;
@@ -1668,7 +1660,7 @@ tbody > tr:hover {
   gap: 8px;
 }
 .competitor-card > .muted {
-  font-size: 9px;
+  font-size: 10px;
   display: block;
   margin-top: 5px;
 }
@@ -1697,7 +1689,7 @@ tbody > tr:hover {
   display: block;
 }
 .competitor-card-stats span {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-muted);
   display: block;
   margin-top: 5px;
@@ -1747,7 +1739,7 @@ tbody > tr:hover {
 .citation-summary > div > span:not(.eyebrow) {
   display: block;
   color: var(--treg-muted);
-  font-size: 9px;
+  font-size: 10px;
   margin-top: 7px;
 }
 .source-domain {
@@ -1773,7 +1765,7 @@ tbody > tr:hover {
 }
 .source-domain small {
   display: block;
-  font: 6px var(--font-mono);
+  font: 9px var(--font-mono);
   letter-spacing: 0.5px;
   color: var(--treg-muted);
   margin-top: 5px;
@@ -1808,11 +1800,11 @@ tbody > tr:hover {
   align-items: center;
 }
 .opportunity-labels > .status-tag {
-  font: 6px var(--font-mono);
+  font: 9px var(--font-mono);
   letter-spacing: 0.6px;
 }
 .opportunity-labels > span:last-child {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-muted);
 }
 .opportunity-row h3 {
@@ -1836,7 +1828,7 @@ tbody > tr:hover {
   margin-top: 11px;
 }
 .opportunity-engines > span:last-child {
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-muted);
 }
 .opportunity-actions {
@@ -1846,7 +1838,7 @@ tbody > tr:hover {
   gap: 14px;
 }
 .opportunity-actions .text-button {
-  font-size: 8px;
+  font-size: 10px;
 }
 .opportunity-row.completed {
   opacity: 0.55;
@@ -1864,13 +1856,20 @@ tbody > tr:hover {
 }
 .history-name small {
   display: block;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 400;
   margin-top: 5px;
   color: var(--treg-muted);
 }
+.history-name strong,
+.history-name small {
+  white-space: nowrap;
+}
+.history-name small.has-errors {
+  color: var(--treg-warning);
+}
 .latest-tag {
-  font-size: 7px;
+  font-size: 10px;
   background: var(--treg-canvas);
   color: var(--treg-muted);
   border: 1px solid var(--treg-border);
@@ -1997,7 +1996,7 @@ tbody > tr:hover {
   padding: 15px;
 }
 .search-results > .eyebrow {
-  font-size: 7px;
+  font-size: 10px;
   margin-bottom: 8px;
 }
 .search-results > button {
@@ -2044,7 +2043,8 @@ tbody > tr:hover {
   align-items: center;
   width: 100%;
   text-align: left;
-  font-size: 10px;
+  white-space: nowrap;
+  font-size: 11px;
   color: var(--treg-body);
   padding: 11px 8px;
   border-radius: 5px;
@@ -2186,10 +2186,23 @@ tbody > tr:hover {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 15px;
-  font-size: 10px;
+  flex-wrap: wrap;
+  gap: 12px 15px;
+  font-size: 11px;
   color: var(--treg-muted);
   margin: 10px 0 20px;
+}
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.button.danger-button {
+  color: var(--treg-danger);
+}
+.button.danger-button:hover {
+  background: var(--treg-danger-soft);
+  border-color: var(--treg-danger-line);
 }
 .answer-list {
   display: flex;
@@ -2238,14 +2251,14 @@ tbody > tr:hover {
   color: var(--treg-muted);
   border: 1px solid var(--treg-border);
   border-radius: 5px;
-  font-size: 8px;
+  font-size: 10px;
   padding: 5px 7px;
 }
 .answer-citations a:hover {
   background: var(--treg-panel);
 }
 .answer-meta {
-  font: 8px var(--font-mono);
+  font: 9px var(--font-mono);
   color: var(--treg-muted);
   margin-top: 14px;
 }
@@ -2310,11 +2323,15 @@ tbody > tr:hover {
   border: 1px solid var(--treg-danger-line);
   background: var(--treg-danger-soft);
   color: var(--treg-danger);
-  padding: 12px;
+  padding: 12px 14px;
   border-radius: 7px;
-  font-size: 10px;
+  font-size: 11px;
   line-height: 1.8;
   margin-bottom: 15px;
+}
+.error-notice b {
+  font-weight: 600;
+  margin-right: 4px;
 }
 .mobile-menu,
 .sidebar-backdrop {
@@ -2389,7 +2406,7 @@ tbody > tr:hover {
     font-size: 11px;
   }
   .hero-eyebrow {
-    font-size: 8px;
+    font-size: 9px;
   }
   .signal-art {
     width: 460px;
@@ -2417,7 +2434,7 @@ tbody > tr:hover {
     font-size: 11px;
   }
   .engine-caption {
-    font-size: 9px;
+    font-size: 10px;
   }
   .next-content p {
     font-size: 11px;
@@ -2445,13 +2462,6 @@ tbody > tr:hover {
   .topbar {
     padding: 0 24px;
   }
-  .profile-button {
-    width: calc(100% + 24px);
-    margin-left: -12px;
-    margin-right: -12px;
-    padding-left: 20px;
-    padding-right: 20px;
-  }
   .wordmark {
     font-size: 29px;
     margin-left: 10px;
@@ -2463,7 +2473,7 @@ tbody > tr:hover {
     font-size: 33px;
   }
   .hero-copy p {
-    font-size: 9px;
+    font-size: 10px;
   }
   .signal-art {
     width: 330px;
@@ -2489,7 +2499,7 @@ tbody > tr:hover {
   }
   .hero-index {
     right: 15px;
-    font-size: 5px;
+    font-size: 9px;
   }
   .overview-middle,
   .overview-bottom {
@@ -2506,16 +2516,16 @@ tbody > tr:hover {
     font-size: 30px;
   }
   .metric-top {
-    font-size: 9px;
+    font-size: 10px;
   }
   .sparkline {
     width: 49px;
   }
   .metric-change {
-    font-size: 7px;
+    font-size: 10px;
   }
   .metric-change > small {
-    font-size: 7px;
+    font-size: 10px;
   }
   .panel-heading {
     padding: 18px 16px 0;
@@ -2524,10 +2534,10 @@ tbody > tr:hover {
     font-size: 11px;
   }
   .panel-heading p {
-    font-size: 8px;
+    font-size: 10px;
   }
   .panel-heading select {
-    font-size: 7px;
+    font-size: 10px;
   }
   .engine-cards {
     padding: 17px 13px;
@@ -2537,16 +2547,16 @@ tbody > tr:hover {
     padding: 10px 7px;
   }
   .engine-card > strong {
-    font-size: 8px;
+    font-size: 10px;
   }
   .engine-card-value {
     font-size: 21px;
   }
   .engine-caption {
-    font-size: 6px;
+    font-size: 10px;
   }
   .outline-tag {
-    font-size: 6px;
+    font-size: 9px;
   }
   .next-content {
     padding: 17px 16px;
@@ -2555,7 +2565,7 @@ tbody > tr:hover {
     font-size: 13px;
   }
   .next-content p {
-    font-size: 8px;
+    font-size: 10px;
   }
   .rank-row {
     padding-left: 16px;
@@ -2566,19 +2576,19 @@ tbody > tr:hover {
     padding-right: 16px;
   }
   .rank-data strong {
-    font-size: 9px;
+    font-size: 10px;
   }
   .rank-data b {
-    font-size: 9px;
+    font-size: 10px;
   }
   .rank-track {
     height: 3px;
   }
   .page-footer {
-    font-size: 7px;
+    font-size: 10px;
   }
   .page-footer button {
-    font-size: 7px;
+    font-size: 10px;
   }
   .competitor-cards {
     gap: 10px;
@@ -2587,7 +2597,7 @@ tbody > tr:hover {
     padding: 16px;
   }
   .rank-badge {
-    font-size: 5px;
+    font-size: 9px;
   }
   .playbook-grid {
     gap: 11px;
@@ -2599,7 +2609,7 @@ tbody > tr:hover {
     font-size: 13px;
   }
   .playbook-grid p {
-    font-size: 9px;
+    font-size: 10px;
   }
   .toast {
     left: calc(50% + 101px);
@@ -2693,7 +2703,7 @@ tbody > tr:hover {
   }
   .metric-change,
   .metric-change > small {
-    font-size: 8px;
+    font-size: 10px;
   }
   .global-search input {
     width: 110px;
@@ -2771,16 +2781,16 @@ tbody > tr:hover {
     font-size: 20px;
   }
   .opportunity-banner p {
-    font-size: 9px;
+    font-size: 10px;
   }
   .opportunity-row h3 {
     font-size: 13px;
   }
   .opportunity-row p {
-    font-size: 9px;
+    font-size: 10px;
   }
   .opportunity-actions > .button {
-    font-size: 8px;
+    font-size: 10px;
     padding: 8px;
   }
   .opportunity-actions > .button > svg:last-child {
@@ -2812,7 +2822,7 @@ tbody > tr:hover {
     font-size: 11px;
   }
   .engine-caption {
-    font-size: 8px;
+    font-size: 10px;
   }
   .engine-card-value {
     font-size: 28px;
@@ -2831,10 +2841,10 @@ tbody > tr:hover {
     height: 175px;
   }
   .chart-legend {
-    font-size: 9px;
+    font-size: 10px;
   }
   .demo-strip {
-    font-size: 8px;
+    font-size: 10px;
   }
   .demo-strip > span {
     gap: 8px;
@@ -2892,14 +2902,14 @@ tbody > tr:hover {
     gap: 6px;
   }
   .heading-actions .button {
-    font-size: 9px;
+    font-size: 10px;
     padding: 8px 9px;
   }
   .heading-actions .button > svg {
     width: 13px;
   }
   .page-heading .eyebrow {
-    font-size: 6px;
+    font-size: 10px;
     letter-spacing: 0.6px;
   }
   .global-search {
@@ -2946,7 +2956,7 @@ tbody > tr:hover {
   .signal-pill {
     display: flex;
     left: 101px;
-    font-size: 5px;
+    font-size: 10px;
     bottom: 28px;
   }
   .metric-grid {
@@ -2970,22 +2980,12 @@ tbody > tr:hover {
     min-width: 300px;
     bottom: 18px;
   }
-  .profile-button {
-    width: calc(100% + 32px);
-    margin-left: -16px;
-    margin-right: -16px;
-    padding-left: 23px;
-    padding-right: 23px;
-  }
   .build-card {
     margin-bottom: 15px;
   }
-  .sidebar-bottom {
-    padding-top: 30px;
-  }
   .demo-strip {
     padding: 9px 10px;
-    font-size: 7px;
+    font-size: 10px;
     line-height: 1.7;
     align-items: flex-start;
   }
@@ -2995,11 +2995,11 @@ tbody > tr:hover {
   .demo-label {
     display: inline-block;
     margin-right: 6px;
-    font-size: 6px;
+    font-size: 9px;
     vertical-align: middle;
   }
   .demo-strip button {
-    font-size: 8px;
+    font-size: 10px;
     line-height: 1.9;
   }
   .view-toolbar {
@@ -3015,7 +3015,7 @@ tbody > tr:hover {
     margin-bottom: 14px;
   }
   .section-toolbar .muted {
-    font-size: 8px;
+    font-size: 10px;
   }
   .native-modal {
     padding: 23px;
@@ -3038,7 +3038,7 @@ tbody > tr:hover {
     margin-top: 2px;
   }
   .opportunity-actions .button {
-    font-size: 9px;
+    font-size: 10px;
   }
   .opportunity-banner {
     flex-wrap: wrap;
@@ -3060,7 +3060,7 @@ tbody > tr:hover {
     white-space: normal;
   }
   .detail-toolbar {
-    font-size: 9px;
+    font-size: 10px;
   }
   .modal-top h2 {
     font-size: 22px;
@@ -3073,11 +3073,11 @@ tbody > tr:hover {
     gap: 6px;
   }
   .filter-tabs button {
-    font-size: 9px;
+    font-size: 10px;
     padding: 7px 9px;
   }
   .source-domain small {
-    font-size: 6px;
+    font-size: 9px;
   }
 }
 @media (max-width: 470px) {
@@ -3136,15 +3136,15 @@ tbody > tr:hover {
     z-index: 3;
   }
   .hero-copy p {
-    font-size: 9px;
+    font-size: 10px;
     max-width: 210px;
     margin-top: 14px;
   }
   .hero-copy button {
-    font-size: 9px;
+    font-size: 10px;
   }
   .hero-eyebrow {
-    font-size: 6px;
+    font-size: 9px;
   }
   .signal-art {
     position: absolute;
@@ -3188,7 +3188,7 @@ tbody > tr:hover {
     padding: 15px 12px;
   }
   .metric-top {
-    font-size: 9px;
+    font-size: 10px;
   }
   .metric-value {
     font-size: 33px;
@@ -3206,12 +3206,12 @@ tbody > tr:hover {
   }
   .metric-change {
     display: block;
-    font-size: 7px;
+    font-size: 10px;
     line-height: 1.5;
   }
   .metric-change small {
     display: block;
-    font-size: 7px;
+    font-size: 10px;
     margin-top: 3px;
   }
   .panel-heading {
@@ -3221,12 +3221,12 @@ tbody > tr:hover {
     font-size: 12px;
   }
   .panel-heading p {
-    font-size: 9px;
+    font-size: 10px;
     max-width: 230px;
     line-height: 1.7;
   }
   .panel-heading select {
-    font-size: 7px;
+    font-size: 10px;
     max-width: 85px;
     padding-left: 6px;
     padding-right: 18px;
@@ -3243,7 +3243,7 @@ tbody > tr:hover {
     gap: 7px;
   }
   .chart-x {
-    font-size: 6px;
+    font-size: 9px;
     margin-top: 11px;
   }
   .chart-legend {
@@ -3252,7 +3252,7 @@ tbody > tr:hover {
     padding-right: 9px;
   }
   .chart-legend button {
-    font-size: 7px;
+    font-size: 10px;
     gap: 4px;
   }
   .chart-legend button > span {
@@ -3273,10 +3273,10 @@ tbody > tr:hover {
     font-size: 27px;
   }
   .engine-caption {
-    font-size: 9px;
+    font-size: 10px;
   }
   .engines-panel .outline-tag {
-    font-size: 5px;
+    font-size: 10px;
     padding: 5px;
     align-self: start;
   }
@@ -3290,10 +3290,10 @@ tbody > tr:hover {
     font-size: 16px;
   }
   .tiny-eyebrow {
-    font-size: 6px;
+    font-size: 9px;
   }
   .page-footer {
-    font-size: 7px;
+    font-size: 10px;
   }
   .competitor-cards {
     gap: 10px;
@@ -3306,9 +3306,8 @@ tbody > tr:hover {
     height: 32px;
   }
   .rank-badge {
-    font-size: 5px;
-    max-width: 45px;
-    line-height: 1.7;
+    font-size: 9px;
+    letter-spacing: 0.3px;
   }
   .competitor-card h2 {
     font-size: 15px;
@@ -3317,10 +3316,10 @@ tbody > tr:hover {
     font-size: 31px;
   }
   .competitor-card > .muted {
-    font-size: 8px;
+    font-size: 10px;
   }
   .competitor-card-stats span {
-    font-size: 7px;
+    font-size: 10px;
   }
   .competitor-intro {
     padding: 18px;
@@ -3331,7 +3330,7 @@ tbody > tr:hover {
     line-height: 1.4;
   }
   .competitor-intro p {
-    font-size: 9px;
+    font-size: 10px;
   }
   .competitor-intro > .button {
     margin-left: 0;
@@ -3462,7 +3461,7 @@ tbody > tr:hover {
     font-size: 12px;
   }
   .eyebrow {
-    font-size: 8px;
+    font-size: 9px;
   }
   .heading-actions .button {
     font-size: 11px;
@@ -3472,7 +3471,7 @@ tbody > tr:hover {
     font-size: 10px;
   }
   .demo-label {
-    font-size: 7px;
+    font-size: 9px;
   }
   .demo-strip button {
     font-size: 10px;
@@ -3487,7 +3486,7 @@ tbody > tr:hover {
     font-size: 11px;
   }
   .hero-eyebrow {
-    font-size: 8px;
+    font-size: 9px;
   }
   .hero-banner {
     min-height: 230px;
@@ -3509,7 +3508,7 @@ tbody > tr:hover {
   }
   .metric-change,
   .metric-change > small {
-    font-size: 9px;
+    font-size: 10px;
   }
   .metric-card {
     padding: 18px;
@@ -3521,26 +3520,26 @@ tbody > tr:hover {
     font-size: 10px;
   }
   .panel-heading select {
-    font-size: 9px;
+    font-size: 10px;
   }
   .chart-plot > svg,
   .chart-y {
     height: 175px;
   }
   .chart-y {
-    font-size: 8px;
+    font-size: 9px;
   }
   .chart-x {
-    font-size: 8px;
+    font-size: 9px;
   }
   .chart-legend button {
-    font-size: 9px;
+    font-size: 10px;
   }
   .chart-summary-note {
-    font-size: 9px;
+    font-size: 10px;
   }
   .ranking-label {
-    font-size: 7px;
+    font-size: 9px;
   }
   .rank-data strong {
     font-size: 11px;
@@ -3562,7 +3561,7 @@ tbody > tr:hover {
     font-size: 27px;
   }
   .engine-caption {
-    font-size: 9px;
+    font-size: 10px;
   }
   .next-content h3 {
     font-size: 16px;
@@ -3575,14 +3574,14 @@ tbody > tr:hover {
     font-size: 10px;
   }
   .tiny-eyebrow {
-    font-size: 7px;
+    font-size: 9px;
   }
   .page-footer,
   .page-footer button {
-    font-size: 9px;
+    font-size: 10px;
   }
   .table-panel th {
-    font-size: 8px;
+    font-size: 10px;
   }
   .table-panel td {
     font-size: 11px;
@@ -3591,19 +3590,19 @@ tbody > tr:hover {
     font-size: 12px;
   }
   .prompt-cell small {
-    font-size: 9px;
+    font-size: 10px;
   }
   .table-score b {
     font-size: 11px;
   }
   .status-tag {
-    font-size: 9px;
+    font-size: 10px;
   }
   .source-domain strong {
     font-size: 12px;
   }
   .source-domain small {
-    font-size: 7px;
+    font-size: 9px;
   }
   .opportunity-row h3 {
     font-size: 15px;
@@ -3612,7 +3611,7 @@ tbody > tr:hover {
     font-size: 11px;
   }
   .opportunity-labels > span:last-child {
-    font-size: 9px;
+    font-size: 10px;
   }
   .build-card strong {
     font-size: 12px;
@@ -3625,7 +3624,7 @@ tbody > tr:hover {
   }
 }
 .source-research-button {
-  font-size: 9px;
+  font-size: 10px;
   padding: 6px 9px;
   min-height: 28px;
   margin-left: 5px;
@@ -3639,7 +3638,7 @@ tbody > tr:hover {
     gap: 8px;
   }
   .inline-actions .button {
-    font-size: 9px;
+    font-size: 10px;
   }
   .inline-actions select {
     flex: 1;
@@ -3667,7 +3666,7 @@ tbody > tr:hover {
   font-weight: 500;
 }
 .answer-body > summary > span {
-  font-size: 8px;
+  font-size: 10px;
   margin-left: 7px;
   color: var(--treg-muted);
   font-weight: 400;
@@ -3788,22 +3787,73 @@ tbody > tr:hover {
 .workspace-logout {
   display: flex;
   align-items: center;
-  gap: 6px;
-  color: var(--treg-muted);
-  font-size: 9px;
-  background: var(--treg-canvas);
-  padding: 7px 8px;
+  gap: 7px;
+  height: 34px;
+  color: var(--treg-body);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  background: var(--treg-surface);
+  padding: 0 12px;
   border: 1px solid var(--treg-border);
-  border-radius: 5px;
+  border-radius: 8px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
 }
 .workspace-logout:hover {
-  background: var(--treg-panel);
+  color: var(--treg-ink);
+  background: var(--treg-canvas);
+  border-color: var(--treg-border-strong);
+}
+.workspace-logout:disabled {
+  opacity: 0.6;
 }
 @media (max-width: 700px) {
   .workspace-logout {
-    font-size: 8px;
-    gap: 5px;
+    height: 32px;
+    padding: 0 10px;
+    gap: 6px;
   }
+}
+/* Promotional card yields to navigation on short laptop screens. */
+@media (min-width: 1001px) and (max-height: 860px) {
+  .build-card {
+    display: none;
+  }
+}
+
+/* Native disclosures share one chevron instead of the browser triangle. */
+:is(.wc-more, .rt-evidence, .prompt-library, .ce-answers, .er-detail, .pp-legacy, .answer-body, .lens-profile-details, .lens-discovery-call-ids, .lens-source-excerpt) > summary {
+  display: flex;
+  align-items: center;
+  gap: 4px 8px;
+  list-style: none;
+  cursor: pointer;
+}
+.prompt-library > summary {
+  flex-wrap: wrap;
+}
+:is(.wc-more, .rt-evidence, .prompt-library, .ce-answers, .er-detail, .pp-legacy, .answer-body, .lens-profile-details, .lens-discovery-call-ids, .lens-source-excerpt) > summary::-webkit-details-marker {
+  display: none;
+}
+:is(.wc-more, .rt-evidence, .prompt-library, .ce-answers, .er-detail, .pp-legacy, .answer-body, .lens-profile-details, .lens-discovery-call-ids, .lens-source-excerpt) > summary::before {
+  content: "";
+  width: 5px;
+  height: 5px;
+  margin: 0 3px 2px 1px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(-45deg);
+  transition: transform 0.15s;
+  flex-shrink: 0;
+}
+:is(.wc-more, .rt-evidence, .prompt-library, .ce-answers, .er-detail, .pp-legacy, .answer-body, .lens-profile-details, .lens-discovery-call-ids, .lens-source-excerpt)[open] > summary::before {
+  transform: rotate(45deg);
+  margin-bottom: 4px;
+}
+:is(.wc-more, .rt-evidence, .prompt-library, .ce-answers, .er-detail, .pp-legacy, .answer-body, .lens-profile-details, .lens-discovery-call-ids, .lens-source-excerpt) > summary:hover {
+  color: var(--treg-ink);
 }
 
 /* Saved-work guidance uses acknowledged records, never click-based progress. */
@@ -3842,7 +3892,7 @@ tbody > tr:hover {
 .wc-record { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
 .wc-record strong { font-size: 12px; }
 .wc-record > span { font-size: 11px; line-height: 1.8; color: var(--treg-body); overflow-wrap: anywhere; }
-.wc-record time { display: flex; align-items: center; gap: 5px; font-size: 9px; line-height: 1.7; color: var(--treg-muted); }
+.wc-record time { display: flex; align-items: center; gap: 5px; font-size: 10px; line-height: 1.7; color: var(--treg-muted); }
 .wc-record time svg { flex-shrink: 0; }
 .wc-recovery { display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--treg-border-strong); border-radius: 10px; background: var(--treg-canvas); padding: 18px 20px; margin-bottom: 16px; }
 .wc-recovery > svg { flex-shrink: 0; color: var(--treg-body); margin-top: 2px; }

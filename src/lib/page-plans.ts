@@ -70,10 +70,11 @@ export function pagePlanOpportunities(runs: SavedRun[], project: Pick<Project, "
       const competitorMentions = absent.filter((answer) => answer.mentionedBrands.some((name) => names.has(name.trim().toLowerCase()))).length;
       const competitorCitations = absent.filter((answer) => answer.citations.some((citation) => domains.some((domain) => evidenceMatchesDomain(citation.url, domain)))).length;
       const requested = measured.scope.collectors.length;
+      const checks = (count: number) => `${count} answered ${count === 1 ? "check" : "checks"}`;
       const reason = !answers.length ? "No answered checks in the latest audit; missing answers are not brand absence."
-        : competitorMentions ? `${competitorMentions} answered checks mentioned a configured competitor without mentioning your brand.`
-          : competitorCitations ? `${competitorCitations} answered checks cited a configured competitor website without mentioning your brand.`
-            : absent.length ? `${absent.length} answered checks did not mention your brand. This alone does not establish a content gap.`
+        : competitorMentions ? `${checks(competitorMentions)} mentioned a configured competitor without mentioning your brand.`
+          : competitorCitations ? `${checks(competitorCitations)} cited a configured competitor website without mentioning your brand.`
+            : absent.length ? `${checks(absent.length)} did not mention your brand. This alone does not establish a content gap.`
               : "Your brand appeared in every answered check. Review accuracy and citations before planning a change.";
       latest.set(question.id, {
         id: `${run.id}:${question.id}`, question: { id: question.id, text: question.text }, runId: run.id,

@@ -565,20 +565,6 @@
   color: var(--treg-muted);
   font-size: 12px;
 }
-.workspace-logout {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--treg-muted);
-  font-size: 9px;
-  background: var(--treg-canvas);
-  padding: 7px 8px;
-  border: 1px solid var(--treg-border);
-  border-radius: 5px;
-}
-.workspace-logout:hover {
-  background: var(--treg-panel);
-}
 .marketing-spin {
   animation: marketing-spin 1s linear infinite;
 }
@@ -680,10 +666,6 @@
   }
   .signin-page .signin-keybox .key-input-group {
     padding-right: 8px;
-  }
-  .workspace-logout {
-    font-size: 8px;
-    gap: 5px;
   }
 }
 @media (max-width: 480px) {

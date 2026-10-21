@@ -32,7 +32,7 @@
 }
 .lens-discovery-history button span { min-width: 0; }
 .lens-discovery-history strong { display: block; font-size: 10px; line-height: 1.7; font-weight: 500; overflow-wrap: anywhere; }
-.lens-discovery-history small { display: block; margin-top: 4px; color: var(--treg-muted); font-size: 9px; line-height: 1.7; }
+.lens-discovery-history small { display: block; margin-top: 4px; color: var(--treg-muted); font-size: 10px; line-height: 1.7; }
 .lens-discovery-save-status {
   display: flex;
   align-items: center;
@@ -57,7 +57,7 @@
   font-size: 10px;
 }
 .lens-discovery-save-error { margin: 0 34px 15px; }
-.lens-discovery-call-ids { margin: 0 34px 15px; font-size: 9px; color: var(--treg-muted); }
+.lens-discovery-call-ids { margin: 0 34px 15px; font-size: 10px; color: var(--treg-muted); }
 .lens-discovery-call-ids summary { cursor: pointer; }
 .lens-discovery-call-ids code { display: block; margin-top: 5px; overflow-wrap: anywhere; }
 .lens-discovery-interrupted {
@@ -139,7 +139,7 @@
 }
 .lens-discovery-locale-caption {
   margin-left: auto;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-muted);
 }
 .lens-discovery-pipeline {
@@ -177,12 +177,12 @@
 }
 .lens-discovery-pipeline small {
   color: var(--treg-muted);
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1.6;
 }
 .lens-discovery-step-tag {
   font:
-    8px/1.4 "SFMono-Regular",
+    9px/1.4 "SFMono-Regular",
     Consolas,
     monospace;
   letter-spacing: 0.65px;
@@ -246,7 +246,7 @@
   margin-top: 2px;
 }
 .lens-discovery-errors {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-danger);
   margin-top: 14px;
   line-height: 1.8;
@@ -312,7 +312,7 @@
   border-radius: 4px;
   color: var(--treg-muted);
   font:
-    8px/1.4 "SFMono-Regular",
+    9px/1.4 "SFMono-Regular",
     Consolas,
     monospace;
 }
@@ -320,7 +320,7 @@
   background: none;
   border: 0;
   color: var(--treg-muted);
-  font-size: 9px !important;
+  font-size: 10px !important;
   padding: 5px 0;
 }
 .lens-discovery-select:disabled {
@@ -407,7 +407,7 @@
 }
 .lens-discovery-candidate-content i {
   font-style: normal;
-  font-size: 8px;
+  font-size: 10px;
   color: var(--treg-muted);
   background: var(--treg-canvas);
   border: 1px solid var(--treg-border);
@@ -421,7 +421,7 @@
   border-color: var(--treg-border);
 }
 .lens-discovery-candidate-content small {
-  font-size: 8px;
+  font-size: 10px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -444,7 +444,7 @@
   font-weight: 400;
 }
 .lens-discovery-volume small {
-  font-size: 7px;
+  font-size: 10px;
   color: var(--treg-muted);
 }
 .lens-discovery-no-results {
@@ -498,17 +498,17 @@
   .lens-discovery-locale-caption {
     max-width: 100px;
     text-align: right;
-    font-size: 8px;
+    font-size: 10px;
     line-height: 1.6;
   }
   .lens-discovery-pipeline {
     padding: 14px 12px;
   }
   .lens-discovery-pipeline small {
-    font-size: 8px;
+    font-size: 10px;
   }
   .lens-discovery-step-tag {
-    font-size: 7px;
+    font-size: 9px;
   }
   .lens-discovery-result-intro {
     padding: 22px;
@@ -521,10 +521,10 @@
     font-size: 20px;
   }
   .lens-discovery-result-metrics > span {
-    font-size: 9px;
+    font-size: 10px;
   }
   .lens-discovery-settled {
-    font-size: 8px !important;
+    font-size: 9px !important;
   }
   .lens-discovery-result-toolbar {
     padding: 0 22px;
@@ -533,11 +533,11 @@
     gap: 12px;
   }
   .lens-discovery-result-toolbar [role="tab"] {
-    font-size: 9px;
+    font-size: 10px;
     gap: 4px;
   }
   .lens-discovery-select {
-    font-size: 8px !important;
+    font-size: 10px !important;
   }
   .lens-discovery-candidates {
     padding: 4px 10px;
@@ -554,19 +554,19 @@
     gap: 6px;
   }
   .lens-discovery-candidate-content small {
-    font-size: 7px;
+    font-size: 10px;
   }
   .lens-discovery-volume {
     margin-left: 1px;
   }
   .lens-discovery-volume small {
-    font-size: 6px;
+    font-size: 10px;
   }
   .lens-discovery-back {
-    font-size: 9px !important;
+    font-size: 10px !important;
   }
   .lens-discovery-selected-count {
-    font-size: 8px;
+    font-size: 9px;
   }
   .lens-discovery-result-footer {
     gap: 9px;
