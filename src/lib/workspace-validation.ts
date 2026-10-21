@@ -6,6 +6,7 @@ import { cleanMeasurementScope } from "./measurement";
 import { parseDiscoveryResearch } from "./discovery-research";
 import { parsePagePlans } from "./page-plans";
 import { parseEvidenceReports } from "./evidence-reports";
+import { parseContinuityPreferences } from "./workspace-continuity";
 
 export const MAX_WORKSPACE_BYTES = 8 * 1024 * 1024;
 export class WorkspaceValidationError extends Error {
@@ -63,6 +64,7 @@ export function sanitizeWorkspaceSnapshot(value: unknown): WorkspaceSnapshot {
     ...(snapshot.discoveryResearch !== undefined ? { discoveryResearch: parseDiscoveryResearch(snapshot.discoveryResearch)! } : {}),
     ...(snapshot.pagePlans !== undefined ? { pagePlans: parsePagePlans(snapshot.pagePlans)! } : {}),
     ...(snapshot.reports !== undefined ? { reports: parseEvidenceReports(snapshot.reports)! } : {}),
+    ...(snapshot.continuity !== undefined ? { continuity: parseContinuityPreferences(snapshot.continuity)! } : {}),
     sourceResearch: Object.fromEntries(Object.entries(snapshot.sourceResearch).map(([key, source]) => [key, {
       kind: source.kind, url: source.url, domain: source.domain, brand: source.brand,
       title: source.title, excerpt: source.excerpt, contentCharacters: source.contentCharacters,

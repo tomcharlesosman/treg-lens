@@ -9,6 +9,7 @@ import { updateProjectProfile } from "@/lib/workspace-onboarding";
 import type { SavedDiscovery } from "@/lib/discovery-research";
 import { applyDiscovery } from "@/lib/discovery-workspace";
 import { syncPromptRecords, activePromptTexts } from "@/lib/prompt-library";
+import type { ContinuityPreferences } from "@/lib/workspace-continuity";
 
 export type WorkspaceEnvelope = { snapshot: WorkspaceSnapshot | null; revision: number; updatedAt: string | null };
 export type SyncPhase = "loading" | "sample" | "saved" | "unsaved" | "saving" | "offline" | "conflict";
@@ -241,6 +242,41 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
       current.saving = false;
     }
   }, [adopt, demoMode, publish]);
+  const saveContinuity = useCallback(async (continuity: ContinuityPreferences, expectedRevision: number | null): Promise<boolean> => {
+    const current = state.current;
+    if (demoMode || !current.loaded || !current.serverVerified || current.disposed || current.saving || current.refreshing || current.conflict || current.revision === null || current.dirty || pendingUpload.current) return false;
+    if (expectedRevision !== current.revision) {
+      publish("saved", "The workspace changed before this preference was saved. Review the current suggestion before trying again.");
+      return false;
+    }
+    const version = current.version;
+    const submitted = { ...current.snapshot, continuity };
+    current.saving = true;
+    publish("saving");
+    try {
+      // Suggestions stay visible until this exact preference is acknowledged.
+      const response = await saveWorkspaceSnapshot(withoutCredentials(submitted), current.revision, { current: null });
+      const data = await response.json();
+      if (current.disposed) return false;
+      if (response.status === 409) {
+        current.conflict = envelopeFrom(data);
+        publish("conflict", "The workspace changed in another tab. The suggestion was not hidden. Review the saved server version before trying again.");
+        return false;
+      }
+      if (!response.ok) throw new Error(data.error || "The suggestion preference could not be saved. It remains visible.");
+      const envelope = envelopeFrom(data);
+      if (current.version !== version) {
+        current.conflict = envelope;
+        publish("conflict", "The preference was saved while other edits were pending. Review the server version before continuing.");
+        return false;
+      }
+      adopt(envelope);
+      return true;
+    } catch (error) {
+      if (!current.disposed) publish("offline", message(error));
+      return false;
+    } finally { current.saving = false; }
+  }, [adopt, demoMode, publish]);
   const acceptAudit = useCallback(async (run: SavedRun, persistence?: AuditPersistence, originalProject?: Project, preserveProfile = false) => {
     const append = (value: WorkspaceSnapshot, selectProject: boolean): WorkspaceSnapshot => {
       const next = { ...value, runs: [...value.runs.filter((old) => old.id !== run.id), run] };
@@ -357,5 +393,5 @@ export function useServerWorkspace(storageKey: string, demoMode: boolean) {
     const timer = window.setInterval(onFocus, 30_000);
     return () => { window.removeEventListener("focus", onFocus); document.removeEventListener("visibilitychange", onFocus); window.clearInterval(timer); };
   }, [demoMode, refresh]);
-  return { snapshot, sync, loaded: demoMode || sync.phase !== "loading", change, field, save, saveProfile, reloadProfile, refresh, retry, loadServer, acceptAudit, saveDiscovery };
+  return { snapshot, sync, loaded: demoMode || sync.phase !== "loading", change, field, save, saveProfile, saveContinuity, reloadProfile, refresh, retry, loadServer, acceptAudit, saveDiscovery };
 }

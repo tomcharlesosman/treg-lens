@@ -82,15 +82,16 @@ function SavedReport({ report, onClose, onDelete, preview = false, synced, retur
   </article></ReportDialog>;
 }
 
-export default function EvidenceReports({ project, runs, plans, reports, onSave, onDelete, demo = false, synced = true }: { project: Project; runs: SavedRun[]; plans: PagePlan[]; reports: EvidenceReport[]; onSave: (report: EvidenceReport) => Promise<boolean>; onDelete?: (id: string) => Promise<boolean>; demo?: boolean; synced?: boolean }) {
+export default function EvidenceReports({ project, runs, plans, reports, onSave, onDelete, demo = false, synced = true, initialReportId, initialPlanId, onTargetClose }: { onTargetClose?: () => void; initialReportId?: string; initialPlanId?: string; project: Project; runs: SavedRun[]; plans: PagePlan[]; reports: EvidenceReport[]; onSave: (report: EvidenceReport) => Promise<boolean>; onDelete?: (id: string) => Promise<boolean>; demo?: boolean; synced?: boolean }) {
   const [reportTrigger, setReportTrigger] = useState<HTMLElement | null>(null);
   const eligible = useMemo(() => runs.filter((run) => sameBrand(run, project)).sort((a, b) => Date.parse(b.completedAt) - Date.parse(a.completedAt)), [runs, project]);
   const [title, setTitle] = useState("");
   const [notes, setNotes] = useState("");
-  const [baselineId, setBaselineId] = useState("");
-  const [followupId, setFollowupId] = useState("");
-  const [planId, setPlanId] = useState("");
-  const [selected, setSelected] = useState<EvidenceReport | null>(null);
+  const [initialPlan] = useState(() => plans.find((plan) => plan.id === initialPlanId && sameBrand({ brand: plan.brand.name, domain: plan.brand.domain }, project)));
+  const [baselineId, setBaselineId] = useState(initialPlan?.baselineRunId ?? "");
+  const [followupId, setFollowupId] = useState(initialPlan?.followupRunId ?? "");
+  const [planId, setPlanId] = useState(initialPlan?.id ?? "");
+  const [selected, setSelected] = useState<EvidenceReport | null>(() => reports.find((report) => report.id === initialReportId && sameBrand(report.project, project)) ?? null);
   const [pending, setPending] = useState<EvidenceReport | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -122,6 +123,6 @@ export default function EvidenceReports({ project, runs, plans, reports, onSave,
       {error && <p role="alert" className="er-warning">{error}</p>}{status && <p role="status">{status}</p>}
       <div className="er-toolbar"><button className="button primary" type="submit" disabled={saving || (!baseline && !pending) || (!demo && limitReached)}>{saving ? "Saving report…" : demo ? "Preview demo report" : pending ? "Retry saving snapshot" : "Save private report"}</button>{pending && !saving && <button className="button" type="button" onClick={() => { setPending(null); setError(""); }}>Edit report draft</button>}</div>
     </form><div className="panel er-library"><div className="er-section-heading"><h3>{synced || demo ? "Saved reports" : "Report snapshots"}</h3><span>{savedReports.length} / 10</span></div><p className="er-note">Snapshots from every brand in this workspace remain available.</p>{!synced && !demo && <p className="er-warning">Workspace changes are not yet acknowledged by the server. Local report copies remain available for recovery and download.</p>}{!savedReports.length ? <div className="er-empty"><FileText size={28} /><h4>Your evidence, ready to use.</h4><p>Save a report to preserve the context behind your next page improvement.</p></div> : <ul>{[...savedReports].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt)).map((report) => <li key={report.id}><button type="button" onClick={(event) => { setReportTrigger(event.currentTarget); setSelected(report); }}><span><strong>{report.title}</strong><small>{report.project.brand} · {report.project.domain}</small><small>{timestamp(report.createdAt)} · {report.runs.length} audit{report.runs.length === 1 ? "" : "s"} · v{report.version}</small></span><ArrowRight size={17} /></button></li>)}</ul>}</div></div>
-    {selected && <SavedReport key={selected.id} report={selected} onClose={() => setSelected(null)} onDelete={onDelete} preview={demo} synced={synced} returnFocus={reportTrigger} />}
+    {selected && <SavedReport key={selected.id} report={selected} onClose={() => { setSelected(null); if (selected.id === initialReportId) onTargetClose?.(); }} onDelete={onDelete} preview={demo} synced={synced} returnFocus={reportTrigger} />}
   </section>;
 }

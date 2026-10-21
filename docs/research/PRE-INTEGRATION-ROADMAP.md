@@ -1,118 +1,139 @@
 # Remaining OpenSEO improvements before native Treg integration
 
-Reviewed 20 October 2026. This records the recommendation at the reviewed baseline. The saved-action, follow-up and report/handoff slices are now implemented; see [current workflows](../WORKFLOWS.md), [product behavior](../PRODUCT-STATUS.md) and the dated [test report](../TEST-REPORT.md). Native integration and first-party connections remain proposed. It updates the remaining work from the [OpenSEO feature audit](OPENSEO-FEATURE-AUDIT.md) after the first three priorities shipped.
+Reviewed 21 October 2026 against standalone Lens `3a40785b4037c398854a506d4fb9ddbf6995c882`. This supersedes the earlier recommendation to build page plans, follow-ups and reports: those workflows have shipped. The [original OpenSEO audit](OPENSEO-FEATURE-AUDIT.md) retains its historical baseline; [current workflows](../WORKFLOWS.md) and [product status](../PRODUCT-STATUS.md) describe the implemented product.
 
-**Recommended next release:** turn saved evidence into a saved page action, compare the follow-up, and produce a reproducible report or agent handoff. Finish this focused workflow before porting; add Search Console within native Treg afterward. Broad SEO feature parity is not a prerequisite.
+**Implementation update (21 October 2026):** this standalone release adds next-step/recent-work continuity and the [portable contract pack](../PORTABLE-CONTRACTS.md). Native parity and a safe import rehearsal remain the next gate. Keep new Google connections and live Lens agent tools in the native integration. Another broad standalone feature release is not a prerequisite.
 
-## Evidence and current state
+## Evidence and confidence
 
-- Standalone Lens reviewed at `dcc25c12492235f82be7f652f8310eacd5abba6a`. [Release verification](../TEST-REPORT.md#discovery-comparable-trends-and-citation-exploration--20-october-2026) records the completed release tests; this follow-up is source review only.
-- OpenSEO baseline remains `c5f8db19c7ca9e750836b6ed5c8a6491d4f967f4`, with pinned implementation references in the original audit. Current official [AI visibility](https://openseo.so/docs/ai-visibility) and [MCP](https://openseo.so/docs/mcp) guides were also reviewed.
-- The main Treg checkout has an existing `codex/native-lens` branch at `eddad81e9277e8b214ea878f554d1ce8a2c5485c`. Its [native Lens documentation](https://github.com/tomcharlesosman/treg/blob/eddad81e9277e8b214ea878f554d1ce8a2c5485c/docs/context/interface/lens.md) describes a Python/FastAPI + Vue feature behind a disabled-by-default flag. This is evidence of a local integration branch, not confirmation of a merged or live feature.
-- No paid research, application changes, new runtime tests, push, deployment or PR were performed for this assessment.
+- Standalone Lens: `3a40785`, including discovery/trends/citations at `dcc25c1` and plans/follow-ups/reports at `e73dd8f`. The [release test report](../TEST-REPORT.md#saved-page-plans-follow-up-measurements-and-agent-reports--20-october-2026) records local verification; [the completed CI run](https://github.com/tomcharlesosman/treg-lens/actions/runs/39500047346) covers the corrected release. This assessment did not rerun the application suites.
+- OpenSEO: reference checkout and upstream main both remain `c5f8db19c7ca9e750836b6ed5c8a6491d4f967f4` when checked. Its current official [AI visibility](https://openseo.so/docs/ai-visibility) and [MCP](https://openseo.so/docs/mcp) guides were also reviewed.
+- Native Lens: the clean local checkout and the fork's `codex/native-lens` branch remain at `eddad81e9277e8b214ea878f554d1ce8a2c5485c`. Its [feature documentation](https://github.com/tomcharlesosman/treg/blob/eddad81e9277e8b214ea878f554d1ce8a2c5485c/docs/context/interface/lens.md) and [frontend contracts](https://github.com/tomcharlesosman/treg/blob/eddad81e9277e8b214ea878f554d1ce8a2c5485c/frontend/src/lens/types.ts) were inspected, not retested.
+- The local/fork main is `9d4755c`; upstream `superdesigndev/treg` main is `6f8f82eb1c6cf4998b7cad699e6e91925d62d26b`, 23 commits ahead of that base. [Verified comparison](https://github.com/superdesigndev/treg/compare/9d4755c6b9c150a0a072aa122cc64a278400f47b...6f8f82eb1c6cf4998b7cad699e6e91925d62d26b). Review current upstream changes before updating the native branch. This review did not fetch, rebase, merge or modify either reference checkout.
+- The source assessment above is the pre-implementation baseline. This release implements the continuity and portable-contract work below; its local verification is recorded in the [test report](../TEST-REPORT.md). No paid quality pilot or native migration is implied.
 
-| Original audit priority | Current status | Remaining decision |
+## What is complete, partial or still absent
+
+| Audit area | Current standalone state | Remaining recommendation |
 | --- | --- | --- |
-| Relevant discovery and saved research | Shipped: editable business-led seeds, saved receipts/candidates, import provenance, recovery and reuse | Improve semantic relevance and grouping later if real research examples justify it; do not rebuild this slice |
-| Stable inventory and reliable trends | Shipped: stable identities, lifecycle, frozen scope, coverage checks and comparable trends | Apply the same evidence rules to opportunity ranking and future reports |
-| Citation and competitor exploration | Shipped: page/domain views, ownership, independent metrics, exact-answer drilldowns and selected-page research | Add side-by-side views of saved answers as part of evaluating an action |
-| Context → action → report → agent | Main remaining product gap | Deliver the two slices below |
-| First-party data and bounded diagnostics | Not implemented in standalone Lens | Start with optional Search Console after native integration |
+| Relevant discovery and saved research | Shipped: reviewed-context seeds, retained candidates/receipts, provenance, reuse and recovery | Evaluate semantic relevance on real examples before adding a second research pipeline |
+| Stable inventory and reliable trends | Shipped: identities, lifecycle, frozen collection scope, separate mention/citation rates and coverage checks | Preserve these contracts across the Python port |
+| Citation and competitor exploration | Shipped: pages/domains, historical ownership, per-engine metrics, exact-answer drilldowns and selected-page research | Add targeted diagnostics only when a page decision needs them |
+| Optional strategy and page plans | Shipped: goals, differentiators, key pages, briefs, target decisions, statuses and publication dates | Preserve the new continuity behavior across the native move; avoid more mandatory onboarding |
+| Comparable follow-up measurements | Shipped: saved-answer comparison and fresh approved collection of original scope | Keep missing/legacy evidence and unreported model versions explicit |
+| Private reports and agent handoff | Shipped: immutable evidence snapshots, Markdown/JSON, browser print and bounded instructions | Live access to saved Lens data is still missing; report templates/sharing can wait |
+| Research digest and activation steps | Implemented: acknowledged brand-scoped next steps, dismiss/restore, recovery priority and bounded recent work | Preserve behavior in native; source-research receipts await an explicit owning-brand domain contract |
+| Search Console / GA4 | No Lens connection, property mapping or first-party page/query workflow | Add optional Search Console in native Treg first; selected GA4 outcomes later |
+| Selected-page readiness checks | No dedicated plan-linked page inspection; choosing a page does not fetch it | Add bounded diagnostics after the native foundation, reusing existing research and Google inspection |
+| Live Lens MCP / end-user skills | Copy/download handoff works; no callable Lens workspace tool surface | Use native team authorization and MCP for read-first tools and focused workflows |
+| Extra markets/engines, monthly cadence, async collection | Not part of current Lens scope | Add from demonstrated need with verified provider and settlement contracts |
+| Broad SEO suite | No full rank tracker, backlink explorer, crawler, Maps suite or IndexNow workflow | Keep deferred; these do not block Lens integration |
 
-## Now: saved actions grounded in evidence
+## 1. Implemented in standalone: next steps and recent work
 
-This is the highest-value remaining slice. A user can already find and inspect a gap; the product should help them decide what page to change and remember why.
+A returning user should see what was learned, what remains unfinished and the next useful decision. The [current activity popover](../../src/components/workspace.tsx) describes the latest audit and offers another audit. It does not summarize saved discovery, source research, plans, follow-ups and reports as one continuing investigation.
 
-### First align opportunity claims with evidence
+The home card is now derived from saved state:
 
-The current [opportunity calculation](../../src/components/workspace.tsx) groups selected answers by question wording and ranks the fraction without a brand mention. The banner describes competitor appearances, but the calculation does not require a competitor appearance. The first three entries receive “HIGH POTENTIAL” based on that ordering. Absence alone does not establish a competitor gap, a missing page, or commercial potential.
+- No usable audit: review the first audit scope and quote.
+- Saved evidence with no decision: inspect the finding and choose a page plan.
+- Draft plan: resume its brief and target page.
+- Published plan without compatible later evidence: review a follow-up; never start it automatically.
+- Compatible follow-up: inspect the comparison and prepare a report.
+- Interrupted research, ambiguous billing or unsynchronized work: show recovery/review before recommending another purchase.
 
-Before expanding this screen:
+A dated 12-entry digest links to original receipts, answers, page plans and reports. Existing plan/report notes remain the place for owner decisions; no separate notes stream was added. The digest is bounded without changing source-record retention. Source research stays in citation exploration because older receipts do not record their owning brand domain. Reuse [audit findings](../../src/lib/audit-findings.ts), [page-plan comparison](../../src/lib/page-plans.ts) and existing saved evidence; no extra model or provider call is needed.
 
-- Distinguish **brand absent**, **competitor mentioned**, and **competitor cited** using the actual saved answer and frozen identities.
-- Use answered observations, deliberate deduplication and visible requested/answered coverage. Explain the ranking and distinguish a historical count from a comparable trend.
-- Reuse [measurement](../../src/lib/measurement.ts), [citation analytics](../../src/lib/citation-analytics.ts) and [audit findings](../../src/lib/audit-findings.ts) instead of creating another set of denominators. A failed or blank response must not become evidence of absence.
-- Keep stable question identities and brand scope through the workflow. Replace completion keyed only by question text with brand-scoped action IDs; preserve legacy completion without inventing publication or outcome history.
+Persist dismiss/restore preferences within the current brand's workspace. Completion must come from an acknowledged saved result, not a button click. Downloading a handoff means instructions were prepared; it does not mean an agent changed or published the page. A reported publication date remains an owner's statement.
 
-### Save a page plan and an editable brief
+**Acceptance:** reload, onboarding rerun, conflicting saves, another brand, failed collections and paused monitoring cannot produce a false completed step or an automatic paid action. Keyboard and phone behavior remain covered.
 
-For a selected buyer question, let the user choose an **existing page**, **proposed page**, or **later/no action**. Save:
+**Relative effort:** small-to-medium. This is useful polish, not a reason to delay migration for a large redesigned dashboard.
 
-- A stable action ID, brand context and linked question IDs.
-- Original run/answer/citation references and the reason for the recommendation.
-- Target page, editable rationale and an evidence-specific brief.
-- Status: planned, in progress, published, measured or dismissed; retain a reason when deferring/dismissing.
-- Publication/change date, a baseline and the intended follow-up question/collector/market/brand scope.
+## 2. Prepared for the port: portable contracts and shared fixtures
 
-The current brief is an unsaved general template. Generate the first saved brief deterministically from available context and evidence, then let the user edit it. Additional research or model drafting remains a separately quoted action. User-entered publication dates describe reported changes; they do not prove the page was updated or caused a later visibility change.
+The current TypeScript validators and tests remain the behavioral reference. The [versioned contract pack](../PORTABLE-CONTRACTS.md) now supplies 86 fixed JSON examples and expected outcomes, a TypeScript adapter calling real domain functions, and an optional Python runner. The native adapter and importer remain to be implemented; Python/Vue parity is unverified.
 
-Add optional goal/timeframe, differentiators, important owned pages and writing preferences where they help the action. Keep them out of the mandatory URL-led onboarding path. Derive a small recent-work digest and next-step card from saved research, actions and measurements, with dismiss/restore controls. The existing first-audit findings remain useful and should be reused.
+The pack and existing standalone tests cover:
 
-### Compare saved answers and remeasure deliberately
+- Stable question identity, wording history, archive/pause state and original discovery provenance.
+- Frozen brand, competitor, collector, market and question scope; UTC daily selection, deduplication and coverage.
+- Owned/competitor/other/unknown citation classification, domain boundaries and exact source references.
+- Page-plan identities, publication chronology, missing baselines, original follow-up scope and concurrent edits.
+- Immutable reports, selected evidence, safe rendering, bounds and explicit deletion.
+- Legacy backups, partial/error answers, ambiguous charges and preserved unknown values.
 
-Show a selected question's saved answers side by side, across engines or before/after a page change, with original text, citations, collection labels, dates and errors. Evidence can be inspected even when scopes differ, but a progress claim requires the existing comparable-measurement rules. Missing historical metadata stays explicit.
+The versioned field mapping and decimal-to-micro-USD conversion are now included. The conversion preserves original reported amounts/provenance and unknown flags with explicit precision/rounding. Native import must never turn an imported amount into a native billing-ledger entry.
 
-“Review follow-up audit” should prefill the original scope and show a fresh quote. It must not start a paid run when an action is marked published or measured. If the original collector/configuration is unavailable, show the incompatibility instead of silently substituting it.
+The native profile currently stores at most eight question strings, while standalone inventory can retain 512 records. Eight is the execution limit, not a valid migration truncation rule. Likewise, preserve up to 128 page plans and the bounded immutable report snapshots instead of flattening them into profile notes.
 
-**Acceptance:** an action survives reload, onboarding rerun, backup/restore and conflicting saves; another brand's action cannot appear as completed; saved evidence remains interpretable after profile changes; removed evidence is visibly unavailable or preserved by a bounded snapshot; partial runs cannot manufacture a high-priority gap or successful result; comparing saved answers makes no provider call.
+The proposed import preview contract covers chosen destination team and brand, per-type counts, identity mappings, unsupported fields and conflicts. Its native implementation remains future work. Partition historical brand-scoped records deliberately; matching a domain does not confer access. Repeating an acknowledged import must not duplicate records. Failed or interrupted imports must preserve the source backup and the destination's previous state.
 
-**Relative effort:** medium-to-large. Durable action/evidence contracts and backward-compatible persistence are the main work. No new runtime dependency is expected.
+**Acceptance:** both languages produce the same expected domain outcomes; round trips preserve IDs, dates, answer/citation text and report evidence; unsupported data is surfaced before the user applies an import.
 
-## Next: reproducible reports and an agent handoff
+**Relative effort:** medium. This reduces the chance of a visually similar port changing measurement or losing history.
 
-Deliver this as a second, smaller slice on the saved-action contracts.
+## 3. Native replacement gate: parity, import rehearsal and recovery
 
-### Private reports from saved evidence
+The [existing native feature](https://github.com/tomcharlesosman/treg/blob/eddad81e9277e8b214ea878f554d1ce8a2c5485c/docs/context/interface/lens.md) already supplies team profiles, URL-led research, explicit quotes, native billing execution and answer history behind a disabled feature flag. Its documentation explicitly excludes discovery, monitoring, exports and standalone imports. Its types also lack standalone plans, reports and stable inventory/scope contracts.
 
-Create a versioned report for a selected brand, period and measurement scope. Include the business question, coverage, separate mention/citation metrics, notable original answers, page actions, known limitations and the next decision. Freeze the evidence IDs and bounded snapshot needed to reproduce it; later profile edits or new runs must not rewrite an existing report.
+| Area | Required before calling native Lens the standalone replacement |
+| --- | --- |
+| Onboarding | Reviewed buyer context, competitor corrections, saved receipts and rerun preservation |
+| Research and inventory | Saved discovery, stable question records, original provenance and lifecycle |
+| Measurement and sources | Matching-scope trends, independent citation ownership, page-level drilldowns and source research |
+| Actions and reporting | Plans, optional strategy, comparable follow-ups, frozen reports and handoff |
+| Import/export | Validated preview, bounded atomic/idempotent apply, complete evidence preservation and native export |
+| Permissions | Existing team membership/roles applied to every new object, import and tool; explicit destination selection |
+| Billing and recovery | Native execution/settlement, accepted quotes, unknown-state recovery and no duplicate paid submission |
+| Monitoring | Port the consent/budget/lease/recovery behavior, or retain standalone monitoring with an explicit transition limitation |
 
-Use the existing renderer and browser print for a useful PDF output. Keep JSON/CSV exports and full backups: reports serve a different purpose. Defer arbitrary authored HTML, public links and a new PDF service. Show unavailable/partial evidence and unknown charges explicitly. A before/after report describes an observed change, not a proven effect of the page edit.
+Never import session secrets, API keys, retained monitoring envelopes or spending authorization. Importing history must not enable a schedule. A native schedule requires fresh consent using native identity and billing; historical reported costs cannot reset its budget.
 
-### “Continue with your agent”
+Refresh the native branch against current upstream, then port domain behavior to Python and UI behavior to Vue. Reuse existing auth, connections, database, pricing, call execution and MCP. Keep one native dashboard and preserve standalone as a fallback during rollout.
 
-Export a bounded Markdown/JSON pack containing reviewed context, selected evidence, the saved action, open questions and a concrete next task. Include collection dates and source provenance. This is an end-user workflow handoff; the existing [agent quickstart](../AGENT-QUICKSTART.md) remains the developer/fork setup guide.
+Rehearse with synthetic backups containing multiple historical brands, legacy records, failed/unknown-cost runs, edited questions, retained discovery, linked plans and immutable reports. Test wrong-team access, viewer restrictions, retries after lost acknowledgements, stale revisions, limits and rollback. Verify reports still reproduce and that retained history remains readable after a source audit is removed.
 
-Provide focused workflows for inspecting results, improving a selected page and preparing a report. The pack contains no API key, cookie, retained monitoring credential or unrelated workspace data. Treat scraped pages and answer text as evidence, not instructions. Copying the pack is not a live connection, and fresh paid work still requires approval.
+Run a small, separately budget-approved live acceptance pilot across different business types before broad rollout. Assess competitor identity, question relevance, citation usefulness and whether a real user can finish the page-plan/report workflow. Existing fixture tests establish application behavior; they do not establish live research quality or an SEO outcome. This review authorizes no paid pilot.
 
-**Acceptance:** report metrics match the selected comparable cohort; a saved version reproduces after profile edits; print is readable; handoffs include enough provenance to avoid buying the same research again; credential scanning and cross-brand tests pass; neither report creation nor export makes a paid call.
+**Relative effort:** large; this is the main integration work. Full OpenSEO parity is not a release gate.
 
-**Relative effort:** medium after the action contracts. Keep exports bounded and avoid adding an agent runtime. A later read-first Lens tool surface should reuse Treg's existing MCP infrastructure.
+## First native additions after that foundation
 
-## Native integration: a separate parity and migration gate
+### Search Console grounded planning
 
-The existing native branch already provides team-owned profiles, URL-led research, explicit quotes, manual audits and answer history. Its own documentation explicitly excludes discovery, scheduled monitoring, exports and standalone imports. Its [profile/result types](https://github.com/tomcharlesosman/treg/blob/eddad81e9277e8b214ea878f554d1ce8a2c5485c/frontend/src/lens/types.ts) also lack the standalone stable inventory, discovery receipts and comparable-measurement contracts. Moving the current branch as-is would lose product capabilities.
+Use actual owned pages and observed Google queries to suggest page targets and questions for review. Offer an explicit connection/property choice and preserve exact property identity, dates, country/device filters, row bounds and incomplete-data warnings. Missing rows are not zero demand; Google query volume is not measured AI prompt demand.
 
-Use that branch as the integration base, after reviewing changes in the target main branch. Port the following before presenting native Lens as the standalone replacement:
+The native branch already has [Google OAuth providers](https://github.com/tomcharlesosman/treg/blob/eddad81e9277e8b214ea878f554d1ce8a2c5485c/src/treg/oauth_providers.py) and a [Search Console catalog](https://github.com/tomcharlesosman/treg/blob/eddad81e9277e8b214ea878f554d1ce8a2c5485c/src/treg/catalog/google-search-console.yaml). Reuse that infrastructure, then verify current endpoint access/pricing, property grants, expiry, revocation and reconnect behavior. Catalog presence is not proof that Lens has a working connection. Do not create a second Google credential store in standalone Lens.
 
-1. **Behavioral parity:** reviewed onboarding and rerun preservation, saved discovery/provenance, inventory lifecycle, scope-aware comparisons, page-level citation exploration and selected-source research, followed by the agreed action/report/handoff slices.
-2. **Safe imports and exports:** authenticated destination team and brand, validated preview, bounded import and idempotent identity mapping. Preserve questions, runs, receipts, timestamps, partial errors and unknown billing. Native integer micro-USD needs an explicit, tested conversion from standalone cost fields. Do not silently discard unsupported records.
-3. **Monitoring decision:** port the shipped scheduling/budget/recovery behavior through native execution and billing before replacing standalone monitoring, or keep the standalone product available with an explicit rollout limitation. Importing a workspace must not transfer spending consent or activate schedules. Never transfer retained API-key envelopes into native Lens.
-4. **Native authorization and billing:** reuse team membership, sessions, connection grants, pricing, execution, persistence and MCP. Translate per-key workspaces into explicitly selected team-owned projects; do not infer access from a matching brand/domain. Keep secrets out of imports and reports.
-5. **Cross-language fixture parity:** check the TypeScript and Python implementations against shared JSON fixtures for identities, UTC comparisons, coverage, citation ownership, legacy records, partial results and unknown charges. Add browser journeys for team switching, import conflicts, lost acknowledgements and paid-action consent.
-6. **Staged release:** retain the feature flag, a tested backup/import route and the existing standalone fallback until imported history and workflows are verified. No duplicate React shell or second auth/provider vault is needed.
+### Read-first Lens tools and focused agent workflows
 
-The backend domain behavior belongs in Python and the UI in Vue. Preserve portable evidence contracts and fixtures; a mechanical line-by-line rewrite or wholesale OpenSEO import would not provide these guarantees. The native code was inspected, not retested, during this follow-up.
+Let agents list a team's permitted Lens projects and read bounded context, questions, research receipts, answers, citation details, plans and reports. Use pagination and explicit IDs, and enforce the same permissions as the native UI. These should read saved evidence without repurchasing it.
 
-## After the move: optional first-party data, then narrow diagnostics
+Provide focused instructions for reviewing visibility, improving a selected page and preparing a report. OpenSEO's [MCP guide](https://openseo.so/docs/mcp) demonstrates the shared-project workflow; Lens's current downloadable handoff is a useful starting point, not a live connection.
 
-**Search Console is the best next integration.** Use actual queries and owned pages to suggest questions and page targets for review. Main Treg already contains [Google OAuth providers](https://github.com/tomcharlesosman/treg/blob/eddad81e9277e8b214ea878f554d1ce8a2c5485c/src/treg/oauth_providers.py) and a [Search Console catalog](https://github.com/tomcharlesosman/treg/blob/eddad81e9277e8b214ea878f554d1ce8a2c5485c/src/treg/catalog/google-search-console.yaml). Reuse these after integration; do not build another Google credential store in standalone Lens.
+Use main Treg's existing MCP surface and its current contribution rules. Defer agent writes, paid execution and schedule changes until their approval/idempotency contracts are explicit. Do not expose full workspace replacement as the default write tool.
 
-This infrastructure is not proof of a working Lens connection. Verify the live route contract, applicable price, granted property access, limits and reconnect/disconnect behavior when implementing. Retain dates, completeness and row limits; do not equate missing query rows with zero demand. Keep connection setup optional and query imports reviewed.
+### Bounded review of the selected owned page
 
-Then consider:
+From a saved plan, inspect only the selected page: fetch status, canonical/noindex directives, extractable title/headings/content, and whether the page addresses the selected question using verifiable product facts. Use Search Console inspection where available for Google's recorded index state. Preserve URL, collection time, provenance and blocked/incomplete results.
 
-- Read-first Lens MCP tools for context, actions and saved evidence, using native authorization.
-- A bounded accessibility/indexability/content check for the selected owned page, with blocked/incomplete results visible.
-- One approved competitor/SERP diagnostic when a saved action needs it; keep cited publishers distinct from reviewed competitors.
-- Selected GA4 landing-page outcomes after Search Console; do not claim AI-to-revenue causation.
-- Semantic discovery grouping, monthly cadence, more markets/engines or asynchronous collection when real usage justifies them and provider settlement/recovery contracts are verified.
+Existing Exa source research is useful but does not establish a complete technical/indexability audit. Robots permission or readable HTML cannot guarantee an AI engine will retrieve or cite a page. If provider calls are needed, quote the whole bounded action and save its receipt. Defer a full site crawler and automated publishing.
 
-Defer full organic rank tracking, a broad backlink explorer, a crawler/rendering platform, Maps/local SEO, in-app autonomous chat, automatic publishing/outreach and IndexNow. These expand the product and do not resolve the current evidence-to-action gap.
+## Later, only when evidence justifies it
 
-## Recommended order and completion rule
+- Semantic relevance filtering and duplicate/topic suggestions: evaluate real discovery results first; keep generated grouping distinct from observed questions and explicit paid approval for extra model work.
+- Report audience/templates or selected multi-period summaries: extend the immutable report model when users repeatedly need them. Public sharing needs a distinct publication/permission/revocation design in native Treg.
+- Selected GA4 landing-page outcomes after Search Console, with time-zone, sampling and attribution limitations. Do not infer AI-to-revenue causality.
+- A single competitor/SERP diagnostic for a saved page question before any general keyword or backlink dashboard.
+- Monthly cadence, extra markets/engines and cheaper asynchronous collection after provider capability, pricing and recovery checks. Keep API experiments, Google AI Mode and AI Overviews distinguishable.
 
-**Saved actions + optional context + saved-answer comparison → reports + agent handoff → native parity/import validation → optional Search Console.**
+Continue deferring full rank tracking, backlink exploration, local Maps grids, broad crawling/rendering, an in-app autonomous agent runtime, automatic outreach/publishing and IndexNow. These expand scope without being necessary to preserve the shipped Lens workflow.
 
-Approve the pre-integration workflow when a user can select a real saved finding, decide which page to improve, preserve an evidence-specific brief, record the change, deliberately buy a comparable recheck, and hand the result to a teammate or agent without reconstructing the investigation.
+## Recommended sequence and decision
 
-For implementation, use synthetic upstream fixtures and the [full testing workflow](../TESTING.md) for UI/storage/auth changes. Preserve explicit paid approvals and the eight-dependency standalone footprint. This roadmap intentionally makes no calendar estimate or quantitative impact claim without usage evidence.
+**Next-step/recent-work and portable contracts (implemented here) → refreshed native parity and import rehearsal → optional Search Console and read-first Lens tools → selected-page diagnostics.**
+
+Proceed to native implementation once the source contract and behavior fixtures are explicit; do not wait for every later feature. Before opening an integration PR, require demonstrated parity for the agreed replacement scope, a migration rehearsal, team-isolation/billing tests, and a documented monitoring transition. Before broad rollout, add the separately approved live quality check.
+
+Use [the testing workflow](../TESTING.md) and [portable contracts](../PORTABLE-CONTRACTS.md) for the native implementation. This standalone release does not open a PR or modify native Treg. Its TypeScript checks do not certify Python/Vue parity; bind the real native adapter and complete the import rehearsal before replacement.

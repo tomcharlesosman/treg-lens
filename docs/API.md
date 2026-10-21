@@ -198,6 +198,10 @@ An existing report ID is immutable across normal workspace saves and chunked com
 
 ### PUT `/api/workspace`
 
+Optional `continuity` holds `{ version: 1, dismissed: [{ brand: { name, domain }, stepId, dismissedAt }] }`. At most 128 entries are accepted; name/domain/step ID/date limits are 200/300/600/40 characters respectively. Dates must parse, IDs must be nonempty, and duplicate brand+step identities are rejected. Brand identity uses trimmed lowercase name and normalized hostname. Unknown properties are stripped. Older snapshots without this field remain valid; full backups retain it. Preferences use the same revision compare-and-swap as other workspace changes and do not mutate evidence, billing or monitoring. The UI waits for acknowledgement before hiding/restoring a suggestion.
+
+Next steps and the 12-entry recent-work digest are pure client projections of saved records, not new endpoints or a durable event stream. The [portable contracts](PORTABLE-CONTRACTS.md) document native mapping and shared behavior fixtures; they do not add a native import endpoint.
+
 Body: `{ "snapshot": { ... }, "revision": 0 }`, using the revision most recently loaded. The route validates the snapshot and writes only known fields, excluding credential fields. Audit IDs must be nonempty and unique. Snapshot data is limited to 8 MiB; the entire JSON body may use another 4 KiB for its envelope, including without Content-Length. Revision must be a nonnegative safe integer.
 
 A successful transaction returns the envelope with an incremented revision. A stale revision returns **409** with `{ error, snapshot, revision, updatedAt }` containing the current saved state. Preserve/export unsaved edits and explicitly refresh before choosing a replacement. Do not simply retry an old snapshot with the new revision. Invalid data is 400, oversized HTTP input is 413, and unavailable storage is 503.

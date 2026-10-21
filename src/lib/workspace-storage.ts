@@ -7,6 +7,7 @@ import { validateMeasurementScope } from "./measurement";
 import { parseDiscoveryResearch, type SavedDiscovery } from "./discovery-research";
 import { parsePagePlans, type PagePlan } from "./page-plans";
 import { parseEvidenceReports, type EvidenceReport } from "./evidence-reports";
+import { parseContinuityPreferences, type ContinuityPreferences } from "./workspace-continuity";
 
 export type WorkspaceSnapshot = {
   project: Project;
@@ -18,6 +19,7 @@ export type WorkspaceSnapshot = {
   discoveryResearch?: SavedDiscovery[];
   pagePlans?: PagePlan[];
   reports?: EvidenceReport[];
+  continuity?: ContinuityPreferences;
 };
 
 const record = (value: unknown): value is Record<string, unknown> =>
@@ -165,6 +167,7 @@ export function parseWorkspaceSnapshot(
       !optional(saved.discoveryResearch, (v) => parseDiscoveryResearch(v) !== null) ||
       !optional(saved.pagePlans, (v) => parsePagePlans(v) !== null) ||
       !optional(saved.reports, (v) => parseEvidenceReports(v) !== null) ||
+      !optional(saved.continuity, (v) => parseContinuityPreferences(v) !== null) ||
       !Array.isArray(saved.runs) ||
       !saved.runs.every(run)
     )
@@ -176,6 +179,7 @@ export function parseWorkspaceSnapshot(
       ...(saved.discoveryResearch !== undefined ? { discoveryResearch: parseDiscoveryResearch(saved.discoveryResearch)! } : {}),
       ...(saved.pagePlans !== undefined ? { pagePlans: parsePagePlans(saved.pagePlans)! } : {}),
       ...(saved.reports !== undefined ? { reports: parseEvidenceReports(saved.reports)! } : {}),
+      ...(saved.continuity !== undefined ? { continuity: parseContinuityPreferences(saved.continuity)! } : {}),
       runs: saved.runs,
       done: strings(saved.done) ? saved.done : [],
       sourceResearch: record(saved.sourceResearch)

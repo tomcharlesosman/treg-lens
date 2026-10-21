@@ -79,7 +79,7 @@ test("empty authenticated workspace, settings validation, persistence, and memor
   await settings.getByLabel(/API token/).fill(secondaryKey);
   await save.click();
   await expect(settings).toBeHidden();
-  await expect(page.getByRole("status")).toContainText("Workspace settings saved.");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Workspace settings saved.");
   await expect(page.getByRole("button", { name: /Treg Research workspace/ })).toBeVisible();
   expect(await browserData(page)).not.toContain(primaryKey);
   expect(await browserData(page)).not.toContain(secondaryKey);
@@ -107,7 +107,7 @@ test("prompt add, duplicate prevention, remove, answer empty state, search short
   await page.getByRole("button", { name: "Add prompt", exact: true }).click();
   await dialog.getByLabel("Buyer question").fill(prompt.toUpperCase());
   await dialog.getByRole("button", { name: "Add prompt", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("You’re already tracking this question.");
+  await expect(page.locator('.toast[role="status"]')).toContainText("You’re already tracking this question.");
   await expect(dialog).toBeVisible();
   await dialog.getByRole("button", { name: "Cancel", exact: true }).click();
   await page.keyboard.press("Control+k");
@@ -126,7 +126,7 @@ test("prompt add, duplicate prevention, remove, answer empty state, search short
   await audit.getByRole("button", { name: "Close audit" }).click();
   await page.getByRole("button", { name: `Remove prompt: ${prompt}`, exact: true }).click();
   await expect(page.locator(".prompt-cell").filter({ hasText: prompt })).toHaveCount(0);
-  await expect(page.getByRole("status")).toContainText("Existing audit answers are preserved.");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Existing audit answers are preserved.");
 });
 
 test("audit validation, live price breakdown, engine selection, four-engine run, result details, and persistence", async ({ page }) => {
@@ -151,7 +151,7 @@ test("audit validation, live price breakdown, engine selection, four-engine run,
   await expect(audit.getByText("4 answers collected across 4 engines. Treg appeared in 4 answers.")).toBeVisible();
   await expect(audit.locator(".lens-complete-stats")).toContainText("$0.008");
   await audit.getByRole("button", { name: "Explore your results" }).click();
-  await expect(page.getByRole("status")).toContainText("Audit complete. 4 real AI answers added.");
+  await expect(page.locator('.toast[role="status"]')).toContainText("Audit complete. 4 real AI answers added.");
   await nav(page, "Audit history");
   await expect(page.getByText("1 RUNS", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Open audit", exact: true }).click();

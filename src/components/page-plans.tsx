@@ -12,6 +12,8 @@ type Props = {
   project: Project;
   runs: SavedRun[];
   plans: PagePlan[];
+  initialPlanId?: string;
+  onTargetClose?: () => void;
   legacyDone?: string[];
   onSave: (plans: PagePlan[]) => Promise<void>;
   onSaveStrategy?: (strategy: Project["strategy"]) => Promise<void>;
@@ -27,9 +29,10 @@ function ownedUrl(value: string, domain: string) {
   try { const url = new URL(value); const host = normalizeDomain(url.hostname); const owner = normalizeDomain(domain); return ["https:", "http:"].includes(url.protocol) && !url.username && !url.password && (host === owner || host.endsWith(`.${owner}`)); } catch { return false; }
 }
 
-export default function PagePlans({ project, runs, plans, legacyDone = [], onSave, onSaveStrategy, onFollowup, disabled }: Props) {
-  const [draft, setDraft] = useState<PagePlan | null>(null);
-  const [originalPlan, setOriginalPlan] = useState<PagePlan | null>(null);
+export default function PagePlans({ project, runs, plans, initialPlanId, onTargetClose, legacyDone = [], onSave, onSaveStrategy, onFollowup, disabled }: Props) {
+  const [initialPlan] = useState(() => plans.find((plan) => plan.id === initialPlanId && pagePlanMatchesProject(plan, project)) ?? null);
+  const [draft, setDraft] = useState<PagePlan | null>(() => initialPlan ? structuredClone(initialPlan) : null);
+  const [originalPlan, setOriginalPlan] = useState<PagePlan | null>(() => initialPlan ? structuredClone(initialPlan) : null);
   const attemptedPlan = useRef<PagePlan | null>(null);
   const attemptedDelete = useRef(false);
   const [strategyOpen, setStrategyOpen] = useState(false);
@@ -66,7 +69,7 @@ export default function PagePlans({ project, runs, plans, legacyDone = [], onSav
     {plans.length >= MAX_PAGE_PLANS && <p className="pp-footnote">Your workspace has reached its {MAX_PAGE_PLANS}-plan limit. Existing plans remain editable and exportable.</p>}
     <p className="pp-footnote">Plans record your decisions. Creating, editing and comparing saved work makes no paid call. Publishing a status does not publish a page or start an audit.</p>
     {legacyDone.length > 0 && <details className="pp-legacy"><summary>Earlier completed moves ({legacyDone.length})</summary><p>These older records contain question wording only. They have no frozen brand, baseline or page plan and are not counted as this project’s completed plans.</p><ul>{legacyDone.map((question, index) => <li key={index}>{question}</li>)}</ul></details>}
-    {draft && <PagePlanEditor key={draft.id} plan={draft} runs={runs} onClose={() => setDraft(null)} onSave={async (next) => { guardPlan(next.id); attemptedPlan.current = next; await onSave(plans.some((plan) => plan.id === next.id) ? plans.map((plan) => plan.id === next.id ? next : plan) : [...plans, next]); setNotice("Page plan saved. Your evidence and next step are kept together."); }} onFollowup={(next) => { setDraft(null); onFollowup(next); }} onDelete={originalPlan ? async () => { guardPlan(draft.id); attemptedDelete.current = true; await onSave(plans.filter((plan) => plan.id !== draft.id)); setNotice("Page plan deleted. Original audits remain in your history."); } : undefined} />}
+    {draft && <PagePlanEditor key={draft.id} plan={draft} runs={runs} onClose={() => { setDraft(null); if (draft.id === initialPlanId) onTargetClose?.(); }} onSave={async (next) => { guardPlan(next.id); attemptedPlan.current = next; await onSave(plans.some((plan) => plan.id === next.id) ? plans.map((plan) => plan.id === next.id ? next : plan) : [...plans, next]); setNotice("Page plan saved. Your evidence and next step are kept together."); }} onFollowup={(next) => { setDraft(null); onFollowup(next); }} onDelete={originalPlan ? async () => { guardPlan(draft.id); attemptedDelete.current = true; await onSave(plans.filter((plan) => plan.id !== draft.id)); setNotice("Page plan deleted. Original audits remain in your history."); } : undefined} />}
     {strategyOpen && onSaveStrategy && <StrategyEditor project={project} onClose={() => setStrategyOpen(false)} onSave={async (strategy) => { await onSaveStrategy(strategy); setNotice("Strategy context saved."); }} />}
   </section>;
 }

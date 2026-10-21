@@ -1,10 +1,12 @@
 # OpenSEO feature audit and Treg Lens roadmap
 
-Reviewed 20 October 2026. This audit records the baseline revisions below. The first three priorities were subsequently implemented in Lens; see the [release verification](../TEST-REPORT.md#discovery-comparable-trends-and-citation-exploration--20-october-2026) and [current product behavior](../PRODUCT-STATUS.md).
+Reviewed 20 October 2026. This audit records the baseline revisions below. Priorities 1–3 and the core page-plan, comparable follow-up, report and agent-handoff workflow from priority 4 have subsequently shipped. The recent-work digest and next-step experience remain partial. See the [release verification](../TEST-REPORT.md#saved-page-plans-follow-up-measurements-and-agent-reports--20-october-2026) and [current product behavior](../PRODUCT-STATUS.md).
 
-For the remaining work and the native Treg parity/migration gates, see the [pre-integration roadmap](PRE-INTEGRATION-ROADMAP.md). The tables below preserve the original audit baseline.
+For the remaining work and the native Treg parity/migration gates, see the [pre-integration roadmap, reviewed 21 October 2026](PRE-INTEGRATION-ROADMAP.md). The tables below preserve the original audit baseline; “adapt next” entries describe that earlier state, not the current backlog.
 
 **Recommendation:** strengthen discovery continuity, measurement quality and evidence-to-action workflows first. Add optional first-party search data after those foundations. OpenSEO provides useful domain algorithms and workflow patterns; importing its whole application would expand Lens into a different product.
+
+The subsequent continuity release adds evidence-derived next steps, a brand-scoped recent-work digest and [portable contracts with shared tests](../PORTABLE-CONTRACTS.md). Native parity/import rehearsal and optional native integrations remain in the [current roadmap](PRE-INTEGRATION-ROADMAP.md); the original findings below retain their historical scope.
 
 ## Scope and confidence
 

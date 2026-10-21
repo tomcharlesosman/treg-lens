@@ -28,7 +28,7 @@ import type {
   DiscoveryResult,
 } from "@/lib/discovery";
 import { createSavedDiscovery, parseSavedDiscovery, suggestedDiscoverySeeds, type SavedDiscovery } from "@/lib/discovery-research";
-import type { Project } from "@/lib/workspace-data";
+import { normalizeDomain, type Project } from "@/lib/workspace-data";
 import "./discovery-dialog.css";
 
 type DiscoveryDialogProps = {
@@ -40,6 +40,8 @@ type DiscoveryDialogProps = {
   project: Project;
   storageKey: string;
   savedResearch: SavedDiscovery[];
+  initialReceiptId?: string;
+  onRunningChange?: (running: boolean) => void;
 };
 type Recovery = { pending: boolean; startedAt: string; input: SavedDiscovery["input"]; estimate: DiscoveryEstimate; receipt?: SavedDiscovery };
 const money = (amount: number) =>
@@ -51,24 +53,25 @@ const money = (amount: number) =>
   }).format(amount);
 
 export function DiscoveryDialog({
-  open, onClose, onAdd, onSave, token = "", project, storageKey, savedResearch,
+  open, onClose, onAdd, onSave, token = "", project, storageKey, savedResearch, initialReceiptId, onRunningChange,
 }: DiscoveryDialogProps) {
   const brand = project.brand;
   const id = useId();
-  const [seeds, setSeeds] = useState(() => suggestedDiscoverySeeds(project));
+  const [initialReceipt] = useState(() => savedResearch.find((item) => item.id === initialReceiptId && item.input.brand.trim().toLowerCase() === project.brand.trim().toLowerCase() && normalizeDomain(item.input.domain) === normalizeDomain(project.domain)) ?? null);
+  const [seeds, setSeeds] = useState(() => initialReceipt?.input.seeds ?? suggestedDiscoverySeeds(project));
   const [apiToken, setApiToken] = useState(token);
   const [serverConfigured, setServerConfigured] = useState<boolean | null>(null);
   const [quoteState, setQuoteState] = useState<{ request: string; estimate: DiscoveryEstimate | null; error: string } | null>(null);
   const [running, setRunning] = useState(false);
   const runningRef = useRef(false);
-  const [result, setResult] = useState<DiscoveryResult | null>(null);
-  const [receipt, setReceipt] = useState<SavedDiscovery | null>(null);
-  const [saveState, setSaveState] = useState<"saving" | "saved" | "error" | null>(null);
+  const [result, setResult] = useState<DiscoveryResult | null>(initialReceipt?.result ?? null);
+  const [receipt, setReceipt] = useState<SavedDiscovery | null>(initialReceipt);
+  const [saveState, setSaveState] = useState<"saving" | "saved" | "error" | null>(initialReceipt ? "saved" : null);
   const [importing, setImporting] = useState(false);
   const [interrupted, setInterrupted] = useState(false);
   const [error, setError] = useState("");
-  const [selected, setSelected] = useState<string[]>([]);
-  const [activeTab, setActiveTab] = useState<"question" | "keyword">("question");
+  const [selected, setSelected] = useState<string[]>(initialReceipt?.selectedCandidateIds ?? []);
+  const [activeTab, setActiveTab] = useState<"question" | "keyword">(initialReceipt?.result.questionCount === 0 ? "keyword" : "question");
   const wasOpen = useRef(false);
   const loadedKey = useRef("");
   const seedContext = useRef("");
@@ -139,13 +142,14 @@ export function DiscoveryDialog({
     if (!restoring && (seedContext.current === projectContext || result || interrupted || runningRef.current)) return;
     const timer = window.setTimeout(() => {
     seedContext.current = projectContext;
-    setSeeds(suggestedDiscoverySeeds(project));
+    if (!initialReceipt) setSeeds(suggestedDiscoverySeeds(project));
     if (!restoring) return;
     loadedKey.current = recoveryKey;
     try {
       const raw = JSON.parse(localStorage.getItem(recoveryKey) || "null") as Recovery | null;
       const recovered = parseSavedDiscovery(raw?.receipt);
       setInterrupted(raw?.pending === true);
+      if (initialReceipt) return;
       if (recovered) {
         setReceipt(recovered); setResult(recovered.result); setSeeds(recovered.input.seeds);
         setActiveTab(recovered.result.questionCount ? "question" : "keyword");
@@ -158,7 +162,7 @@ export function DiscoveryDialog({
     } catch { /* Invalid recovery data cannot authorize research. */ }
     }, 0);
     return () => window.clearTimeout(timer);
-  }, [open, token, storageKey, recoveryKey, project, projectContext, result, interrupted]);
+  }, [open, token, storageKey, recoveryKey, project, projectContext, result, interrupted, initialReceipt]);
   useEffect(() => {
     if (!open) return;
     const controller = new AbortController();
@@ -196,7 +200,7 @@ export function DiscoveryDialog({
       setError("Browser recovery storage is unavailable. Enable storage before paid discovery so an interrupted request cannot be repeated accidentally.");
       return;
     }
-    setError(""); setRunning(true); runningRef.current = true;
+    setError(""); setRunning(true); runningRef.current = true; onRunningChange?.(true);
     try {
       const response = await fetch("/api/aeo/discover", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -221,7 +225,7 @@ export function DiscoveryDialog({
     } catch (error) {
       setError(error instanceof Error ? error.message : "Discovery could not finish. Check Treg activity before retrying.");
       try { if (JSON.parse(localStorage.getItem(recoveryKey) || "null")?.pending === true) setInterrupted(true); } catch { setInterrupted(true); }
-    } finally { setRunning(false); runningRef.current = false; }
+    } finally { setRunning(false); runningRef.current = false; onRunningChange?.(false); }
   }
   async function importSelected() {
     if (!receipt || !selected.length || importing) return;

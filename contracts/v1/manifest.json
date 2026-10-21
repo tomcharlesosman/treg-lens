@@ -1,0 +1,38 @@
+{
+  "contractVersion": 1,
+  "name": "treg-lens-portable-domain",
+  "sourceRevision": "3a40785b4037c398854a506d4fb9ddbf6995c882",
+  "status": "TypeScript behavior reference; native Python parity unverified",
+  "numericEquality": "JSON numbers compare by value; booleans are not numbers. MicroUSD integers are decimal strings. Object key order is irrelevant; array order is significant.",
+  "suites": [
+    "questions.json",
+    "measurement.json",
+    "citations.json",
+    "plans.json",
+    "reports-and-backups.json",
+    "money.json",
+    "continuity.json"
+  ],
+  "operations": {
+    "questions.identity": "Input text/project; output portable exact-wording id and neutral/branded kind.",
+    "questions.lifecycle": "Input records/prompts/project and optional edit; output reconciled records, active text list and validity.",
+    "scope.build": "Input audit and optional records; output frozen scope and validity.",
+    "scope.same": "Input left/right scopes; output scope-key equality and individual validity.",
+    "measurement.run": "Input saved run and optional filter; output recorded/requested/answered/missing/coverage/rates/comparability/answerIds.",
+    "measurement.trend": "Input runs/project and optional filter; output latest/previous ids, UTC daily point ids, excluded run count and nullable delta.",
+    "citation.url": "Input url/domain; output safe normalized URL or null and owned-domain boundary match.",
+    "citation.ownership": "Input accepted URL and historical run; output owned/competitor/other/unknown plus optional owner.",
+    "citation.analytics": "Input runs and optional ownership filter; output deduped answer counts, page/domain evidence projections and independent brand mention/citation counts.",
+    "plans.compare": "Input plan/runs; output baseline/followup measurement projections, compatibility, nullable delta and explicit unavailable reasons.",
+    "plans.followup": "Input plan/runs; output original audit input, records, competitor domains and scope or unavailable with reason.",
+    "reports.create": "Input id/title/project/runs/plans/notes/demo/now; output cleaned frozen report and stable parse round-trip result or valid:false.",
+    "reports.immutable": "Input previous/next report lists; output whether same-id contents remain immutable (deletion/new-id allowed).",
+    "workspace.sanitize": "Input full snapshot; output clean snapshot or valid:false; unknown optional records are rejected, unknown object fields are projected away.",
+    "money.convert": "Input reportedUsd, optional knownSubtotalUsd and costKnown; output decimal-preserving signed-int64 microUSD strings and nullable final total or valid:false.",
+    "continuity.project": "Input complete saved workspace; output ordered step IDs/actions, recent record IDs/original timestamps/actions and current-brand dismissal count. English UI copy is excluded."
+  },
+  "additionsAfterReferenceRevision": [
+    "Portable decimal-to-microUSD normalization; does not change app billing",
+    "Optional continuity preferences and evidence-derived guidance from this preparing-for-native release"
+  ]
+}

@@ -1,25 +1,41 @@
-# Full feature verification — 20 October 2026
+# Full feature verification — 21 October 2026
 
-The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This local pass covers saved page plans, comparable follow-up measurements, immutable reports/agent handoff, saved discovery research, stable question identities, trends and citation exploration, alongside URL-led setup, rerunning onboarding, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Earlier real-Neon, public Vercel and paid-provider checks are recorded separately below; they are separate evidence and do not establish current live-provider behavior.
+The [coverage guide](./TESTING.md) maps the implemented features to their browser, HTTP and library tests. This local pass covers acknowledged next steps/recent work, recovery continuity, the portable native contract pack, saved page plans, comparable follow-up measurements, immutable reports/agent handoff, saved discovery research, stable question identities, trends and citation exploration, alongside URL-led setup, rerunning onboarding, the live workspace, shared SQLite/Postgres storage logic, backup restoration, hosted transport and budgeted monitoring. Automated production HTTP/browser tests use SQLite and synthetic provider responses. Earlier real-Neon, public Vercel and paid-provider checks are recorded separately below; they are separate evidence and do not establish current live-provider behavior.
 
 ## Results
 
 | Suite | Passed | Failed / skipped |
 | --- | ---: | ---: |
-| HTTP API | 170 | 0 / 0 |
-| Chromium browser workflows | 152 | 0 / 0 |
-| Firefox browser workflows | 152 | 0 / 0 |
-| WebKit browser workflows | 152 | 0 / 0 |
-| Library, setup and operations tests | 213 | 0 / 0 |
-| **Total** | **839** | **0 / 0** |
+| HTTP API | 173 | 0 / 0 |
+| Chromium browser workflows | 165 | 0 / 0 |
+| Firefox browser workflows | 165 | 0 / 0 |
+| WebKit browser workflows | 165 | 0 / 0 |
+| Library, setup, operations and portable contract tests | 317 | 0 / 0 |
+| **Total** | **985** | **0 / 0** |
 
-The final complete 626-case production API/browser run passed with zero failures, retries or skips: 170 HTTP tests plus 152 browser scenarios in each of Chromium, Firefox and WebKit. The 213 library/setup/operations tests also passed. Lint, fresh route type generation, TypeScript, local documentation links and the production build passed. After the final code changes, `npm run check` and `npm run test:e2e` passed; the latter builds first and runs all four projects against the isolated production test server. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
+The final complete 668-case production API/browser run passed with zero failures, retries or skips: 173 HTTP tests plus 165 browser scenarios in each of Chromium, Firefox and WebKit. The 317 library/setup/operations/contract tests also passed. Lint, fresh route type generation, TypeScript, local documentation links and the production build passed. After the final code changes, `npm run check` and `npm run test:e2e` passed; the latter builds first and runs all four projects against the isolated production test server. Responsive browser cases exercised 320, 390, 768 and 1440-pixel widths, with each public route checked independently. The harness forces SQLite with a fresh private database and synthetic credentials; it never opens the development or hosted production workspace database.
 
 New coverage includes server durability after clearing the browser cache, scoped legacy migration, failed-save recovery, revision conflicts, complete backup restoration, confirmed audit deletion, idempotent monitoring recovery merges, and an exact-8 MiB backup round trip with answer hashes checked. Worker HTTP tests make isolated schedules due and execute the actual auth, pricing, provider adapters, ledger and workspace routes. They cover success, UTC cadence, revocation, per-run/monthly budgets, partial failures, missing charges, pending reservations, and retained paid results when the workspace is full.
 
 Library/operations regressions exercise cross-process SQLite reads, atomic rollback, encrypted credential ownership, concurrent runner leases, crashes before and after journaling, exact quote execution, UTC slot alignment, online WAL-consistent backups, and the real worker CLI against an isolated HTTP server. Existing coverage also includes completed prompt rechecks, audit/discovery continuation across dialog close/reopen, discovery selection limits and resets, and backup exports when browser storage rejects writes.
 
 Hosted transport coverage exercises owner-bound uploads above the 3 MiB direct-save threshold, 1 MiB chunk limits, UTF-8 character boundaries, exact 8 MiB round trips, checksum/schema failures, immutable chunk replay, concurrent revision conflicts, expiry/abort, encrypted staging, bounded retention, and replay of the original committed snapshot after later edits. Client tests cover lost commit acknowledgments without duplicate writes; streamed JSON tests round-trip Unicode above the platform response limit. Hosted cron tests reject absent/incorrect bearer values and spoofed Vercel headers. The local POST runner and hosted GET dispatcher share the tested monitor domain logic. Remote-mode operations tests confirm local backup and pause commands refuse without touching an unrelated SQLite database or exposing credentials.
+
+## Next steps, recent work and portable native contracts — 21 October 2026
+
+This release extends standalone revision `3a40785`. It retains eight runtime dependencies and the existing database schema. Brand-scoped dismissal preferences are an optional validated workspace field; older workspaces and full backups remain readable. Guidance and the dated digest derive from acknowledged saved records. No real workspace was reset and no paid live provider calls were made.
+
+Thirteen new browser scenarios run in each of Chromium, Firefox and WebKit, with three new HTTP cases and seventeen continuity library regressions. They cover:
+
+- First-audit review without execution, saved page-plan resumption, owner-reported publication, compatible follow-up review and exact report preparation/reopening.
+- Hide/restore only after the exact server acknowledgment, failed saves, stale revisions, key and brand isolation, same-brand onboarding preservation, legacy snapshots and full-backup restoration.
+- Unknown and legacy billing retained after newer successful work, partial evidence, original receipt/answer links and an unacknowledged publication that cannot produce a completed-work recommendation.
+- Interrupted and returned discovery recovery, reopening an in-flight request without remounting or repurchasing it, and interrupted/returned onboarding-review drafts resumed with the existing key. Initial-setup drafts are not mistaken for review drafts; the banner clears only after profile acknowledgment.
+- A bounded chronological twelve-record history, four-record initial view, keyboard expansion/focus and responsive layouts at 320 and 1440 pixels. Both viewport screenshots were inspected.
+
+The [portable contract pack](PORTABLE-CONTRACTS.md) adds 86 fixed JSON vectors plus a manifest-coverage test, executed through adapters calling the actual TypeScript domain functions. Its seven suites cover questions, measurement, citations, plans, reports/backups, money and continuity. The optional Python standard-library harness validated fixture structure; missing adapters and deliberate mismatches failed as expected. **Native Python/Vue parity remains unverified:** no native adapter, importer, team-authorization or native-billing integration was implemented here. The proposed import preview and atomic/idempotent apply protocol are documented preparation.
+
+The first full browser pass exposed two existing notification assertions that matched the new synchronization status as well as the intended toast. Those locators now target the actual notification. Focused continuity checks then passed 39/39 across all engines, followed by the final full 668-case production run and `npm run check` (317 tests, lint, route types, TypeScript and local documentation links; the final documentation-only pass checked 248 links). The production build passed. Tests retain zero retries and the isolated SQLite/synthetic-provider boundary. Current hosted checks and commit-specific CI are separate evidence in [GitHub Actions](https://github.com/tomcharlesosman/treg-lens/actions/workflows/test.yml).
 
 ## Saved page plans, follow-up measurements and agent reports — 20 October 2026
 

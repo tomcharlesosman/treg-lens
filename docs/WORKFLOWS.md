@@ -2,6 +2,16 @@
 
 Treg Lens keeps research, page decisions, repeat measurements and reports connected. Start with an approved audit, then use **Opportunities** to decide what to improve. Reading saved evidence, editing plans, comparing saved audits and creating reports make no paid provider calls.
 
+## Pick up where you left off
+
+**Overview → Next step** uses your acknowledged saved evidence to suggest the next useful review: first audit scope, an observed opportunity, a draft page plan, a published plan's follow-up, a compatible comparison or a report. Incomplete evidence and unknown billing are surfaced first. A newer successful call does not settle an older unknown charge; its review suggestion remains until you explicitly hide it. An interrupted discovery, unfinished brand-research review or unsynchronized workspace shows recovery guidance before recommendations. Brand-research recovery resumes the existing onboarding draft with your signed-in key; it does not repeat research. Opening a recommendation never executes research, collects answers or enables monitoring.
+
+**Recent work** lists up to 12 saved audits, buyer-question research receipts, brand research receipts, page plans and reports for the selected brand and domain, newest first. The newest four are visible immediately; expand older saved work to see the rest. Each entry opens the original record. It is a bounded view of retained evidence, not a complete activity log: a plan shows its latest saved update, and the digest does not delete or shorten source records. Older records remain in their existing history/library views. Source-research receipts currently identify the source website rather than the owning brand domain, so they remain in citation exploration and are not mixed into this brand-scoped digest.
+
+Hide a suggestion to remove it from your home view, then use **Restore suggestions** to bring back hidden suggestions for this brand. Hiding is not completion or billing reconciliation. Preferences save only after server acknowledgement, survive reload and full backups, and do not affect other brands. Updated plan evidence can produce a fresh suggestion. Up to 128 dismissal preferences are retained across the workspace; older preferences are dropped when adding beyond that bound.
+
+Publication dates are owner-reported. A compatible follow-up is ready for review, not automatically marked measured. Downloading agent instructions prepares a handoff; Lens does not record that an agent executed them. While synchronization is pending, the home view offers recovery and does not present unacknowledged edits as completed work.
+
 ## Save a page plan
 
 Each opportunity explains the latest saved evidence for one buyer question. A configured competitor appearing without your brand is different from simple brand absence. Failed or blank answers are missing evidence, not proof that your brand was omitted. Low coverage and unknown collection settings stay visible.

@@ -11,7 +11,7 @@ function collect(path) {
     else if (name.endsWith(".md")) files.push(next);
   }
 }
-for (const directory of ["docs", "src", ".github"]) collect(join(root, directory));
+for (const directory of ["docs", "src", ".github", "contracts"]) collect(join(root, directory));
 function anchors(file) {
   const result = new Set();
   for (const heading of readFileSync(file, "utf8").matchAll(/^#{1,6}\s+(.+?)\s*#*$/gm)) {

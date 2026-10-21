@@ -1,0 +1,65 @@
+{
+  "contractVersion": 1,
+  "kind": "treg-lens-import-preview",
+  "status": "blocked",
+  "source": {
+    "kind": "treg-lens-workspace-backup",
+    "version": 1,
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "importNamespace": "synthetic-example-import",
+    "bytes": 32768
+  },
+  "destination": {
+    "teamId": "synthetic-team-id",
+    "brandProjectId": "synthetic-lens-project-id",
+    "brand": {
+      "name": "Treg",
+      "domain": "treg.to"
+    },
+    "expectedRevision": 7
+  },
+  "mappingVersion": 1,
+  "counts": {
+    "questionRecords": 2,
+    "auditRuns": 2,
+    "discoveryReceipts": 1,
+    "sourceResearchRecords": 1,
+    "pagePlans": 1,
+    "reportSnapshots": 1,
+    "legacyCompletedMoves": 1,
+    "dismissalPreferences": 1
+  },
+  "recordMappings": [
+    {
+      "kind": "question",
+      "sourceId": "buyer-1",
+      "nativeId": "synthetic-native-question-id",
+      "decision": "create"
+    },
+    {
+      "kind": "audit",
+      "sourceId": "baseline",
+      "nativeId": "synthetic-native-run-id",
+      "decision": "create"
+    }
+  ],
+  "conflicts": [],
+  "unsupportedFields": [
+    {
+      "path": "reports",
+      "count": 1,
+      "resolution": "Implement native immutable report storage before apply; preserve the source backup."
+    }
+  ],
+  "warnings": [
+    "Synthetic contract example only. No native import endpoint is implemented.",
+    "Historical unknown collection settings and billing must remain unknown."
+  ],
+  "excludedCategories": [
+    "session and API credentials",
+    "retained monitoring key envelopes",
+    "spending authorization and scheduled execution state"
+  ],
+  "applyAllowed": false,
+  "idempotencyKey": null
+}

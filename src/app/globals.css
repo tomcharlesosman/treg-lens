@@ -3805,3 +3805,51 @@ tbody > tr:hover {
     gap: 5px;
   }
 }
+
+/* Saved-work guidance uses acknowledged records, never click-based progress. */
+.workspace-continuity { margin: 0 0 24px; }
+.wc-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(270px, 1fr); gap: 18px; align-items: start; }
+.wc-guidance, .wc-recent { min-width: 0; border: 1px solid var(--treg-border); border-radius: 12px; padding: 22px; background: var(--treg-surface); }
+.wc-guidance { border-color: var(--treg-mint-line); }
+.wc-heading { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-bottom: 16px; }
+.wc-heading h2 { display: flex; align-items: center; gap: 9px; font-size: 17px; letter-spacing: -.4px; margin: 6px 0 0; }
+.wc-heading > span { color: var(--treg-body); font-size: 10px; }
+.wc-step { padding: 16px 0; border-top: 1px solid var(--treg-border); }
+.wc-step h3 { margin: 0; font-size: 15px; line-height: 1.65; letter-spacing: -.25px; }
+.wc-step p { margin: 8px 0 16px; font-size: 12px; line-height: 1.8; color: var(--treg-body); overflow-wrap: anywhere; }
+.wc-primary { border: 0; padding: 17px; background: var(--treg-mint); border-radius: 9px; }
+.wc-step-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.wc-step-actions .button { white-space: normal; text-align: left; }
+.wc-step-actions .button > svg { flex-shrink: 0; }
+.wc-hide, .wc-restore { display: inline-flex; align-items: center; gap: 6px; font: inherit; font-size: 10px; line-height: 1.7; color: var(--treg-body); border: 0; padding: 6px 0; background: transparent; cursor: pointer; text-align: left; }
+.wc-hide:hover, .wc-restore:hover { color: var(--treg-ink); text-decoration: underline; }
+.wc-hide:disabled, .wc-restore:disabled { opacity: .6; cursor: not-allowed; }
+.wc-hide svg, .wc-restore svg { flex-shrink: 0; }
+.wc-more { margin-top: 16px; font-size: 11px; }
+.wc-more summary { color: var(--treg-body); cursor: pointer; margin-bottom: 8px; }
+.wc-more summary:focus-visible { outline: 2px solid var(--treg-mint-ink); outline-offset: 4px; }
+.wc-empty, .wc-note, .wc-disclosure, .wc-first-audit p { font-size: 11px; line-height: 1.8; color: var(--treg-body); }
+.wc-empty { margin: 16px 0; }
+.wc-note { margin: 0 0 14px; }
+.wc-disclosure { margin: 18px 0 0; padding-top: 14px; border-top: 1px solid var(--treg-border); font-size: 10px; }
+.wc-first-audit { margin-top: 16px; }
+.wc-first-audit > div { display: flex; gap: 8px; flex-wrap: wrap; }
+.wc-recent ol { list-style: none; padding: 0; margin: 0; }
+.wc-recent li + li { border-top: 1px solid var(--treg-border); }
+.wc-recent li > button { display: flex; width: 100%; min-width: 0; align-items: center; gap: 12px; text-align: left; font: inherit; border: 0; color: var(--treg-ink); background: transparent; padding: 14px 0; cursor: pointer; }
+.wc-recent li > button:hover strong { color: var(--treg-mint-ink); }
+.wc-recent li > button > svg { flex-shrink: 0; }
+.wc-record { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; }
+.wc-record strong { font-size: 12px; }
+.wc-record > span { font-size: 11px; line-height: 1.8; color: var(--treg-body); overflow-wrap: anywhere; }
+.wc-record time { display: flex; align-items: center; gap: 5px; font-size: 9px; line-height: 1.7; color: var(--treg-muted); }
+.wc-record time svg { flex-shrink: 0; }
+.wc-recovery { display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--treg-border-strong); border-radius: 10px; background: var(--treg-canvas); padding: 18px 20px; margin-bottom: 16px; }
+.wc-recovery > svg { flex-shrink: 0; color: var(--treg-body); margin-top: 2px; }
+.wc-recovery > div { min-width: 0; }
+.wc-recovery h2 { font-size: 14px; margin: 0; line-height: 1.6; }
+.wc-recovery p, .wc-message { font-size: 11px; line-height: 1.8; color: var(--treg-body); margin: 7px 0 12px; }
+.wc-message { margin: 14px 0 0; color: var(--treg-success); }
+.wc-error { color: var(--treg-ink); padding: 10px; border: 1px solid var(--treg-border); border-radius: 6px; }
+@media (max-width: 1100px) { .wc-layout { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .wc-guidance, .wc-recent { padding: 16px; }.wc-primary { padding: 13px; }.wc-step-actions { align-items: stretch; flex-direction: column; gap: 7px; }.wc-step-actions .button { justify-content: space-between; }.wc-recovery { padding: 14px; }.wc-recovery .button { white-space: normal; text-align: left; } }

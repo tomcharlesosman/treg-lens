@@ -53,3 +53,7 @@ next-env.d.ts
 *.sqlite
 *.sqlite-wal
 *.sqlite-shm
+
+# Optional native contract harness.
+__pycache__/
+*.py[cod]

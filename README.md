@@ -56,6 +56,8 @@ Perplexity uses the Sonar model API; the other engines return web-interface answ
 
 Treg Lens is an independent implementation inspired by [Profound](https://www.tryprofound.com/). It does not promise complete Profound parity or provide shared team accounts, automatic outreach, or publishing. Page-plan briefs start from saved evidence and remain editable. They do not make an additional model call or publish content. Follow the [page-plan, comparison and report guide](docs/WORKFLOWS.md).
 
+Return to **Overview** for a next step based on your saved evidence and a dated recent-work digest. Suggestions open original research, audits, plans or reports; they never start a paid call. Hide and restore suggestions per brand, with preferences saved in your workspace and full backups. The [native contract pack](docs/PORTABLE-CONTRACTS.md) prepares the Python/Vue move with shared fixed test cases while keeping this standalone app runnable with the same eight dependencies.
+
 ## Documentation
 
 | I want to… | Read |
@@ -66,6 +68,7 @@ Treg Lens is an independent implementation inspired by [Profound](https://www.tr
 | Understand the small dependency footprint | [Dependencies](docs/DEPENDENCIES.md) |
 | Turn evidence into a page plan, follow-up and report | [Workflow guide](docs/WORKFLOWS.md) |
 | Integrate with the HTTP API | [API contracts](docs/API.md) |
+| Port domain behavior into native Treg | [Portable contracts and shared tests](docs/PORTABLE-CONTRACTS.md) |
 | Understand state, costs, and extension points | [Architecture](docs/ARCHITECTURE.md) and [product behavior](docs/PRODUCT-STATUS.md) |
 | Run tests and inspect coverage | [Testing](docs/TESTING.md) and [verification report](docs/TEST-REPORT.md) |
 | Contribute a fix or feature | [Contributing](CONTRIBUTING.md) and [pull request template](.github/pull_request_template.md) |

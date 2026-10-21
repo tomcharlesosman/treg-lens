@@ -1,0 +1,1735 @@
+{
+  "contractVersion": 1,
+  "cases": [
+    {
+      "id": "plan-comparison-original-scope-after-publication",
+      "operation": "plans.compare",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "publishedAt": "2026-10-21T00:00:00Z",
+          "baselineRunId": "baseline",
+          "baselineMeasurement": {
+            "version": 1,
+            "market": {
+              "country": "US",
+              "language": "en"
+            },
+            "brand": {
+              "name": "Treg",
+              "domain": "treg.to"
+            },
+            "prompts": [
+              {
+                "id": "buyer-1",
+                "text": "Best toolkit?",
+                "kind": "neutral"
+              }
+            ],
+            "collectors": [
+              {
+                "engine": "chatgpt",
+                "sourceKind": "web-interface",
+                "provider": "cloro",
+                "model": "web-interface-default-unreported"
+              }
+            ]
+          },
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": [
+          {
+            "id": "baseline",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-1",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Composio offers integrations.",
+                "citations": [
+                  {
+                    "url": "https://composio.dev/docs",
+                    "title": "Docs",
+                    "domain": "composio.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Composio"
+                ],
+                "brandMentioned": false,
+                "position": null,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-20T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-20T12:00:00Z"
+          },
+          {
+            "id": "followup",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-2",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Treg is suitable.",
+                "citations": [
+                  {
+                    "url": "https://docs.treg.to/guide",
+                    "title": "Guide",
+                    "domain": "spoofed-label.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Treg"
+                ],
+                "brandMentioned": true,
+                "position": 1,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-21T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-21T12:00:00Z"
+          }
+        ]
+      },
+      "expected": {
+        "baseline": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 1,
+          "missing": 0,
+          "coverage": 1.0,
+          "mentionRate": 0,
+          "citationRate": 0,
+          "comparable": true,
+          "answerIds": [
+            "answer-1"
+          ]
+        },
+        "followup": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 1,
+          "missing": 0,
+          "coverage": 1.0,
+          "mentionRate": 100,
+          "citationRate": 100,
+          "comparable": true,
+          "answerIds": [
+            "answer-2"
+          ]
+        },
+        "comparable": true,
+        "delta": {
+          "mentions": 100,
+          "citations": 100
+        },
+        "reasons": []
+      }
+    },
+    {
+      "id": "plan-missing-baseline-remains-unavailable",
+      "operation": "plans.compare",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "publishedAt": "2026-10-21T00:00:00Z",
+          "baselineRunId": "baseline",
+          "baselineMeasurement": {
+            "version": 1,
+            "market": {
+              "country": "US",
+              "language": "en"
+            },
+            "brand": {
+              "name": "Treg",
+              "domain": "treg.to"
+            },
+            "prompts": [
+              {
+                "id": "buyer-1",
+                "text": "Best toolkit?",
+                "kind": "neutral"
+              }
+            ],
+            "collectors": [
+              {
+                "engine": "chatgpt",
+                "sourceKind": "web-interface",
+                "provider": "cloro",
+                "model": "web-interface-default-unreported"
+              }
+            ]
+          },
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": [
+          {
+            "id": "followup",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-2",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Treg is suitable.",
+                "citations": [
+                  {
+                    "url": "https://docs.treg.to/guide",
+                    "title": "Guide",
+                    "domain": "spoofed-label.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Treg"
+                ],
+                "brandMentioned": true,
+                "position": 1,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-21T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-21T12:00:00Z"
+          }
+        ]
+      },
+      "expected": {
+        "baseline": null,
+        "followup": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 1,
+          "missing": 0,
+          "coverage": 1.0,
+          "mentionRate": 100,
+          "citationRate": 100,
+          "comparable": true,
+          "answerIds": [
+            "answer-2"
+          ]
+        },
+        "comparable": false,
+        "delta": null,
+        "reasons": [
+          "The baseline audit is unavailable."
+        ]
+      }
+    },
+    {
+      "id": "plan-missing-followup-is-not-progress",
+      "operation": "plans.compare",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "publishedAt": "2026-10-21T00:00:00Z",
+          "baselineRunId": "baseline",
+          "baselineMeasurement": {
+            "version": 1,
+            "market": {
+              "country": "US",
+              "language": "en"
+            },
+            "brand": {
+              "name": "Treg",
+              "domain": "treg.to"
+            },
+            "prompts": [
+              {
+                "id": "buyer-1",
+                "text": "Best toolkit?",
+                "kind": "neutral"
+              }
+            ],
+            "collectors": [
+              {
+                "engine": "chatgpt",
+                "sourceKind": "web-interface",
+                "provider": "cloro",
+                "model": "web-interface-default-unreported"
+              }
+            ]
+          },
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": [
+          {
+            "id": "baseline",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-1",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Composio offers integrations.",
+                "citations": [
+                  {
+                    "url": "https://composio.dev/docs",
+                    "title": "Docs",
+                    "domain": "composio.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Composio"
+                ],
+                "brandMentioned": false,
+                "position": null,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-20T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-20T12:00:00Z"
+          }
+        ]
+      },
+      "expected": {
+        "baseline": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 1,
+          "missing": 0,
+          "coverage": 1.0,
+          "mentionRate": 0,
+          "citationRate": 0,
+          "comparable": true,
+          "answerIds": [
+            "answer-1"
+          ]
+        },
+        "followup": null,
+        "comparable": false,
+        "delta": null,
+        "reasons": [
+          "Select a saved follow-up audit."
+        ]
+      }
+    },
+    {
+      "id": "plan-pre-publication-followup-cannot-claim-change",
+      "operation": "plans.compare",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "publishedAt": "2026-10-22T00:00:00Z",
+          "baselineRunId": "baseline",
+          "baselineMeasurement": {
+            "version": 1,
+            "market": {
+              "country": "US",
+              "language": "en"
+            },
+            "brand": {
+              "name": "Treg",
+              "domain": "treg.to"
+            },
+            "prompts": [
+              {
+                "id": "buyer-1",
+                "text": "Best toolkit?",
+                "kind": "neutral"
+              }
+            ],
+            "collectors": [
+              {
+                "engine": "chatgpt",
+                "sourceKind": "web-interface",
+                "provider": "cloro",
+                "model": "web-interface-default-unreported"
+              }
+            ]
+          },
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": [
+          {
+            "id": "baseline",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-1",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Composio offers integrations.",
+                "citations": [
+                  {
+                    "url": "https://composio.dev/docs",
+                    "title": "Docs",
+                    "domain": "composio.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Composio"
+                ],
+                "brandMentioned": false,
+                "position": null,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-20T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-20T12:00:00Z"
+          },
+          {
+            "id": "followup",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-2",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Treg is suitable.",
+                "citations": [
+                  {
+                    "url": "https://docs.treg.to/guide",
+                    "title": "Guide",
+                    "domain": "spoofed-label.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Treg"
+                ],
+                "brandMentioned": true,
+                "position": 1,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-21T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-21T12:00:00Z"
+          }
+        ]
+      },
+      "expected": {
+        "baseline": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 1,
+          "missing": 0,
+          "coverage": 1.0,
+          "mentionRate": 0,
+          "citationRate": 0,
+          "comparable": true,
+          "answerIds": [
+            "answer-1"
+          ]
+        },
+        "followup": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 1,
+          "missing": 0,
+          "coverage": 1.0,
+          "mentionRate": 100,
+          "citationRate": 100,
+          "comparable": true,
+          "answerIds": [
+            "answer-2"
+          ]
+        },
+        "comparable": false,
+        "delta": null,
+        "reasons": [
+          "The follow-up was collected before the recorded publication date."
+        ]
+      }
+    },
+    {
+      "id": "plan-low-coverage-does-not-infer-improvement",
+      "operation": "plans.compare",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "publishedAt": "2026-10-21T00:00:00Z",
+          "baselineRunId": "baseline",
+          "baselineMeasurement": {
+            "version": 1,
+            "market": {
+              "country": "US",
+              "language": "en"
+            },
+            "brand": {
+              "name": "Treg",
+              "domain": "treg.to"
+            },
+            "prompts": [
+              {
+                "id": "buyer-1",
+                "text": "Best toolkit?",
+                "kind": "neutral"
+              }
+            ],
+            "collectors": [
+              {
+                "engine": "chatgpt",
+                "sourceKind": "web-interface",
+                "provider": "cloro",
+                "model": "web-interface-default-unreported"
+              }
+            ]
+          },
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": [
+          {
+            "id": "baseline",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-1",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Composio offers integrations.",
+                "citations": [
+                  {
+                    "url": "https://composio.dev/docs",
+                    "title": "Docs",
+                    "domain": "composio.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Composio"
+                ],
+                "brandMentioned": false,
+                "position": null,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-20T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-20T12:00:00Z"
+          },
+          {
+            "id": "followup",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [],
+            "errors": [
+              {
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "error": "Interrupted"
+              }
+            ],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": false,
+            "completedAt": "2026-10-21T12:00:00Z"
+          }
+        ]
+      },
+      "expected": {
+        "baseline": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 1,
+          "missing": 0,
+          "coverage": 1.0,
+          "mentionRate": 0,
+          "citationRate": 0,
+          "comparable": true,
+          "answerIds": [
+            "answer-1"
+          ]
+        },
+        "followup": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 0,
+          "missing": 1,
+          "coverage": 0.0,
+          "mentionRate": null,
+          "citationRate": null,
+          "comparable": false,
+          "answerIds": []
+        },
+        "comparable": false,
+        "delta": null,
+        "reasons": [
+          "Both audits need at least 90% answered coverage for a comparable change."
+        ]
+      }
+    },
+    {
+      "id": "plan-followup-must-be-later-independent-audit",
+      "operation": "plans.compare",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "baselineRunId": "baseline",
+          "baselineMeasurement": {
+            "version": 1,
+            "market": {
+              "country": "US",
+              "language": "en"
+            },
+            "brand": {
+              "name": "Treg",
+              "domain": "treg.to"
+            },
+            "prompts": [
+              {
+                "id": "buyer-1",
+                "text": "Best toolkit?",
+                "kind": "neutral"
+              }
+            ],
+            "collectors": [
+              {
+                "engine": "chatgpt",
+                "sourceKind": "web-interface",
+                "provider": "cloro",
+                "model": "web-interface-default-unreported"
+              }
+            ]
+          },
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": [
+          {
+            "id": "baseline",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-1",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Composio offers integrations.",
+                "citations": [
+                  {
+                    "url": "https://composio.dev/docs",
+                    "title": "Docs",
+                    "domain": "composio.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Composio"
+                ],
+                "brandMentioned": false,
+                "position": null,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-20T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-20T12:00:00Z"
+          },
+          {
+            "id": "followup",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-2",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Treg is suitable.",
+                "citations": [
+                  {
+                    "url": "https://docs.treg.to/guide",
+                    "title": "Guide",
+                    "domain": "spoofed-label.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Treg"
+                ],
+                "brandMentioned": true,
+                "position": 1,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-21T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-19T00:00:00Z"
+          }
+        ]
+      },
+      "expected": {
+        "baseline": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 1,
+          "missing": 0,
+          "coverage": 1.0,
+          "mentionRate": 0,
+          "citationRate": 0,
+          "comparable": true,
+          "answerIds": [
+            "answer-1"
+          ]
+        },
+        "followup": {
+          "recorded": true,
+          "requested": 1,
+          "answered": 1,
+          "missing": 0,
+          "coverage": 1.0,
+          "mentionRate": 100,
+          "citationRate": 100,
+          "comparable": true,
+          "answerIds": [
+            "answer-2"
+          ]
+        },
+        "comparable": false,
+        "delta": null,
+        "reasons": [
+          "The follow-up must be a separate audit collected after the baseline."
+        ]
+      }
+    },
+    {
+      "id": "plan-reconstructs-frozen-original-paid-scope",
+      "operation": "plans.followup",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "publishedAt": "2026-10-21T00:00:00Z",
+          "baselineRunId": "baseline",
+          "baselineMeasurement": {
+            "version": 1,
+            "market": {
+              "country": "US",
+              "language": "en"
+            },
+            "brand": {
+              "name": "Treg",
+              "domain": "treg.to"
+            },
+            "prompts": [
+              {
+                "id": "buyer-1",
+                "text": "Best toolkit?",
+                "kind": "neutral"
+              }
+            ],
+            "collectors": [
+              {
+                "engine": "chatgpt",
+                "sourceKind": "web-interface",
+                "provider": "cloro",
+                "model": "web-interface-default-unreported"
+              }
+            ]
+          },
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": [
+          {
+            "id": "baseline",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "web-interface-default-unreported"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-1",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Composio offers integrations.",
+                "citations": [
+                  {
+                    "url": "https://composio.dev/docs",
+                    "title": "Docs",
+                    "domain": "composio.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Composio"
+                ],
+                "brandMentioned": false,
+                "position": null,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-20T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-20T12:00:00Z"
+          }
+        ]
+      },
+      "expected": {
+        "available": true,
+        "input": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ],
+          "prompts": [
+            "Best toolkit?"
+          ],
+          "engines": [
+            "chatgpt"
+          ],
+          "market": {
+            "country": "US",
+            "language": "en"
+          }
+        },
+        "promptRecords": [
+          {
+            "id": "buyer-1",
+            "text": "Best toolkit?",
+            "kind": "neutral",
+            "intent": "other",
+            "provenance": "manual",
+            "paused": false,
+            "archived": false
+          }
+        ],
+        "competitorDetails": [
+          {
+            "name": "Composio",
+            "domain": "composio.dev"
+          }
+        ],
+        "measurement": {
+          "version": 1,
+          "market": {
+            "country": "US",
+            "language": "en"
+          },
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "prompts": [
+            {
+              "id": "buyer-1",
+              "text": "Best toolkit?",
+              "kind": "neutral"
+            }
+          ],
+          "collectors": [
+            {
+              "engine": "chatgpt",
+              "sourceKind": "web-interface",
+              "provider": "cloro",
+              "model": "web-interface-default-unreported"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "plan-followup-missing-baseline-fails-closed",
+      "operation": "plans.followup",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "publishedAt": "2026-10-21T00:00:00Z",
+          "baselineRunId": "baseline",
+          "baselineMeasurement": {
+            "version": 1,
+            "market": {
+              "country": "US",
+              "language": "en"
+            },
+            "brand": {
+              "name": "Treg",
+              "domain": "treg.to"
+            },
+            "prompts": [
+              {
+                "id": "buyer-1",
+                "text": "Best toolkit?",
+                "kind": "neutral"
+              }
+            ],
+            "collectors": [
+              {
+                "engine": "chatgpt",
+                "sourceKind": "web-interface",
+                "provider": "cloro",
+                "model": "web-interface-default-unreported"
+              }
+            ]
+          },
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": []
+      },
+      "expected": {
+        "available": false,
+        "error": "The baseline audit is unavailable. Restore its full workspace backup before requesting a follow-up."
+      }
+    },
+    {
+      "id": "plan-followup-legacy-scope-not-fabricated",
+      "operation": "plans.followup",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "publishedAt": "2026-10-21T00:00:00Z",
+          "baselineRunId": "baseline",
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": [
+          {
+            "id": "baseline",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-1",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Composio offers integrations.",
+                "citations": [
+                  {
+                    "url": "https://composio.dev/docs",
+                    "title": "Docs",
+                    "domain": "composio.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Composio"
+                ],
+                "brandMentioned": false,
+                "position": null,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-20T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "completedAt": "2026-10-20T12:00:00Z"
+          }
+        ]
+      },
+      "expected": {
+        "available": false,
+        "error": "The baseline has no matching recorded collection settings. Start a new explicitly approved baseline audit."
+      }
+    },
+    {
+      "id": "plan-unsupported-collector-cannot-be-substituted",
+      "operation": "plans.followup",
+      "input": {
+        "plan": {
+          "version": 1,
+          "id": "plan-1",
+          "brand": {
+            "name": "Treg",
+            "domain": "treg.to"
+          },
+          "question": {
+            "id": "buyer-1",
+            "text": "Best toolkit?"
+          },
+          "target": {
+            "kind": "existing",
+            "url": "https://treg.to/guide"
+          },
+          "rationale": "Review this buyer need.",
+          "brief": "Use verified facts.",
+          "status": "published",
+          "publishedAt": "2026-10-21T00:00:00Z",
+          "baselineRunId": "baseline",
+          "baselineMeasurement": {
+            "version": 1,
+            "market": {
+              "country": "US",
+              "language": "en"
+            },
+            "brand": {
+              "name": "Treg",
+              "domain": "treg.to"
+            },
+            "prompts": [
+              {
+                "id": "buyer-1",
+                "text": "Best toolkit?",
+                "kind": "neutral"
+              }
+            ],
+            "collectors": [
+              {
+                "engine": "chatgpt",
+                "sourceKind": "web-interface",
+                "provider": "cloro",
+                "model": "retired-model"
+              }
+            ]
+          },
+          "followupRunId": "followup",
+          "createdAt": "2026-10-20T13:00:00Z",
+          "updatedAt": "2026-10-21T00:00:00Z"
+        },
+        "runs": [
+          {
+            "id": "baseline",
+            "brand": "Treg",
+            "domain": "treg.to",
+            "competitors": [
+              "Composio"
+            ],
+            "prompts": [
+              "Best toolkit?"
+            ],
+            "engines": [
+              "chatgpt"
+            ],
+            "measurement": {
+              "version": 1,
+              "market": {
+                "country": "US",
+                "language": "en"
+              },
+              "brand": {
+                "name": "Treg",
+                "domain": "treg.to"
+              },
+              "prompts": [
+                {
+                  "id": "buyer-1",
+                  "text": "Best toolkit?",
+                  "kind": "neutral"
+                }
+              ],
+              "collectors": [
+                {
+                  "engine": "chatgpt",
+                  "sourceKind": "web-interface",
+                  "provider": "cloro",
+                  "model": "retired-model"
+                }
+              ]
+            },
+            "competitorDetails": [
+              {
+                "name": "Composio",
+                "domain": "composio.dev"
+              }
+            ],
+            "results": [
+              {
+                "id": "answer-1",
+                "prompt": "Best toolkit?",
+                "engine": "chatgpt",
+                "answer": "Composio offers integrations.",
+                "citations": [
+                  {
+                    "url": "https://composio.dev/docs",
+                    "title": "Docs",
+                    "domain": "composio.dev"
+                  }
+                ],
+                "mentionedBrands": [
+                  "Composio"
+                ],
+                "brandMentioned": false,
+                "position": null,
+                "costUsd": 0.02,
+                "costKnown": true,
+                "completedAt": "2026-10-20T12:00:00Z",
+                "provider": "cloro",
+                "sourceKind": "web-interface"
+              }
+            ],
+            "errors": [],
+            "totalCostUsd": 0.02,
+            "totalCostKnown": true,
+            "completedAt": "2026-10-20T12:00:00Z"
+          }
+        ]
+      },
+      "expected": {
+        "available": false,
+        "error": "The original collector configuration is no longer supported. A substituted collector would not be a comparable follow-up."
+      }
+    }
+  ]
+}

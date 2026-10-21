@@ -1,0 +1,399 @@
+{
+  "contractVersion": 1,
+  "cases": [
+    {
+      "id": "question-identity-trim",
+      "operation": "questions.identity",
+      "input": {
+        "text": "  Best toolkit?  ",
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        }
+      },
+      "expected": {
+        "id": "prompt-dec937c654749c515ffe17335729e8ce",
+        "kind": "neutral"
+      }
+    },
+    {
+      "id": "question-identity-case",
+      "operation": "questions.identity",
+      "input": {
+        "text": "best toolkit?",
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        }
+      },
+      "expected": {
+        "id": "prompt-455411e660f24e718ceb3bd38a9d292e",
+        "kind": "neutral"
+      }
+    },
+    {
+      "id": "question-identity-unicode-surrogate",
+      "operation": "questions.identity",
+      "input": {
+        "text": "Which 🦉 toolkit fits café teams?",
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        }
+      },
+      "expected": {
+        "id": "prompt-bc74bfcb9f3584a8a69adf2a93d9602f",
+        "kind": "neutral"
+      }
+    },
+    {
+      "id": "question-identity-unicode-nfc",
+      "operation": "questions.identity",
+      "input": {
+        "text": "café tools",
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        }
+      },
+      "expected": {
+        "id": "prompt-ff9b7ef3d269aa2ea62d2940c4058189",
+        "kind": "neutral"
+      }
+    },
+    {
+      "id": "question-identity-unicode-nfd",
+      "operation": "questions.identity",
+      "input": {
+        "text": "café tools",
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        }
+      },
+      "expected": {
+        "id": "prompt-84c3d054e9dc27f363ea3b498a248474",
+        "kind": "neutral"
+      }
+    },
+    {
+      "id": "question-identity-named-brand",
+      "operation": "questions.identity",
+      "input": {
+        "text": "Is Treg suitable?",
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        }
+      },
+      "expected": {
+        "id": "prompt-0e553d27f8b4522865fcac12a22c394f",
+        "kind": "branded"
+      }
+    },
+    {
+      "id": "question-identity-word-boundary",
+      "operation": "questions.identity",
+      "input": {
+        "text": "Does Tregular exist?",
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        }
+      },
+      "expected": {
+        "id": "prompt-36be8c38cbb9d26b4c7a21cf6fbc4d60",
+        "kind": "neutral"
+      }
+    },
+    {
+      "id": "question-identity-competitor",
+      "operation": "questions.identity",
+      "input": {
+        "text": "Compare COMPOSIO options",
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        }
+      },
+      "expected": {
+        "id": "prompt-82917e3b1bda78a04d55ce74f8403223",
+        "kind": "branded"
+      }
+    },
+    {
+      "id": "question-lifecycle-preserves-paused-history-and-provenance",
+      "operation": "questions.lifecycle",
+      "input": {
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        },
+        "records": [
+          {
+            "id": "buyer-1",
+            "text": "Best toolkit?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": false,
+            "archived": false,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          },
+          {
+            "id": "paused",
+            "text": "Later question?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": true,
+            "archived": false,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          },
+          {
+            "id": "old",
+            "text": "Old question?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": false,
+            "archived": true,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          }
+        ],
+        "prompts": [
+          "Best toolkit?"
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "id": "buyer-1",
+            "text": "Best toolkit?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": false,
+            "archived": false,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          },
+          {
+            "id": "paused",
+            "text": "Later question?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": true,
+            "archived": false,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          },
+          {
+            "id": "old",
+            "text": "Old question?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": false,
+            "archived": true,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          }
+        ],
+        "active": [
+          "Best toolkit?"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "question-edit-archives-original-instead-of-rewriting-evidence",
+      "operation": "questions.lifecycle",
+      "input": {
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        },
+        "records": [
+          {
+            "id": "buyer-1",
+            "text": "Best toolkit?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": false,
+            "archived": false,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          }
+        ],
+        "prompts": [
+          "Best toolkit?"
+        ],
+        "edit": {
+          "id": "buyer-1",
+          "text": "Which toolkit fits agencies?"
+        }
+      },
+      "expected": {
+        "records": [
+          {
+            "id": "buyer-1",
+            "text": "Best toolkit?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": false,
+            "archived": true,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          },
+          {
+            "id": "prompt-3b1449aced46f655cb4e846b99b0bd1a",
+            "text": "Which toolkit fits agencies?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "manual",
+            "topic": "Integrations",
+            "paused": false,
+            "archived": false
+          }
+        ],
+        "active": [
+          "Which toolkit fits agencies?"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "question-reactivation-keeps-original-identity",
+      "operation": "questions.lifecycle",
+      "input": {
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        },
+        "records": [
+          {
+            "id": "old",
+            "text": "Old question?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": false,
+            "archived": true,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          }
+        ],
+        "prompts": [
+          "Old question?"
+        ]
+      },
+      "expected": {
+        "records": [
+          {
+            "id": "old",
+            "text": "Old question?",
+            "intent": "category",
+            "kind": "neutral",
+            "provenance": "discovered",
+            "topic": "Integrations",
+            "paused": false,
+            "archived": false,
+            "evidence": {
+              "discoveryId": "discovery-1",
+              "candidateId": "candidate-1"
+            }
+          }
+        ],
+        "active": [
+          "Old question?"
+        ],
+        "valid": true
+      }
+    },
+    {
+      "id": "question-identity-ecmascript-byte-order-mark-trim",
+      "operation": "questions.identity",
+      "input": {
+        "text": "﻿Best toolkit?﻿",
+        "project": {
+          "brand": "Treg",
+          "domain": "treg.to",
+          "competitors": [
+            "Composio"
+          ]
+        }
+      },
+      "expected": {
+        "id": "prompt-dec937c654749c515ffe17335729e8ce",
+        "kind": "neutral"
+      }
+    }
+  ]
+}

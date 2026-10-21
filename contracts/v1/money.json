@@ -1,0 +1,265 @@
+{
+  "contractVersion": 1,
+  "cases": [
+    {
+      "id": "money-known-decimal-no-floating-multiply",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "1.005",
+        "costKnown": true
+      },
+      "expected": {
+        "valid": true,
+        "value": {
+          "currency": "USD",
+          "reportedUsd": "1.005",
+          "reportedKnownSubtotalUsd": "1.005",
+          "costKnown": true,
+          "knownSubtotalMicroUsd": "1005000",
+          "totalMicroUsd": "1005000",
+          "rounded": false
+        }
+      }
+    },
+    {
+      "id": "money-submicro-half-up",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "0.0000005",
+        "costKnown": true
+      },
+      "expected": {
+        "valid": true,
+        "value": {
+          "currency": "USD",
+          "reportedUsd": "0.0000005",
+          "reportedKnownSubtotalUsd": "0.0000005",
+          "costKnown": true,
+          "knownSubtotalMicroUsd": "1",
+          "totalMicroUsd": "1",
+          "rounded": true
+        }
+      }
+    },
+    {
+      "id": "money-submicro-below-half",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "0.00000049",
+        "costKnown": true
+      },
+      "expected": {
+        "valid": true,
+        "value": {
+          "currency": "USD",
+          "reportedUsd": "0.00000049",
+          "reportedKnownSubtotalUsd": "0.00000049",
+          "costKnown": true,
+          "knownSubtotalMicroUsd": "0",
+          "totalMicroUsd": "0",
+          "rounded": true
+        }
+      }
+    },
+    {
+      "id": "money-exponent-supported",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "1e-6",
+        "costKnown": true
+      },
+      "expected": {
+        "valid": true,
+        "value": {
+          "currency": "USD",
+          "reportedUsd": "1e-6",
+          "reportedKnownSubtotalUsd": "1e-6",
+          "costKnown": true,
+          "knownSubtotalMicroUsd": "1",
+          "totalMicroUsd": "1",
+          "rounded": false
+        }
+      }
+    },
+    {
+      "id": "money-numeric-backup-value",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": 0.02,
+        "costKnown": true
+      },
+      "expected": {
+        "valid": true,
+        "value": {
+          "currency": "USD",
+          "reportedUsd": "0.02",
+          "reportedKnownSubtotalUsd": "0.02",
+          "costKnown": true,
+          "knownSubtotalMicroUsd": "20000",
+          "totalMicroUsd": "20000",
+          "rounded": false
+        }
+      }
+    },
+    {
+      "id": "money-unknown-charge-keeps-subtotal",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "0.02",
+        "costKnown": false
+      },
+      "expected": {
+        "valid": true,
+        "value": {
+          "currency": "USD",
+          "reportedUsd": "0.02",
+          "reportedKnownSubtotalUsd": "0.02",
+          "costKnown": false,
+          "knownSubtotalMicroUsd": "20000",
+          "totalMicroUsd": null,
+          "rounded": false
+        }
+      }
+    },
+    {
+      "id": "money-missing-legacy-flag-stays-unknown",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "0"
+      },
+      "expected": {
+        "valid": true,
+        "value": {
+          "currency": "USD",
+          "reportedUsd": "0",
+          "reportedKnownSubtotalUsd": "0",
+          "costKnown": null,
+          "knownSubtotalMicroUsd": "0",
+          "totalMicroUsd": null,
+          "rounded": false
+        }
+      }
+    },
+    {
+      "id": "money-null-total-keeps-separate-known-cost",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": null,
+        "knownSubtotalUsd": "0.003",
+        "costKnown": false
+      },
+      "expected": {
+        "valid": true,
+        "value": {
+          "currency": "USD",
+          "reportedUsd": null,
+          "reportedKnownSubtotalUsd": "0.003",
+          "costKnown": false,
+          "knownSubtotalMicroUsd": "3000",
+          "totalMicroUsd": null,
+          "rounded": false
+        }
+      }
+    },
+    {
+      "id": "money-signed-int64-boundary-is-string-safe",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "9223372036854.775807",
+        "costKnown": true
+      },
+      "expected": {
+        "valid": true,
+        "value": {
+          "currency": "USD",
+          "reportedUsd": "9223372036854.775807",
+          "reportedKnownSubtotalUsd": "9223372036854.775807",
+          "costKnown": true,
+          "knownSubtotalMicroUsd": "9223372036854775807",
+          "totalMicroUsd": "9223372036854775807",
+          "rounded": false
+        }
+      }
+    },
+    {
+      "id": "money-reject-negative",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "-0.01",
+        "costKnown": true
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "id": "money-reject-overflow",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "9223372036854.775808",
+        "costKnown": true
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "id": "money-reject-known-null",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": null,
+        "costKnown": true
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "id": "money-reject-subtotal-over-total",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "0.01",
+        "knownSubtotalUsd": "0.02",
+        "costKnown": true
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "id": "money-reject-nonnumeric",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "NaN",
+        "costKnown": false
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "id": "money-reject-coerced-boolean-flag",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": "0.02",
+        "costKnown": "false"
+      },
+      "expected": {
+        "valid": false
+      }
+    },
+    {
+      "id": "money-reject-array-instead-of-decimal",
+      "operation": "money.convert",
+      "input": {
+        "reportedUsd": [
+          "0.02"
+        ],
+        "costKnown": true
+      },
+      "expected": {
+        "valid": false
+      }
+    }
+  ]
+}

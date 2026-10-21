@@ -59,6 +59,8 @@ import PromptLibrary from "./prompt-library";
 import CitationExplorer from "./citation-explorer";
 import PagePlans from "./page-plans";
 import EvidenceReports from "./evidence-reports";
+import WorkspaceContinuity from "./workspace-continuity";
+import { setStepDismissed, type ContinuityAction } from "@/lib/workspace-continuity";
 import { buildPagePlanFollowup, pagePlanOpportunities, type PagePlan } from "@/lib/page-plans";
 import type { EvidenceReport } from "@/lib/evidence-reports";
 import { syncPromptRecords, activePromptTexts, type PromptRecord } from "@/lib/prompt-library";
@@ -303,6 +305,11 @@ export default function Workspace({
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [finishingOnboarding, setFinishingOnboarding] = useState(false);
   const [discoveryOpen, setDiscoveryOpen] = useState(false);
+  const [discoveryTarget, setDiscoveryTarget] = useState<string | undefined>();
+  const [discoveryRequest, setDiscoveryRequest] = useState(0);
+  const [continuityTarget, setContinuityTarget] = useState<{ request: number; planId?: string; reportId?: string } | null>(null);
+  const continuityRequest = useRef(0);
+  const discoveryRunning = useRef(false);
   const [researchSource, setResearchSource] = useState<{
     url: string;
     domain: string;
@@ -317,12 +324,14 @@ export default function Workspace({
   const [selectedRun, setSelectedRun] = useState<SavedRun | null>(null);
   const [findingAnswer, setFindingAnswer] = useState<AnswerResult | null>(null);
   const [researchHistoryOpen, setResearchHistoryOpen] = useState(false);
+  const [researchHistoryTarget, setResearchHistoryTarget] = useState<string | undefined>();
   const [toast, setToast] = useState("");
   const [exportOpen, setExportOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [sourceOpen, setSourceOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   const workspaceHeading = useRef<HTMLHeadingElement>(null);
+  const workspaceSync = useRef<HTMLElement>(null);
   const wasReviewing = useRef(reviewOnboarding);
   useEffect(() => {
     const returning = wasReviewing.current && !reviewOnboarding;
@@ -440,11 +449,57 @@ export default function Workspace({
     } catch (error) { setToast(error instanceof Error ? error.message : "The original collection settings are unavailable."); }
   };
   const nav = (id: View) => {
+    setContinuityTarget(null);
     setView(id);
     setMobileOpen(false);
     setQuery("");
     setExportOpen(false);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const openDiscovery = (receiptId?: string, forceRecovery = false) => {
+    if (discoveryRunning.current) { setDiscoveryOpen(true); return; }
+    if (receiptId || forceRecovery || discoveryTarget) setDiscoveryRequest((value) => value + 1);
+    setDiscoveryTarget(receiptId);
+    setDiscoveryOpen(true);
+  };
+  const continuityAction = (action: ContinuityAction) => {
+    const sameBrand = (name: string, domain: string) => name.trim().toLowerCase() === project.brand.trim().toLowerCase() && normalizeDomain(domain) === normalizeDomain(project.domain);
+    const missing = () => setToast("That saved record is no longer available for this brand. Refresh the workspace to review its latest version.");
+    if (action.kind === "audit") { void onRun(); return; }
+    if (action.kind === "run") {
+      const run = runs.find((item) => item.id === action.id && sameBrand(item.brand, item.domain));
+      if (run) setSelectedRun(run); else missing();
+      return;
+    }
+    if (action.kind === "plan") {
+      const plan = workspace.snapshot.pagePlans?.find((item) => item.id === action.id && sameBrand(item.brand.name, item.brand.domain));
+      if (!plan) { missing(); return; }
+      nav("opportunities");
+      setContinuityTarget({ request: ++continuityRequest.current, planId: plan.id });
+      return;
+    }
+    if (action.kind === "report") {
+      const report = workspace.snapshot.reports?.find((item) => item.id === action.id && sameBrand(item.project.brand, item.project.domain));
+      if (!report) { missing(); return; }
+      nav("reports"); setContinuityTarget({ request: ++continuityRequest.current, reportId: report.id });
+      return;
+    }
+    if (action.kind === "reports") {
+      nav("reports");
+      if (action.id) setContinuityTarget({ request: ++continuityRequest.current, planId: action.id });
+      requestAnimationFrame(() => workspaceHeading.current?.focus());
+      return;
+    }
+    if (action.kind === "discovery") {
+      const receipt = workspace.snapshot.discoveryResearch?.find((item) => item.id === action.id && sameBrand(item.input.brand, item.input.domain));
+      if (receipt) openDiscovery(receipt.id); else missing();
+      return;
+    }
+    if (action.kind === "research") {
+      if (action.id && !project.researchReceipts?.some((item) => `${item.completedAt}:${item.url}` === action.id && sameBrand(item.brand, item.domain))) { missing(); return; }
+      setResearchHistoryTarget(action.id); setResearchHistoryOpen(true); return;
+    }
+    nav("opportunities"); requestAnimationFrame(() => workspaceHeading.current?.focus());
   };
   const onRun = async () => {
     if (demoMode) {
@@ -666,7 +721,7 @@ export default function Workspace({
         onLogout={logout}
         error={sync.error || (loggingOut ? "Signing out…" : toast)}
         recovery={(sync.phase === "offline" || sync.phase === "conflict") && (
-        <section className={`workspace-sync is-${sync.phase}`} aria-label="Workspace synchronization">
+        <section ref={workspaceSync} tabIndex={-1} className={`workspace-sync is-${sync.phase}`} aria-label="Workspace synchronization">
           <span>{sync.phase === "conflict" ? "Conflicting workspace versions" : "Workspace connection unavailable"}</span>
           <p>{sync.error} Your onboarding draft stays in this browser.</p>
           <div className="sync-actions">
@@ -929,14 +984,14 @@ export default function Workspace({
               </button>
             </div>
           </div>
-          {!demo && <section className={`workspace-sync is-${sync.phase}`} aria-label="Workspace synchronization" aria-live="polite">
+          {!demo && <section ref={workspaceSync} tabIndex={-1} className={`workspace-sync is-${sync.phase}`} aria-label="Workspace synchronization" aria-live="polite">
             <span>{sync.phase === "offline" || sync.phase === "conflict" ? <AlertTriangle size={14} /> : <Cloud size={14} />}{sync.phase === "saved" ? "Saved to server" : sync.phase === "saving" ? "Saving changes…" : sync.phase === "unsaved" ? "Unsaved changes" : sync.phase === "conflict" ? "Conflicting workspace versions" : "Unsynced · browser fallback"}</span>
             {sync.updatedAt && <small>Updated {new Date(sync.updatedAt).toLocaleTimeString()}</small>}
             <div className="sync-actions"><button className="button" onClick={() => { void workspace.refresh(); }} disabled={sync.phase === "saving"}><RefreshCw size={12} /> Refresh</button><button className="button" onClick={() => setBackupOpen(true)}>Backup and restore</button><button className="button" onClick={() => setMonitorOpen(true)}><Clock size={12} /> Monitoring</button>{(sync.phase === "offline" || sync.phase === "conflict") && <button className="button" onClick={() => { void workspace.retry(); }}>Retry sync</button>}{sync.phase === "conflict" && <button className="button" onClick={() => setConfirmServer(true)}>Load server version</button>}</div>
             {sync.error && <p>{sync.error}</p>}{sync.cacheError && <p>{sync.cacheError}</p>}
           </section>}
-          {!demo && project.researchReceipts?.length ? <div className="profile-research-entry"><button className="button" onClick={() => setResearchHistoryOpen(true)}><BookOpen size={14} /> Brand research and sources</button><span>Your original research, sources and billing receipts stay with this workspace.</span></div> : null}
-          {!demo && view === "overview" && !projectRuns.length && <section className="workspace-onboarding" aria-label="Set up your workspace"><div><h2>Your brand is ready for its first answers.</h2><p>{prompts.length} buyer questions saved. Choose your engines and review the cost before collecting answers. Measurement: United States / English. Monitoring is a separate opt-in.</p></div><button className="button primary" onClick={onRun}>Review first audit <ArrowRight size={14} /></button><button className="button" onClick={openSettings}>Edit brand profile</button><button className="button" onClick={() => nav("prompts")}>Manage buyer questions</button></section>}
+          {!demo && project.researchReceipts?.length ? <div className="profile-research-entry"><button className="button" onClick={() => { setResearchHistoryTarget(undefined); setResearchHistoryOpen(true); }}><BookOpen size={14} /> Brand research and sources</button><span>Your original research, sources and billing receipts stay with this workspace.</span></div> : null}
+          {!demo && view === "overview" && <WorkspaceContinuity key={`${project.brand.toLowerCase()}:${normalizeDomain(project.domain)}`} snapshot={workspace.snapshot} syncPhase={sync.phase} storageKey={storageKey} recoveryRefreshKey={discoveryOpen} onAction={continuityAction} onDismiss={(stepId) => workspace.saveContinuity(setStepDismissed(workspace.snapshot, stepId), sync.revision)} onRecover={() => { workspaceSync.current?.scrollIntoView({ block: "center", behavior: "smooth" }); workspaceSync.current?.focus(); }} onRecoverDiscovery={() => openDiscovery(undefined, true)} onRecoverBrandResearch={() => { void rerunOnboarding(); }} onEditProfile={openSettings} onManageQuestions={() => nav("prompts")} />}
           {demo && (
             <div className="demo-strip">
               <span>
@@ -1275,7 +1330,7 @@ export default function Workspace({
                   <button
                     className="button"
                     onClick={() =>
-                      demoMode ? router.push("/login") : setDiscoveryOpen(true)
+                      demoMode ? router.push("/login") : openDiscovery()
                     }
                   >
                     <Sparkles size={14} /> Discover prompts
@@ -1475,8 +1530,8 @@ export default function Workspace({
             onAnswer={setFindingAnswer}
             onResearch={(source) => demoMode ? router.push("/login") : setResearchSource(source)}
           />}
-          {view === "opportunities" && <PagePlans project={project} runs={allRuns} plans={workspace.snapshot.pagePlans ?? []} onSave={savePlans} onSaveStrategy={saveStrategy} onFollowup={reviewFollowup} legacyDone={workspace.snapshot.done} disabled={demoMode} />}
-          {view === "reports" && <EvidenceReports project={project} runs={allRuns} plans={workspace.snapshot.pagePlans ?? []} reports={workspace.snapshot.reports ?? []} onSave={saveReport} onDelete={deleteReport} synced={sync.phase === "saved"} demo={demoMode} />}
+          {view === "opportunities" && <PagePlans key={continuityTarget?.request ?? "plans"} initialPlanId={continuityTarget?.planId} onTargetClose={() => requestAnimationFrame(() => workspaceHeading.current?.focus())} project={project} runs={allRuns} plans={workspace.snapshot.pagePlans ?? []} onSave={savePlans} onSaveStrategy={saveStrategy} onFollowup={reviewFollowup} legacyDone={workspace.snapshot.done} disabled={demoMode} />}
+          {view === "reports" && <EvidenceReports key={continuityTarget?.request ?? "reports"} initialReportId={continuityTarget?.reportId} initialPlanId={continuityTarget?.planId} onTargetClose={() => requestAnimationFrame(() => workspaceHeading.current?.focus())} project={project} runs={allRuns} plans={workspace.snapshot.pagePlans ?? []} reports={workspace.snapshot.reports ?? []} onSave={saveReport} onDelete={deleteReport} synced={sync.phase === "saved"} demo={demoMode} />}
           {view === "history" && (
             <>
               <div className="section-toolbar">
@@ -1685,6 +1740,9 @@ export default function Workspace({
         token={token}
       />
       <DiscoveryDialog
+        key={discoveryRequest}
+        initialReceiptId={discoveryTarget}
+        onRunningChange={(running) => { discoveryRunning.current = running; }}
         open={discoveryOpen}
         onClose={() => setDiscoveryOpen(false)}
         project={project}
@@ -1860,7 +1918,7 @@ export default function Workspace({
         </Modal>
       )}
       {findingAnswer && <Modal title="Answer evidence" onClose={() => setFindingAnswer(null)} wide><p className="modal-description">Buyer question: {findingAnswer.prompt}</p>{answerContent([findingAnswer])}</Modal>}
-      {researchHistoryOpen && <Modal title="Brand research and sources" onClose={() => setResearchHistoryOpen(false)} wide><p className="modal-description">Original research is kept with its website and charge. Suggestions may belong to an earlier version of your profile; edits do not rewrite this evidence.</p><div className="profile-research-list">{[...(project.researchReceipts ?? [])].reverse().map((receipt, i) => <div key={receipt.completedAt + "-" + i}><p className="profile-context-note">Researched {new Date(receipt.completedAt).toLocaleString()} · {receipt.url}</p><ResearchReceipt receipt={receipt} currentDomain={project.domain} /></div>)}</div></Modal>}
+      {researchHistoryOpen && <Modal title="Brand research and sources" onClose={() => setResearchHistoryOpen(false)} wide><p className="modal-description">Original research is kept with its website and charge. Suggestions may belong to an earlier version of your profile; edits do not rewrite this evidence.</p><div className="profile-research-list">{[...(project.researchReceipts ?? [])].filter((receipt) => !researchHistoryTarget || `${receipt.completedAt}:${receipt.url}` === researchHistoryTarget).reverse().map((receipt, i) => <div key={receipt.completedAt + "-" + i}><p className="profile-context-note">Researched {new Date(receipt.completedAt).toLocaleString()} · {receipt.url}</p><ResearchReceipt receipt={receipt} currentDomain={project.domain} /></div>)}</div></Modal>}
       {sourceOpen && (
         <Modal title="Built in the open." onClose={() => setSourceOpen(false)}>
           <div className="source-modal">

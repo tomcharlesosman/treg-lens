@@ -1,5 +1,7 @@
 # Architecture
 
+Home continuity is a pure projection in `src/lib/workspace-continuity.ts`: saved evidence drives recommendations and a bounded recent-work digest. The optional `continuity` snapshot field contains only brand-scoped dismissal preferences. Browser/server validation projects known fields, and UI preference writes wait for revision-checked acknowledgement. No new table, external service, provider execution or event log is introduced. See [user workflow](WORKFLOWS.md#pick-up-where-you-left-off) and [portable native contracts](PORTABLE-CONTRACTS.md).
+
 Treg Lens is a live Next.js application with durable workspaces, bounded Treg adapters, and optional paid monitoring. A user signs in with a verified Treg team key, runs research, and returns to the same server-side history from another browser. Follow [getting started](GETTING-STARTED.md) for first use and [deployment](DEPLOYMENT.md) for local SQLite or hosted Vercel + Neon.
 
 The product discovers questions, measures AI answers, compares brands, researches cited pages, and records repeat audits. It includes backup import/export and budgeted daily or weekly monitoring. It does not provide managed team accounts, automatic publishing, outreach, or complete Profound parity. Saved page plans, comparable follow-up audits and immutable reports connect evidence to an editable next step without buying another model response.

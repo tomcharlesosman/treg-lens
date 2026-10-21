@@ -140,6 +140,6 @@ test("a blocked workspace storage write offers a backup and exports current unsa
   expect(reportText).not.toContain(primaryKey);
   expect(reportText).not.toContain(secondaryKey);
   expect(reportText).not.toContain("treg_lens_session");
-  await expect(page.getByRole("status")).toContainText("JSON report exported.");
+  await expect(page.locator('.toast[role="status"]')).toContainText("JSON report exported.");
   expect(await page.evaluate((key) => localStorage.getItem(key), storageKey)).toBe(persistedBefore);
 });

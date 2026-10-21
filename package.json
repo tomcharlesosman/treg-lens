@@ -16,6 +16,7 @@
     "docs:check": "node scripts/check-docs.mjs",
     "check": "npm run lint && npm run typecheck && npm test && npm run docs:check",
     "test": "tsx --test \"src/lib/*.test.ts\" \"scripts/*.test.mjs\"",
+    "test:contracts": "tsx --test src/lib/portable-contracts.test.ts",
     "test:e2e": "npm run build && playwright test",
     "test:e2e:ui": "npm run build && playwright test --ui",
     "test:e2e:report": "playwright show-report output/playwright/report"
