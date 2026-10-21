@@ -72,36 +72,26 @@ type AuditDialogProps = {
 const engineOptions: {
   id: Engine;
   label: string;
-  symbol: string;
-  className: string;
   description: string;
 }[] = [
   {
     id: "chatgpt",
     label: "ChatGPT",
-    symbol: "✳",
-    className: "chatgpt",
     description: "Web interface",
   },
   {
     id: "perplexity",
     label: "Perplexity",
-    symbol: "⌘",
-    className: "perplexity",
     description: "Sonar API",
   },
   {
     id: "gemini",
     label: "Gemini",
-    symbol: "✦",
-    className: "gemini",
     description: "Web interface",
   },
   {
     id: "google",
     label: "Google",
-    symbol: "G",
-    className: "google",
     description: "AI Mode web search",
   },
 ];
@@ -568,8 +558,10 @@ export function AuditDialog({
                   className="lens-dialog-field"
                   htmlFor={`${id}-competitors`}
                 >
-                  Competitors{" "}
-                  <span className="lens-field-optional">optional</span>
+                  <span>
+                    Competitors{" "}
+                    <span className="lens-field-optional">optional</span>
+                  </span>
                   <input
                     id={`${id}-competitors`}
                     value={competitors}
@@ -644,10 +636,9 @@ export function AuditDialog({
                           )
                         }
                       >
-                        <span
-                          className={`lens-engine-symbol ${engine.className}`}
-                        >
-                          {engine.symbol}
+                        <span className="lens-engine-symbol" aria-hidden="true">
+                          {/* eslint-disable-next-line @next/next/no-img-element -- static local engine marks */}
+                          <img src={`/engines/${engine.id}.svg`} alt="" width={18} height={18} />
                         </span>
                         <span className="lens-engine-name">
                           {engine.label}
@@ -683,10 +674,12 @@ export function AuditDialog({
                       className="lens-dialog-field"
                       htmlFor={`${id}-token`}
                     >
-                      Treg API token
-                      {serverConfigured && (
-                        <span className="lens-field-optional">optional</span>
-                      )}
+                      <span>
+                        Treg API token
+                        {serverConfigured && (
+                          <span className="lens-field-optional">optional</span>
+                        )}
+                      </span>
                       <input
                         id={`${id}-token`}
                         type="password"

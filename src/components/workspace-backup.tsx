@@ -1,7 +1,7 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { ArrowDownToLine, Upload, X } from "lucide-react";
+import { ArchiveRestore, ArrowDownToLine, Upload, X } from "lucide-react";
 const MAX_BACKUP_FILE_BYTES = MAX_WORKSPACE_BYTES + 1024;
 
 import { DialogFrame } from "./audit-dialog";
@@ -61,7 +61,7 @@ export default function WorkspaceBackup({ open, onClose, snapshot, onRestore }: 
     finally { setBusy(false); if (input.current) input.current.value = ""; }
   }
   return <DialogFrame open={open} onClose={onClose} titleId={`${id}-title`} className="lens-settings-dialog">
-    <div className="lens-dialog-heading"><button className="lens-dialog-close" aria-label="Close backup and restore" onClick={onClose}><X size={19} /></button><h2 id={`${id}-title`}>Backup and restore.</h2><p>A complete copy of your workspace, across every brand, date and engine.</p></div>
+    <div className="lens-dialog-heading"><div className="lens-dialog-eyebrow"><span className="lens-eyebrow-dot" /> YOUR DATA, PORTABLE</div><button className="lens-dialog-close" aria-label="Close backup and restore" onClick={onClose}><X size={19} /></button><div className="lens-dialog-title-row"><div className="lens-dialog-icon"><ArchiveRestore size={23} strokeWidth={1.6} /></div><h2 id={`${id}-title`}>Backup and restore.</h2></div><p>A complete copy of your workspace, across every brand, date and engine.</p></div>
     <div className="lens-dialog-body workspace-backup-body">
       <p>Your backup includes all {snapshot.runs.length} audits, {snapshot.prompts.length} tracked prompts, saved page plans, report snapshots, strategy context, completed moves and research. API keys are excluded.</p>
       <button className="button primary" onClick={() => { try { downloadWorkspaceBackup(snapshot); } catch (failure) { setError(failure instanceof Error ? failure.message : "Could not export backup."); } }}><ArrowDownToLine size={15} /> Download full workspace backup</button>

@@ -29,7 +29,6 @@ import {
   Link2,
   Menu,
   MessageSquareText,
-  MoreHorizontal,
   LogOut,
   Plus,
   Search,
@@ -142,6 +141,9 @@ function n(value: number, digits = 0) {
     maximumFractionDigits: digits,
     minimumFractionDigits: digits,
   });
+}
+function plural(count: number, one: string, many = `${one}s`) {
+  return `${n(count)} ${count === 1 ? one : many}`;
 }
 function shortDate(value: string) {
   return new Date(value).toLocaleDateString("en-US", {
@@ -609,40 +611,40 @@ export default function Workspace({
   const metricCards = [
     {
       name: "Visibility score",
-      value: results.length ? n(score, 1) : "—",
+      value: results.length ? n(score, 1) : null,
       suffix: "/100",
       icon: Eye,
       detail: results.length ? "Saved answer sample" : "Your baseline awaits",
-      foot: "scope-matched change is shown below",
+      foot: results.length ? "Scope-matched change is shown below" : "Run an audit to measure it",
       spark: [12, 17, 15, 23, 19, 30, 29, 36, 34, 45, 42, 54],
     },
     {
       name: "Share of voice",
-      value: results.length ? n(share, 1) : "—",
+      value: results.length ? n(share, 1) : null,
       suffix: "%",
       icon: MessageSquareText,
-      detail: `${n(mentions)} brand mentions`,
-      foot: "of all tracked brand mentions",
+      detail: plural(mentions, "brand mention"),
+      foot: "Of all tracked brand mentions",
       spark: [12, 11, 16, 14, 22, 20, 19, 27, 26, 30, 35, 38],
     },
     {
       name: "Citations",
-      value: results.length ? n(citations) : "—",
+      value: results.length ? n(citations) : null,
       suffix: "",
       icon: Link2,
-      detail: `${n(sources.length)} unique sources`,
-      foot: `${n(ownCitations)} answers cite your domain`,
+      detail: plural(sources.length, "unique source"),
+      foot: `${ownCitations === 1 ? "1 answer cites" : `${n(ownCitations)} answers cite`} your domain`,
       spark: [8, 14, 12, 20, 17, 24, 19, 34, 32, 37, 33, 45],
     },
     {
       name: "Average position",
-      value: positions.length ? n(position, 1) : "—",
+      value: positions.length ? n(position, 1) : null,
       suffix: "",
       icon: Target,
       detail: positions.length
         ? `Top ${Math.ceil(position)} on average`
         : "No brand mentions yet",
-      foot: "among brands in each answer",
+      foot: positions.length ? "Among brands named in each answer" : "Appears once AI names your brand",
       spark: [38, 36, 39, 31, 34, 27, 29, 21, 24, 18, 20, 12],
     },
   ];
@@ -766,12 +768,12 @@ export default function Workspace({
             treg<span className="lens-word">lens</span>
           </span>
         </Link>
-        <button className="workspace-switch" onClick={openSettings}>
+        <button className="workspace-switch" onClick={openSettings} title={`${project.brand} · ${normalizeDomain(project.domain)}`} aria-label={`${project.brand} workspace settings`}>
           <span className="workspace-avatar">
             {project.brand.slice(0, 1).toUpperCase()}
           </span>
           <span>
-            <strong>{project.brand} workspace</strong>
+            <strong>{project.brand}</strong>
             <small>{normalizeDomain(project.domain)}</small>
           </span>
           <ChevronDown size={14} />
@@ -798,15 +800,14 @@ export default function Workspace({
         <button
           className={`nav-item ${view === "guide" ? "active" : ""}`}
           onClick={() => nav("guide")}
+          aria-current={view === "guide" ? "page" : undefined}
         >
           <BookOpen size={18} />
           <span>The AEO playbook</span>
-          <ArrowUpRight size={13} className="end-icon" />
         </button>
         <button className="nav-item" onClick={() => setSourceOpen(true)}>
           <Code2 size={18} />
           <span>Open source</span>
-          <span className="oss-dot" />
         </button>
         <div className="sidebar-bottom">
           <div className="build-card">
@@ -824,16 +825,8 @@ export default function Workspace({
             </a>
           </div>
           <button className="nav-item" onClick={openSettings}>
-            <Settings2 size={17} />
+            <Settings2 size={18} />
             <span>Settings</span>
-          </button>
-          <button className="profile-button" onClick={openSettings}>
-            <span className="profile-avatar">T</span>
-            <span>
-              <strong>Your workspace</strong>
-              <small>Open-source edition</small>
-            </span>
-            <MoreHorizontal size={17} />
           </button>
         </div>
       </aside>
@@ -859,7 +852,7 @@ export default function Workspace({
               <input
                 ref={searchRef}
                 aria-label="Search prompts"
-                placeholder="Search anything..."
+                placeholder="Search prompts…"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
               />
@@ -933,7 +926,7 @@ export default function Workspace({
             </div>
             {demoMode ? (
               <Link className="workspace-logout" href="/login">
-                Connect Treg <ArrowRight size={12} />
+                Connect Treg <ArrowRight size={14} />
               </Link>
             ) : (
               <button
@@ -941,11 +934,10 @@ export default function Workspace({
                 onClick={logout}
                 disabled={loggingOut}
               >
-                <LogOut size={12} />
+                <LogOut size={14} />
                 {loggingOut ? "Signing out…" : "Sign out"}
               </button>
             )}
-            <span className="topbar-avatar">T</span>
           </div>
         </header>
         <main className="main-content">
@@ -975,7 +967,7 @@ export default function Workspace({
                       <FileText size={15} />
                       Download JSON
                     </button>
-                    {!demo && <button onClick={() => { downloadWorkspaceBackup(workspace.snapshot); setExportOpen(false); }}>Download full workspace backup</button>}
+                    {!demo && <button onClick={() => { downloadWorkspaceBackup(workspace.snapshot); setExportOpen(false); }}><ArrowDownToLine size={15} />Download full workspace backup</button>}
                   </div>
                 )}
               </div>
@@ -1006,7 +998,7 @@ export default function Workspace({
           {view === "overview" && (
             <>
               {!demo && projectRuns.at(-1) && <AuditFindings run={projectRuns.at(-1)!} onAnswer={setFindingAnswer} onRun={() => setSelectedRun(projectRuns.at(-1)!)} />}
-              <section className="hero-banner">
+              {demo && <section className="hero-banner">
                 <div className="hero-copy">
                   <span className="hero-eyebrow">
                     <span /> TURN ANSWERS INTO ADVANTAGE
@@ -1052,7 +1044,7 @@ export default function Workspace({
                   <span className="art-plus plus-two">+</span>
                 </div>
                 <span className="hero-index">[ A CLEARER PERSPECTIVE ]</span>
-              </section>
+              </section>}
               <div className="section-toolbar">
                 <div>
                   <h2>The big picture</h2>
@@ -1083,8 +1075,14 @@ export default function Workspace({
                       <m.icon size={16} />
                     </div>
                     <div className="metric-value">
-                      {m.value}
-                      <small>{m.suffix}</small>
+                      {m.value === null ? (
+                        <span className="metric-empty">—</span>
+                      ) : (
+                        <>
+                          {m.value}
+                          {m.suffix && <small>{m.suffix}</small>}
+                        </>
+                      )}
                       {demo && (
                         <svg
                           className="sparkline"
@@ -1106,12 +1104,8 @@ export default function Workspace({
                       )}
                     </div>
                     <div className="metric-change">
-                      <span>
-                        {i === 0 ? (
-                          <TrendingUp size={12} />
-                        ) : (
-                          <span className="mini-dot" />
-                        )}
+                      <span className={m.value === null ? "is-empty" : undefined}>
+                        <span className="mini-dot" />
                         {m.detail}
                       </span>
                       <small>{m.foot}</small>
@@ -1169,13 +1163,19 @@ export default function Workspace({
                             <span className="you-tag">You</span>
                           )}
                           <b>
-                            {n(
-                              totalMentions
-                                ? (b.mentions / totalMentions) * 100
-                                : 0,
-                              1,
+                            {results.length ? (
+                              <>
+                                {n(
+                                  totalMentions
+                                    ? (b.mentions / totalMentions) * 100
+                                    : 0,
+                                  1,
+                                )}
+                                <small>%</small>
+                              </>
+                            ) : (
+                              <span className="metric-empty">—</span>
                             )}
-                            <small>%</small>
                           </b>
                         </div>
                         <div className="rank-track">
@@ -1230,8 +1230,14 @@ export default function Workspace({
                           </span>
                           <strong>{e.name}</strong>
                           <div className="engine-card-value">
-                            {rows.length ? n(value, 1) : "—"}
-                            <small>/100</small>
+                            {rows.length ? (
+                              <>
+                                {n(value, 1)}
+                                <small>/100</small>
+                              </>
+                            ) : (
+                              <span className="metric-empty">—</span>
+                            )}
                           </div>
                           <span className="engine-track">
                             <i
@@ -1276,7 +1282,7 @@ export default function Workspace({
                     </h3>
                     <p>
                       {gaps.length
-                        ? `${gaps.length} questions have answered checks that don’t mention ${project.brand}. Inspect the evidence and save a page plan.`
+                        ? `${gaps.length === 1 ? "1 question has" : `${gaps.length} questions have`} answered checks that don’t mention ${project.brand}. Inspect the evidence and save a page plan.`
                         : "Run an audit to find the questions where your brand can make its mark."}
                     </p>
                     <button
@@ -1369,8 +1375,8 @@ export default function Workspace({
                                 <span>
                                   {p}
                                   <small>
-                                    Buyer question <span>·</span> {rows.length}{" "}
-                                    answers
+                                    Buyer question <span>·</span>{" "}
+                                    {plural(rows.length, "answer")}
                                   </small>
                                 </span>
                               </button>
@@ -1429,8 +1435,8 @@ export default function Workspace({
                 )}
                 <div className="table-bottom">
                   <span>
-                    {visiblePrompts.length} prompts · {results.length} answers
-                    in selected period
+                    {plural(visiblePrompts.length, "prompt")} ·{" "}
+                    {plural(results.length, "answer")} in selected period
                   </span>
                   <span>
                     Click a question to explore its answers{" "}
@@ -1537,7 +1543,7 @@ export default function Workspace({
               <div className="section-toolbar">
                 <div>
                   <h2>{demo ? "Example audit history" : "Your audit trail"}</h2>
-                  <span className="outline-tag">{allRuns.length} RUNS</span>
+                  <span className="outline-tag">{allRuns.length} {allRuns.length === 1 ? "RUN" : "RUNS"}</span>
                 </div>
                 <span className="muted">
                   {demo ? "Illustrative sample history" : "Saved to your server · export a full backup"}
@@ -1569,10 +1575,12 @@ export default function Workspace({
                             </span>
                             <strong>
                               {project.brand} visibility audit
-                              <small>
+                              <small className={!demo && run.errors.length ? "has-errors" : undefined}>
                                 {demo
                                   ? "Illustrative run"
-                                  : `${run.errors.length} failed answers`}
+                                  : run.errors.length
+                                    ? plural(run.errors.length, "failed answer")
+                                    : "No failed answers"}
                               </small>
                             </strong>
                           </button>
@@ -1885,35 +1893,38 @@ export default function Workspace({
           <div className="detail-toolbar">
             <span>
               {shortDate(selectedRun.completedAt)} ·{" "}
-              {selectedRun.results.length} answers ·{" "}
+              {plural(selectedRun.results.length, "answer")} ·{" "}
               {demo
                 ? "Demo run"
                 : selectedRun.totalCostKnown === false
                   ? "Charge unavailable"
                   : `$${n(selectedRun.totalCostUsd, 4)}`}
             </span>
-            <button
-              className="button"
-              onClick={() =>
-                downloadFile(
-                  "treg-audit.json",
-                  JSON.stringify({ demo, ...selectedRun }, null, 2),
-                )
-              }
-            >
-              <ArrowDownToLine size={14} /> Export audit
-            </button>
+            <div className="detail-actions">
+              <button
+                className="button"
+                onClick={() =>
+                  downloadFile(
+                    "treg-audit.json",
+                    JSON.stringify({ demo, ...selectedRun }, null, 2),
+                  )
+                }
+              >
+                <ArrowDownToLine size={14} /> Export audit
+              </button>
+              {!demo && <button className="button" onClick={() => downloadWorkspaceBackup(workspace.snapshot)}><ArrowDownToLine size={14} /> Download full workspace backup</button>}
+              {!demo && <button className="button danger-button" onClick={() => { if (window.confirm("Delete this saved audit? Download a full workspace backup first. This removal will synchronize to your server.")) { setRuns((old) => old.filter((run) => run.id !== selectedRun.id)); setSelectedRun(null); setToast("Audit removed. Synchronizing the workspace…"); } }}><Trash2 size={14} /> Delete this audit</button>}
+            </div>
           </div>
           {selectedRun.errors.length > 0 && (
             <div className="error-notice">
               {selectedRun.errors.map((e, i) => (
                 <p key={i}>
-                  {e.engine}: {e.error}
+                  <b>{ENGINES.find((engine) => engine.id === e.engine)?.name || e.engine}</b> {e.error}
                 </p>
               ))}
             </div>
           )}
-          {!demo && <div className="detail-toolbar"><button className="button" onClick={() => downloadWorkspaceBackup(workspace.snapshot)}>Download full workspace backup</button><button className="button" onClick={() => { if (window.confirm("Delete this saved audit? Download a full workspace backup first. This removal will synchronize to your server.")) { setRuns((old) => old.filter((run) => run.id !== selectedRun.id)); setSelectedRun(null); setToast("Audit removed. Synchronizing the workspace…"); } }}>Delete this audit</button></div>}
           {answerContent(selectedRun.results)}
         </Modal>
       )}

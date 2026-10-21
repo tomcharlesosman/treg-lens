@@ -72,7 +72,7 @@ export default function MonitorSettings({ open, onClose, project, prompts }: { o
     finally { setBusy(false); }
   }
   return <DialogFrame open={open} onClose={busy ? () => {} : onClose} titleId={`${id}-title`} className="lens-settings-dialog">
-    <div className="lens-dialog-heading"><button className="lens-dialog-close" aria-label="Close monitoring" disabled={busy} onClick={onClose}><X size={19} /></button><h2 id={`${id}-title`}><Clock size={22} /> Scheduled monitoring.</h2><p>Recheck your buyer questions daily or weekly, with explicit spending limits.</p></div>
+    <div className="lens-dialog-heading"><div className="lens-dialog-eyebrow"><span className="lens-eyebrow-dot" /> AUTOMATED RECHECKS</div><button className="lens-dialog-close" aria-label="Close monitoring" disabled={busy} onClick={onClose}><X size={19} /></button><div className="lens-dialog-title-row"><div className="lens-dialog-icon"><Clock size={23} strokeWidth={1.6} /></div><h2 id={`${id}-title`}>Scheduled monitoring.</h2></div><p>Recheck your buyer questions daily or weekly, with explicit spending limits.</p></div>
     <div className="lens-dialog-body">
       {loading ? <p role="status">Loading monitoring settings…</p> : <form className="monitor-form" onSubmit={(event) => { void save(event); }}>
         <div className={`monitor-worker ${data?.worker.healthy ? "" : "offline"}`} role="status"><strong>{data?.worker.healthy ? "Worker online" : "Worker offline or not yet seen"}</strong><br />Last heartbeat: {date(data?.worker.lastSeenAt)}. {data?.worker.healthy ? "Scheduled jobs can run while your browser is closed." : <>Start the separate server process with <code>npm run monitor</code>. An enabled schedule will wait until a worker is available.</>}</div>

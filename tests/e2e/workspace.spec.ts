@@ -153,7 +153,7 @@ test("audit validation, live price breakdown, engine selection, four-engine run,
   await audit.getByRole("button", { name: "Explore your results" }).click();
   await expect(page.locator('.toast[role="status"]')).toContainText("Audit complete. 4 real AI answers added.");
   await nav(page, "Audit history");
-  await expect(page.getByText("1 RUNS", { exact: true })).toBeVisible();
+  await expect(page.getByText("1 RUN", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Open audit", exact: true }).click();
   const detail = page.getByRole("dialog", { name: "Treg visibility audit" });
   await expect(detail.locator(".answer-card")).toHaveCount(4);
@@ -244,7 +244,7 @@ test("overview date and engine filters, interactive chart, competitors, citation
   await expect(page.locator(".prompt-cell")).toContainText(missingPrompt);
   await page.getByRole("button", { name: /^All prompts/ }).click();
   await page.getByLabel("Filter prompts by engine").selectOption("chatgpt");
-  await expect(page.getByText("8 prompts · 1 answers in selected period", { exact: true })).toBeVisible();
+  await expect(page.getByText("8 prompts · 1 answer in selected period", { exact: true })).toBeVisible();
   await page.getByLabel("Filter prompts by engine").selectOption("all");
   await nav(page, "Competitors");
   await expect(page.getByRole("heading", { name: "Competitive landscape", exact: true })).toBeVisible();
@@ -256,7 +256,7 @@ test("overview date and engine filters, interactive chart, competitors, citation
   await expect(page.locator(".chart-tooltip")).toBeVisible();
   await page.getByLabel("Filter chart by engine").selectOption("perplexity");
   await nav(page, "Sources & citations");
-  await expect(page.getByRole("heading", { name: "1 sources. A world of influence." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "1 source. A world of influence." })).toBeVisible();
   await expect(page.getByRole("link", { name: "Open example.com", exact: true })).toHaveAttribute("href", "https://example.com/research");
   await nav(page, "Overview");
   await page.getByLabel("Filter chart by engine").selectOption("all");
@@ -264,7 +264,7 @@ test("overview date and engine filters, interactive chart, competitors, citation
   await page.locator(".engine-card").filter({ hasText: "Gemini" }).click();
   await expect(page.getByRole("heading", { name: "Prompt tracking", exact: true })).toBeVisible();
   await expect(page.getByLabel("Filter prompts by engine")).toHaveValue("gemini");
-  await expect(page.getByText("8 prompts · 1 answers in selected period", { exact: true })).toBeVisible();
+  await expect(page.getByText("8 prompts · 1 answer in selected period", { exact: true })).toBeVisible();
 });
 
 test("source research runs through server routes, records authority and contacts, caches evidence, and refreshes pricing first", async ({ page }) => {

@@ -104,7 +104,7 @@
   border-right: 0;
 }
 .lens-source-metrics span {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-muted);
   line-height: 1.6;
 }
@@ -121,7 +121,7 @@
   color: var(--treg-muted);
 }
 .lens-source-metrics strong small {
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 400;
   color: var(--treg-muted);
   letter-spacing: 0;
@@ -144,7 +144,7 @@
   flex-wrap: wrap;
   gap: 6px 20px;
   margin-top: 9px;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-muted);
   line-height: 1.7;
 }
@@ -231,7 +231,7 @@
   font-weight: 500;
 }
 .lens-source-contacts small {
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-muted);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -250,7 +250,7 @@
   width: 100%;
   display: flex;
   gap: 25px;
-  font-size: 9px;
+  font-size: 10px;
   color: var(--treg-muted);
   padding-top: 13px;
   border-top: 1px solid var(--treg-border);
@@ -283,7 +283,7 @@
     flex-wrap: wrap;
   }
   .lens-source-address small {
-    font-size: 9px;
+    font-size: 10px;
   }
 }
 
