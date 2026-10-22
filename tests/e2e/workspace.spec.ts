@@ -256,7 +256,7 @@ test("overview date and engine filters, interactive chart, competitors, citation
   await expect(page.locator(".chart-tooltip")).toBeVisible();
   await page.getByLabel("Filter chart by engine").selectOption("perplexity");
   await nav(page, "Sources & citations");
-  await expect(page.getByRole("heading", { name: "1 source. A world of influence." })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Citation summary" })).toContainText("1 source domain");
   await expect(page.getByRole("link", { name: "Open example.com", exact: true })).toHaveAttribute("href", "https://example.com/research");
   await nav(page, "Overview");
   await page.getByLabel("Filter chart by engine").selectOption("all");

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { GITHUB_REPOSITORY } from "@/lib/site";
 import { useEffect, useMemo, useRef, useState, type ReactNode, type SetStateAction } from "react";
 import {
+  ArchiveRestore,
   ArrowDownToLine,
   Clock,
   RefreshCw,
@@ -12,7 +13,6 @@ import {
   AlertTriangle,
   ArrowRight,
   ArrowUpRight,
-  BarChart3,
   Bell,
   BookOpen,
   Check,
@@ -144,6 +144,17 @@ function n(value: number, digits = 0) {
 }
 function plural(count: number, one: string, many = `${one}s`) {
   return `${n(count)} ${count === 1 ? one : many}`;
+}
+function longDate(value: string) {
+  return new Date(value).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+function utcTime(value: string) {
+  return `${new Date(value).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "UTC" })} UTC`;
 }
 function shortDate(value: string) {
   return new Date(value).toLocaleDateString("en-US", {
@@ -810,7 +821,7 @@ export default function Workspace({
           <span>Open source</span>
         </button>
         <div className="sidebar-bottom">
-          <div className="build-card">
+          {demo && <div className="build-card">
             <span className="build-icon">
               <Sparkles size={17} />
             </span>
@@ -823,7 +834,7 @@ export default function Workspace({
             <a href="https://treg.to/aeo" target="_blank" rel="noreferrer">
               Explore the toolkit <ArrowUpRight size={13} />
             </a>
-          </div>
+          </div>}
           <button className="nav-item" onClick={openSettings}>
             <Settings2 size={18} />
             <span>Settings</span>
@@ -978,12 +989,17 @@ export default function Workspace({
           </div>
           {!demo && <section ref={workspaceSync} tabIndex={-1} className={`workspace-sync is-${sync.phase}`} aria-label="Workspace synchronization" aria-live="polite">
             <span>{sync.phase === "offline" || sync.phase === "conflict" ? <AlertTriangle size={14} /> : <Cloud size={14} />}{sync.phase === "saved" ? "Saved to server" : sync.phase === "saving" ? "Saving changes…" : sync.phase === "unsaved" ? "Unsaved changes" : sync.phase === "conflict" ? "Conflicting workspace versions" : "Unsynced · browser fallback"}</span>
-            {sync.updatedAt && <small>Updated {new Date(sync.updatedAt).toLocaleTimeString()}</small>}
-            <div className="sync-actions"><button className="button" onClick={() => { void workspace.refresh(); }} disabled={sync.phase === "saving"}><RefreshCw size={12} /> Refresh</button><button className="button" onClick={() => setBackupOpen(true)}>Backup and restore</button><button className="button" onClick={() => setMonitorOpen(true)}><Clock size={12} /> Monitoring</button>{(sync.phase === "offline" || sync.phase === "conflict") && <button className="button" onClick={() => { void workspace.retry(); }}>Retry sync</button>}{sync.phase === "conflict" && <button className="button" onClick={() => setConfirmServer(true)}>Load server version</button>}</div>
+            {sync.updatedAt && <small>Updated {new Date(sync.updatedAt).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" })}</small>}
+            <div className="sync-actions">
+              {project.researchReceipts?.length ? <button className="button" aria-label="Brand research and sources" onClick={() => { setResearchHistoryTarget(undefined); setResearchHistoryOpen(true); }}><BookOpen size={13} /> Brand research</button> : null}
+              <button className="button" onClick={() => setMonitorOpen(true)}><Clock size={13} /> Monitoring</button>
+              <button className="button" onClick={() => setBackupOpen(true)}><ArchiveRestore size={13} /> Backup and restore</button>
+              <button className="button" onClick={() => { void workspace.refresh(); }} disabled={sync.phase === "saving"}><RefreshCw size={13} /> Refresh</button>
+              {(sync.phase === "offline" || sync.phase === "conflict") && <button className="button" onClick={() => { void workspace.retry(); }}>Retry sync</button>}{sync.phase === "conflict" && <button className="button" onClick={() => setConfirmServer(true)}>Load server version</button>}
+            </div>
             {sync.error && <p>{sync.error}</p>}{sync.cacheError && <p>{sync.cacheError}</p>}
           </section>}
-          {!demo && project.researchReceipts?.length ? <div className="profile-research-entry"><button className="button" onClick={() => { setResearchHistoryTarget(undefined); setResearchHistoryOpen(true); }}><BookOpen size={14} /> Brand research and sources</button><span>Your original research, sources and billing receipts stay with this workspace.</span></div> : null}
-          {!demo && view === "overview" && <WorkspaceContinuity key={`${project.brand.toLowerCase()}:${normalizeDomain(project.domain)}`} snapshot={workspace.snapshot} syncPhase={sync.phase} storageKey={storageKey} recoveryRefreshKey={discoveryOpen} onAction={continuityAction} onDismiss={(stepId) => workspace.saveContinuity(setStepDismissed(workspace.snapshot, stepId), sync.revision)} onRecover={() => { workspaceSync.current?.scrollIntoView({ block: "center", behavior: "smooth" }); workspaceSync.current?.focus(); }} onRecoverDiscovery={() => openDiscovery(undefined, true)} onRecoverBrandResearch={() => { void rerunOnboarding(); }} onEditProfile={openSettings} onManageQuestions={() => nav("prompts")} />}
+          {!demo && view === "overview" && <WorkspaceContinuity key={`${project.brand.toLowerCase()}:${normalizeDomain(project.domain)}`} snapshot={workspace.snapshot} syncPhase={sync.phase} storageKey={storageKey} recoveryRefreshKey={discoveryOpen} onAction={continuityAction} onDismiss={(stepId) => workspace.saveContinuity(setStepDismissed(workspace.snapshot, stepId), sync.revision)} onRecover={() => { workspaceSync.current?.scrollIntoView({ block: "center", behavior: "smooth" }); workspaceSync.current?.focus(); }} onRecoverDiscovery={() => openDiscovery(undefined, true)} onRecoverBrandResearch={() => { void rerunOnboarding(); }} onEditProfile={openSettings} onManageQuestions={() => nav("prompts")} findings={projectRuns.at(-1) ? <AuditFindings run={projectRuns.at(-1)!} onAnswer={setFindingAnswer} onRun={() => setSelectedRun(projectRuns.at(-1)!)} /> : null} />}
           {demo && (
             <div className="demo-strip">
               <span>
@@ -997,7 +1013,6 @@ export default function Workspace({
           )}
           {view === "overview" && (
             <>
-              {!demo && projectRuns.at(-1) && <AuditFindings run={projectRuns.at(-1)!} onAnswer={setFindingAnswer} onRun={() => setSelectedRun(projectRuns.at(-1)!)} />}
               {demo && <section className="hero-banner">
                 <div className="hero-copy">
                   <span className="hero-eyebrow">
@@ -1200,7 +1215,7 @@ export default function Workspace({
                   </button>
                 </section>
               </div>
-              <div className="overview-bottom">
+              <div className={`overview-bottom ${demo ? "" : "single"}`}>
                 <section className="panel engines-panel">
                   <div className="panel-heading">
                     <div>
@@ -1257,7 +1272,7 @@ export default function Workspace({
                     })}
                   </div>
                 </section>
-                <section className="panel next-panel">
+                {demo && <section className="panel next-panel">
                   <div className="panel-heading">
                     <div>
                       <span className="tiny-eyebrow">
@@ -1297,7 +1312,7 @@ export default function Workspace({
                       <ArrowRight size={14} />
                     </button>
                   </div>
-                </section>
+                </section>}
               </div>
             </>
           )}
@@ -1374,10 +1389,7 @@ export default function Workspace({
                                 </span>
                                 <span>
                                   {p}
-                                  <small>
-                                    Buyer question <span>·</span>{" "}
-                                    {plural(rows.length, "answer")}
-                                  </small>
+                                  <small>{plural(rows.length, "answer")}</small>
                                 </span>
                               </button>
                             </td>
@@ -1438,10 +1450,6 @@ export default function Workspace({
                     {plural(visiblePrompts.length, "prompt")} ·{" "}
                     {plural(results.length, "answer")} in selected period
                   </span>
-                  <span>
-                    Click a question to explore its answers{" "}
-                    <ArrowUpRight size={12} />
-                  </span>
                 </div>
               </section>
               <PromptLibrary records={promptRecords} project={project}
@@ -1452,21 +1460,16 @@ export default function Workspace({
           )}
           {view === "competitors" && (
             <>
-              <section className="competitor-intro">
-                <span className="intro-icon">
-                  <Users size={25} />
-                </span>
+              <div className="section-toolbar">
                 <div>
-                  <h2>You’re part of a bigger conversation.</h2>
-                  <p>
-                    Track your brand alongside the alternatives your customers
-                    are considering.
-                  </p>
+                  <h2>Your competitive set</h2>
+                  <span className="subtle-divider" />
+                  <span className="muted">{plural(brands.length, "brand")} tracked</span>
                 </div>
                 <button className="button" onClick={openSettings}>
                   <Plus size={14} /> Manage competitors
                 </button>
-              </section>
+              </div>
               <div className="competitor-cards">
                 {brands.map((b, i) => (
                   <section
@@ -1519,20 +1522,10 @@ export default function Workspace({
                 onEngine={setEngine}
                 onRun={onRun}
               />
-              <div className="method-note">
-                <CircleHelp size={15} />
-                <p>
-                  Brands are matched against your configured brand names.
-                  Position uses a numbered recommendation rank when returned;
-                  otherwise it is inferred from the first mention among detected
-                  brands.
-                </p>
-              </div>
             </>
           )}
           {view === "citations" && <CitationExplorer
             runs={filteredRuns.map((run) => ({ ...run, results: run.results.filter((answer) => engine === "all" || answer.engine === engine), errors: run.errors.filter((issue) => engine === "all" || issue.engine === engine) }))}
-            project={project}
             onAnswer={setFindingAnswer}
             onResearch={(source) => demoMode ? router.push("/login") : setResearchSource(source)}
           />}
@@ -1545,16 +1538,12 @@ export default function Workspace({
                   <h2>{demo ? "Example audit history" : "Your audit trail"}</h2>
                   <span className="outline-tag">{allRuns.length} {allRuns.length === 1 ? "RUN" : "RUNS"}</span>
                 </div>
-                <span className="muted">
-                  {demo ? "Illustrative sample history" : "Saved to your server · export a full backup"}
-                </span>
               </div>
               <section className="panel table-panel">
                 <table>
                   <thead>
                     <tr>
                       <th>AUDIT</th>
-                      <th>DATE</th>
                       <th>ENGINES</th>
                       <th>ANSWERS</th>
                       <th>VISIBILITY</th>
@@ -1570,26 +1559,19 @@ export default function Workspace({
                             className="history-name"
                             onClick={() => setSelectedRun(run)}
                           >
-                            <span className="source-icon">
-                              <BarChart3 size={16} />
-                            </span>
                             <strong>
-                              {project.brand} visibility audit
-                              <small className={!demo && run.errors.length ? "has-errors" : undefined}>
-                                {demo
-                                  ? "Illustrative run"
-                                  : run.errors.length
-                                    ? plural(run.errors.length, "failed answer")
-                                    : "No failed answers"}
-                              </small>
+                              {longDate(run.completedAt)}
+                              {i === 0 && <span className="latest-tag">Latest</span>}
                             </strong>
+                            <small className={!demo && run.errors.length ? "has-errors" : undefined}>
+                              {utcTime(run.completedAt)} ·{" "}
+                              {demo
+                                ? "Illustrative run"
+                                : run.errors.length
+                                  ? plural(run.errors.length, "failed answer")
+                                  : "No failed answers"}
+                            </small>
                           </button>
-                        </td>
-                        <td>
-                          {shortDate(run.completedAt)}
-                          {i === 0 && (
-                            <span className="latest-tag">Latest</span>
-                          )}
                         </td>
                         <td>
                           <EngineStack
@@ -1636,12 +1618,6 @@ export default function Workspace({
           {view === "guide" && (
             <>
               <div className="playbook-hero">
-                <span className="eyebrow">OPEN TOOLS. CLEAR ANSWERS.</span>
-                <h2>
-                  Get on the map.
-                  <br />
-                  Then keep moving.
-                </h2>
                 <p>
                   Treg Lens brings the measurement step of the open-source AEO
                   toolkit into one focused workspace. Make a baseline,
@@ -1719,7 +1695,7 @@ export default function Workspace({
               </section>
             </>
           )}
-          <footer className="page-footer">
+          {demo && <footer className="page-footer">
             <span>
               <BrandMark small /> A clearer perspective, powered by{" "}
               <a href="https://treg.to/aeo" target="_blank" rel="noreferrer">
@@ -1732,7 +1708,7 @@ export default function Workspace({
                 MIT licensed <ArrowUpRight size={11} />
               </button>
             </span>
-          </footer>
+          </footer>}
         </main>
       </div>
       {!demo && <WorkspaceBackup open={backupOpen} onClose={() => setBackupOpen(false)} snapshot={workspace.snapshot} onRestore={(next) => { workspace.change(next); setToast("Backup restored in this tab. Server synchronization is pending."); }} />}

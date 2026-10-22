@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { ArrowRight, CircleAlert, Clock3, EyeOff, History, RotateCcw } from "lucide-react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { ArrowRight, CircleAlert, Clock3, EyeOff, RotateCcw } from "lucide-react";
 import { deriveWorkspaceContinuity, type ContinuityAction, type NextStep } from "@/lib/workspace-continuity";
 import { parseSavedDiscovery } from "@/lib/discovery-research";
 import { cleanResearchReceipt, isResearchReceipt } from "@/lib/workspace-profile";
@@ -21,6 +21,8 @@ type Props = {
   onRecoverBrandResearch: () => void;
   onEditProfile: () => void;
   onManageQuestions: () => void;
+  /** Latest-audit evidence, shown inside this module rather than as a separate section. */
+  findings?: ReactNode;
 };
 const stamp = (value: string) => new Date(value).toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" });
 
@@ -49,7 +51,7 @@ function brandReviewRecovery(storageKey: string, confirmed: WorkspaceSnapshot | 
   } catch { return null; }
 }
 
-export default function WorkspaceContinuity({ snapshot, syncPhase, storageKey, recoveryRefreshKey, onAction, onDismiss, onRecover, onRecoverDiscovery, onRecoverBrandResearch, onEditProfile, onManageQuestions }: Props) {
+export default function WorkspaceContinuity({ snapshot, syncPhase, storageKey, recoveryRefreshKey, onAction, onDismiss, onRecover, onRecoverDiscovery, onRecoverBrandResearch, onEditProfile, onManageQuestions, findings }: Props) {
   const [confirmed, setConfirmed] = useState<WorkspaceSnapshot | null>(() => syncPhase === "saved" ? snapshot : null);
   if (syncPhase === "saved" && confirmed !== snapshot) setConfirmed(snapshot);
   const [recovery, setRecovery] = useState<"pending" | "returned" | null>(null);
@@ -93,8 +95,8 @@ export default function WorkspaceContinuity({ snapshot, syncPhase, storageKey, r
       {data.steps[0] ? stepCard(data.steps[0], true) : <p className="wc-empty">{blocked ? "Recommendations resume when the saved workspace is confirmed." : data.dismissedCount ? "Your current suggestions are hidden. Restore them whenever you want to review the next step." : "No new suggestion from the saved evidence. Revisit recent work or review an audit when you are ready."}</p>}
       {data.steps.length > 1 && <details className="wc-more"><summary>{data.steps.length - 1} more saved-work {data.steps.length === 2 ? "suggestion" : "suggestions"}</summary>{data.steps.slice(1).map((step) => stepCard(step))}</details>}
       {error && <p className="wc-message wc-error" role="alert">{error}</p>}{notice && <p className="wc-message" role="status">{notice}</p>}
-      {!blocked && !confirmed?.runs.some((run) => run.brand.trim().toLowerCase() === snapshot.project.brand.trim().toLowerCase() && normalizeDomain(run.domain) === normalizeDomain(snapshot.project.domain)) && <section className="wc-first-audit" aria-label="Set up your workspace"><p>Your brand is ready for its first answers. Keep buyer questions focused before reviewing the audit estimate. United States / English; monitoring needs a separate opt-in.</p><div><button className="button" onClick={onEditProfile}>Edit brand profile</button><button className="button" onClick={onManageQuestions}>Manage buyer questions</button></div></section>}
-      <p className="wc-disclosure">Hiding or restoring suggestions changes only guidance. Opening a record does not complete its work. Publication dates are owner-reported; preparing an agent handoff does not execute an agent.</p>
-    </div><section className="wc-recent" aria-label="Recent saved work"><div className="wc-heading"><h2><History size={17} />Recent work</h2><span>{showOlder ? data.recent.length : Math.min(4, data.recent.length)} of {data.recent.length}</span></div><p className="wc-note">Original records for {snapshot.project.brand}. No activity is inferred from clicks.{blocked ? " Showing the last acknowledged workspace." : ""}</p>{data.recent.length ? <ol id="continuity-recent-records">{data.recent.slice(0, showOlder ? 12 : 4).map((item) => <li key={item.id}><button type="button" onClick={() => onAction(item.action)}><span className="wc-record"><strong>{item.title}</strong><span>{item.detail}</span><time dateTime={item.at}><Clock3 size={11} />{stamp(item.at)} UTC</time></span><ArrowRight size={14} /></button></li>)}</ol> : <p className="wc-empty">Saved research, audits, page plans and reports will appear here with their original dates.</p>}{data.recent.length > 4 && <button type="button" className="wc-restore wc-recent-toggle" aria-expanded={showOlder} aria-controls="continuity-recent-records" onClick={() => setShowOlder(!showOlder)}>{showOlder ? "Show fewer saved records" : `Show older saved work (${data.recent.length - 4})`}</button>}</section></div>
+      {!blocked && !confirmed?.runs.some((run) => run.brand.trim().toLowerCase() === snapshot.project.brand.trim().toLowerCase() && normalizeDomain(run.domain) === normalizeDomain(snapshot.project.domain)) && <section className="wc-first-audit" aria-label="Set up your workspace"><p>Before your first answers:</p><div><button className="button" onClick={onEditProfile}>Edit brand profile</button><button className="button" onClick={onManageQuestions}>Manage buyer questions</button></div></section>}
+    </div><section className="wc-recent" aria-label="Recent saved work"><div className="wc-heading"><div><span className="eyebrow">SAVED RECORDS</span><h2>Recent work</h2></div><span>{showOlder ? data.recent.length : Math.min(4, data.recent.length)} of {data.recent.length}</span></div>{blocked && <p className="wc-note">Showing the last acknowledged workspace.</p>}{data.recent.length ? <ol id="continuity-recent-records">{data.recent.slice(0, showOlder ? 12 : 4).map((item) => <li key={item.id}><button type="button" onClick={() => onAction(item.action)}><span className="wc-record"><strong>{item.title}</strong><span>{item.detail}</span><time dateTime={item.at}><Clock3 size={11} />{stamp(item.at)} UTC</time></span><ArrowRight size={14} /></button></li>)}</ol> : <p className="wc-empty">Saved research, audits, page plans and reports will appear here with their original dates.</p>}{data.recent.length > 4 && <button type="button" className="wc-restore wc-recent-toggle" aria-expanded={showOlder} aria-controls="continuity-recent-records" onClick={() => setShowOlder(!showOlder)}>{showOlder ? "Show fewer saved records" : `Show older saved work (${data.recent.length - 4})`}</button>}</section></div>
+    {findings}
   </section>;
 }

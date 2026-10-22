@@ -51,7 +51,7 @@ test("page and domain exploration retains every page, deduplicates coverage and 
     if (request.method() === "POST" && /\/api\/aeo\/(run|discover|source)$/.test(request.url()) && !request.postDataJSON().estimateOnly) paid.push(request.url());
   });
   const explorer = page.getByRole("region", { name: "Citation explorer", exact: true });
-  await expect(explorer.getByRole("heading", { name: "4 sources. A world of influence." })).toBeVisible();
+  await expect(explorer.getByRole("group", { name: "Citation summary" })).toContainText("4 source domains");
   const table = explorer.getByRole("table", { name: "Saved citation evidence" });
   const supplier = table.getByRole("row").filter({ has: page.getByText("example.com", { exact: true }) });
   await expect(supplier).toContainText("2 cited pages");
