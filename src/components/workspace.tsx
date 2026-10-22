@@ -99,41 +99,19 @@ const NAV = [
   { id: "history", label: "Audit history", icon: History },
   { id: "reports", label: "Reports", icon: FileText },
 ] as const;
-const TITLES: Record<View, { title: string; description: string }> = {
-  overview: {
-    title: "Overview",
-    description: "Your brand, through the lens of AI.",
-  },
-  prompts: {
-    title: "Prompt tracking",
-    description:
-      "The questions that matter. The answers that shape your brand.",
-  },
-  competitors: {
-    title: "Competitive landscape",
-    description: "Understand who gets recommended, and where you stand.",
-  },
-  citations: {
-    title: "Sources & citations",
-    description: "Meet the sources shaping what AI says about your category.",
-  },
-  opportunities: {
-    title: "Your next moves",
-    description: "Turn the gaps in AI answers into your next advantage.",
-  },
-  history: {
-    title: "Audit history",
-    description: "Every answer, every source, every change. Yours to keep.",
-  },
-  reports: {
-    title: "Reports & agent handoff",
-    description: "Keep the evidence. Share a clear next step.",
-  },
-  guide: {
-    title: "A little clarity goes a long way.",
-    description: "How Treg Lens turns AI answers into a clearer picture.",
-  },
+// Page titles match the navigation so the sidebar, breadcrumb and heading agree.
+const TITLES: Record<View, string> = {
+  overview: "Overview",
+  prompts: "Prompt tracking",
+  competitors: "Competitors",
+  citations: "Sources & citations",
+  opportunities: "Opportunities",
+  history: "Audit history",
+  reports: "Reports",
+  guide: "The AEO playbook",
 };
+// Export writes the selected period's answers, so it appears only where those answers are shown.
+const EXPORT_VIEWS: View[] = ["overview", "prompts", "history"];
 const COLORS = ["#118453", "#9c9dca", "#dfb66a", "#93b6c5"];
 const STORE = "treg-lens-workspace-v1";
 function n(value: number, digits = 0) {
@@ -854,7 +832,7 @@ export default function Workspace({
             <span className="breadcrumb-brand">Workspace</span>
             <ChevronRight size={12} />
             <strong>
-              {NAV.find((i) => i.id === view)?.label || "The AEO playbook"}
+              {TITLES[view]}
             </strong>
           </div>
           <div className="topbar-actions">
@@ -953,15 +931,9 @@ export default function Workspace({
         </header>
         <main className="main-content">
           <div className="page-heading">
-            <div>
-              <div className="eyebrow">
-                <span className="live-dot" /> THE ANSWER ENGINE WORKSPACE
-              </div>
-              <h1 ref={workspaceHeading} tabIndex={-1}>{TITLES[view].title}</h1>
-              <p>{TITLES[view].description}</p>
-            </div>
+            <h1 ref={workspaceHeading} tabIndex={-1}>{TITLES[view]}</h1>
             <div className="heading-actions">
-              <div className="popover-anchor">
+              {EXPORT_VIEWS.includes(view) && <div className="popover-anchor">
                 <button
                   className="button"
                   onClick={() => setExportOpen(!exportOpen)}
@@ -981,7 +953,7 @@ export default function Workspace({
                     {!demo && <button onClick={() => { downloadWorkspaceBackup(workspace.snapshot); setExportOpen(false); }}><ArrowDownToLine size={15} />Download full workspace backup</button>}
                   </div>
                 )}
-              </div>
+              </div>}
               <button className="button primary" onClick={onRun}>
                 <Plus size={16} /> Run an audit
               </button>

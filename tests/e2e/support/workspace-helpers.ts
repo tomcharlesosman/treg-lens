@@ -105,7 +105,7 @@ export async function seedWorkspace(page: Page) {
   await saveServerSnapshot(page, storedFixture());
   await page.reload();
   await expect(page.getByRole("heading", { name: "Overview", exact: true })).toBeVisible();
-  await expect(page.locator(".chart-legend")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Comparable visibility trends" })).toBeVisible();
   return storageKey;
 }
 

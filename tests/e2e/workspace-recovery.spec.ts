@@ -27,7 +27,7 @@ test("a completed prompt recheck appends history and displays the latest saved a
   }, storageKey);
   await saveServerSnapshot(page, historical);
   await page.reload();
-  await expect(page.locator(".chart-legend")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Comparable visibility trends" })).toBeVisible();
   const before = await page.evaluate((key) => JSON.parse(localStorage.getItem(key)!), storageKey);
 
   await nav(page, "Prompt tracking");

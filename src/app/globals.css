@@ -470,18 +470,11 @@ textarea::placeholder {
   font-weight: 550;
   letter-spacing: -0.9px;
   line-height: 1.2;
-  margin-top: 8px;
-}
-.page-heading p {
-  font-size: 11px;
-  color: var(--treg-muted);
-  margin-top: 7px;
 }
 .heading-actions {
   display: flex;
   gap: 8px;
   align-items: center;
-  padding-top: 17px;
 }
 .button {
   display: inline-flex;
@@ -1102,6 +1095,7 @@ textarea::placeholder {
 .ranking-panel {
   display: flex;
   flex-direction: column;
+  align-self: start;
 }
 .ranking-label {
   display: flex;
@@ -2655,18 +2649,8 @@ tbody > tr:hover {
   .global-search kbd {
     display: none;
   }
-  .page-heading {
-    align-items: flex-start;
-  }
-  .heading-actions {
-    padding-top: 20px;
-  }
   .page-heading h1 {
     font-size: 29px;
-  }
-  .page-heading p {
-    line-height: 1.7;
-    max-width: 300px;
   }
   .competitor-cards {
     grid-template-columns: repeat(2, 1fr);
@@ -2803,11 +2787,7 @@ tbody > tr:hover {
   .page-heading h1 {
     font-size: 31px;
   }
-  .page-heading p {
-    font-size: 10px;
-  }
   .page-heading > .heading-actions {
-    padding-top: 21px;
     gap: 6px;
   }
   .heading-actions .button {
@@ -2816,10 +2796,6 @@ tbody > tr:hover {
   }
   .heading-actions .button > svg {
     width: 13px;
-  }
-  .page-heading .eyebrow {
-    font-size: 10px;
-    letter-spacing: 0.6px;
   }
   .global-search {
     display: none;
@@ -3005,14 +2981,9 @@ tbody > tr:hover {
   }
   .page-heading h1 {
     font-size: 30px;
-    margin-top: 9px;
-  }
-  .page-heading p {
-    font-size: 11px;
-    max-width: none;
   }
   .heading-actions {
-    padding-top: 17px !important;
+    padding-top: 14px;
   }
   .heading-actions .button {
     font-size: 10px;
@@ -3329,9 +3300,6 @@ tbody > tr:hover {
   .global-search input {
     font-size: 12px;
     width: 150px;
-  }
-  .page-heading p {
-    font-size: 12px;
   }
   .eyebrow {
     font-size: 9px;

@@ -159,6 +159,10 @@ test("competitor trend markers leave gaps for unconfigured names and changed his
   // These missing historical identities are unknown observations, not zeroes.
   await expect(trend.getByTestId("trend-series-Treg").locator("circle")).toHaveCount(3);
   await expect(trend.getByTestId("trend-series-Composio").locator("circle")).toHaveCount(1);
+  await trend.locator(".chart-legend").getByRole("button", { name: "Composio", exact: true }).click();
+  await expect(trend.locator(".chart-legend").getByRole("button", { name: "Composio", exact: true })).toHaveClass("muted-legend");
+  await trend.getByRole("img", { name: "Brand mention rate trend" }).hover();
+  await expect(trend.locator(".chart-tooltip")).toBeVisible();
   await trend.getByText("Inspect trend scope and observations", { exact: true }).click();
   await expect(trend.getByText(/Competitor lines require the same saved name and domain/)).toBeVisible();
 });

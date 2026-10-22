@@ -50,6 +50,8 @@ const record = (v: unknown): v is Record<string, unknown> => Boolean(v && typeof
 const text = (v: unknown, max: number, nonempty = false): v is string => typeof v === "string" && v.length <= max && (!nonempty || Boolean(v.trim()));
 const date = (v: unknown) => text(v, 40, true) && Number.isFinite(Date.parse(v));
 const identity = (name: string, domain: string) => JSON.stringify([name.trim().toLowerCase(), normalizeDomain(domain)]);
+/** Saved with each absence reason; the page-plans view states it once instead of on every card. */
+export const ABSENCE_CAVEAT = "This alone does not establish a content gap.";
 export function pagePlanMatchesProject(plan: Pick<PagePlan, "brand">, project: Pick<Project, "brand" | "domain">): boolean {
   return identity(plan.brand.name, plan.brand.domain) === identity(project.brand, project.domain);
 }
@@ -74,7 +76,7 @@ export function pagePlanOpportunities(runs: SavedRun[], project: Pick<Project, "
       const reason = !answers.length ? "No answered checks in the latest audit; missing answers are not brand absence."
         : competitorMentions ? `${checks(competitorMentions)} mentioned a configured competitor without mentioning your brand.`
           : competitorCitations ? `${checks(competitorCitations)} cited a configured competitor website without mentioning your brand.`
-            : absent.length ? `${checks(absent.length)} did not mention your brand. This alone does not establish a content gap.`
+            : absent.length ? `${checks(absent.length)} did not mention your brand. ${ABSENCE_CAVEAT}`
               : "Your brand appeared in every answered check. Review accuracy and citations before planning a change.";
       latest.set(question.id, {
         id: `${run.id}:${question.id}`, question: { id: question.id, text: question.text }, runId: run.id,
