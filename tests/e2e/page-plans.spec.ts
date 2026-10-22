@@ -190,7 +190,7 @@ test("an editor never rebases its old draft onto an externally refreshed plan", 
   const switchedResponse = page.waitForResponse((response) => response.url().endsWith("/api/workspace") && response.request().method() === "GET");
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await switchedResponse;
-  await expect(page.locator(".pp-section-heading").first()).toContainText("Private work for Another brand");
+  await expect(page.locator(".workspace-switch")).toContainText("Another brand");
   await strategy.getByRole("button", { name: "Save strategy context" }).click();
   await expect(strategy.getByRole("alert")).toContainText("active brand changed");
   await expect(strategy.getByRole("textbox", { name: "Goal", exact: true })).toHaveValue("An unsaved goal for the original brand.");
@@ -283,7 +283,7 @@ test("page plans, expanded comparisons and optional strategy fit small and large
   await nav(page, "Opportunities");
   for (const width of [320, 390, 1440]) {
     await page.setViewportSize({ width, height: 900 });
-    await expect(page.getByRole("heading", { name: "Give the next move a home." })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Saved page plans/ })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     if (browserName === "chromium") await page.screenshot({ path: testInfo.outputPath(`page-plans-${width}.png`), fullPage: true });
     await page.getByRole("button", { name: "Open page plan", exact: true }).click();

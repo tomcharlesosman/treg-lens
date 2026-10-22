@@ -98,7 +98,7 @@ test("guidance resumes the exact plan, compares saved follow-ups, preselects rep
   await guidance(page).getByRole("button", { name: "Resume page plan", exact: true }).click();
   await expect(editor(page).getByLabel("Writing brief")).toHaveValue(plan().brief);
   await editor(page).getByRole("button", { name: "Close page plan", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Your next moves", exact: true })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Opportunities", exact: true })).toBeFocused();
   const published = { ...plan(), status: "published" as const, publishedAt: "2026-10-02", updatedAt: "2026-10-02T13:00:00Z" };
   await replace(page, { ...fixture([run()]), pagePlans: [published] });
   await guidance(page).getByRole("button", { name: "Open published plan", exact: true }).click();
@@ -132,7 +132,7 @@ test("guidance resumes the exact plan, compares saved follow-ups, preselects rep
   await report.getByRole("button", { name: "Continue with your agent", exact: true }).click();
   await expect(report.getByRole("region", { name: "Agent handoff" })).toBeVisible();
   await report.getByRole("button", { name: "Close report", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Reports & agent handoff", exact: true })).toBeFocused();
+  await expect(page.getByRole("heading", { name: "Reports", exact: true })).toBeFocused();
   expect(paid).toEqual([]);
 });
 
@@ -361,7 +361,7 @@ test("recent work is bounded, expandable, chronological and keyboard-accessible 
     await row.focus(); await page.keyboard.press("Enter");
     await expect(page.getByRole("dialog", { name: report.title })).toBeVisible();
     await page.keyboard.press("Escape");
-    await expect(page.getByRole("heading", { name: "Reports & agent handoff", exact: true })).toBeFocused();
+    await expect(page.getByRole("heading", { name: "Reports", exact: true })).toBeFocused();
     if (width < 800) await page.getByRole("button", { name: "Open navigation" }).click();
     await nav(page, "Overview");
   }

@@ -231,8 +231,10 @@ test("discovery validates seeds, prices requests, supports question and keyword 
 
 test("overview date and engine filters, interactive chart, competitors, citations, and prompt filters agree", async ({ page }) => {
   await seedWorkspace(page);
-  const chart = page.getByRole("img", { name: "Brand mention rate trend" });
-  await expect(chart).toBeVisible();
+  // Only the latest seeded audit is in scope and it has 50% coverage, so the trend waits instead of drawing a chart.
+  const trend = page.getByRole("region", { name: "Comparable visibility trends" });
+  await expect(trend).toContainText("The chart appears once a day reaches 90% answer coverage.");
+  await expect(trend.getByRole("img", { name: "Brand mention rate trend" })).toHaveCount(0);
   await page.getByLabel("Date range").selectOption("7");
   await nav(page, "Prompt tracking");
   await expect(page.getByText("8 prompts · 2 answers in selected period", { exact: true })).toBeVisible();
@@ -247,16 +249,13 @@ test("overview date and engine filters, interactive chart, competitors, citation
   await expect(page.getByText("8 prompts · 1 answer in selected period", { exact: true })).toBeVisible();
   await page.getByLabel("Filter prompts by engine").selectOption("all");
   await nav(page, "Competitors");
-  await expect(page.getByRole("heading", { name: "Competitive landscape", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Competitors", exact: true })).toBeVisible();
   await expect(page.locator(".competitor-card")).toHaveCount(4);
   await expect(page.locator(".competitor-card").filter({ hasText: "Treg" })).toContainText("50");
-  await page.locator(".chart-legend").getByRole("button", { name: "Composio", exact: true }).click();
-  await expect(page.locator(".chart-legend").getByRole("button", { name: "Composio", exact: true })).toHaveClass("muted-legend");
-  await chart.hover();
-  await expect(page.locator(".chart-tooltip")).toBeVisible();
+  await expect(page.getByRole("region", { name: "Comparable visibility trends" })).toContainText("The chart appears once a day reaches 90% answer coverage.");
   await page.getByLabel("Filter chart by engine").selectOption("perplexity");
   await nav(page, "Sources & citations");
-  await expect(page.getByRole("heading", { name: "1 source. A world of influence." })).toBeVisible();
+  await expect(page.getByRole("group", { name: "Citation summary" })).toContainText("1 source domain");
   await expect(page.getByRole("link", { name: "Open example.com", exact: true })).toHaveAttribute("href", "https://example.com/research");
   await nav(page, "Overview");
   await page.getByLabel("Filter chart by engine").selectOption("all");
@@ -525,7 +524,7 @@ test("mobile navigation, help, playbook, open-source dialog, and activity action
   await expect(page.getByRole("button", { name: "Close navigation", exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: "Open navigation", exact: true }).click();
   await page.getByRole("button", { name: "The AEO playbook", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "A little clarity goes a long way." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "The AEO playbook", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Read the full AEO workflow" })).toHaveAttribute("href", "https://treg.to/aeo");
   await expect(page.getByText("Visibility = mean(50 × mentioned + 30 × mentioned / position + 20 × cited)")).toBeVisible();
   await page.getByRole("button", { name: "Open navigation", exact: true }).click();
